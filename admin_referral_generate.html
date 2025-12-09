@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Referral Codes</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;600&display=swap" rel="stylesheet">
+    <style>
+        body { background: #111; color: white; font-family: 'Poppins', sans-serif; padding: 20px; text-align: center; }
+        .box { background: #222; padding: 30px; border-radius: 10px; max-width: 400px; margin: 0 auto; border: 1px solid #333; }
+        input { padding: 12px; width: 70%; background: #000; border: 1px solid #444; color: white; text-align: center; border-radius: 5px; }
+        button { padding: 12px; background: #00c6ff; border: none; font-weight: bold; cursor: pointer; margin-top: 10px; width: 80%; border-radius: 5px; }
+        .code-item { background: #1a1a1a; padding: 10px; margin: 5px auto; width: 80%; display: flex; justify-content: space-between; border-left: 3px solid #00c6ff; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h2 style="color:#00c6ff">Create Referral Code</h2>
+        <input type="text" id="newCode" placeholder="Enter Code (e.g. VIP2025)">
+        <button onclick="create()">GENERATE CODE</button>
+        <div id="list" style="margin-top:20px; text-align: left;"></div>
+        <button onclick="window.location.href='admin_home.html'" style="background: #333; margin-top:20px;">Back to Dashboard</button>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+        import { getDatabase, ref, set, onValue, remove } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+
+        const firebaseConfig = { apiKey: "AIzaSyAvTnq3h4SAsgOZcKg58TioELMZWr-Jp4c", authDomain: "task-d0f72.firebaseapp.com", databaseURL: "https://task-d0f72-default-rtdb.firebaseio.com", projectId: "task-d0f72", storageBucket: "task-d0f72.firebasestorage.app", messagingSenderId: "376760667912", appId: "1:376760667912:web:056595289880d291d5a6bd" };
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        window.create = () => {
+            const code = document.getElementById('newCode').value.trim();
+            if(code) {
+                set(ref(db, 'referral_codes/' + code), { active: true });
+                document.getElementById('newCode').value = '';
+            }
+        }
+
+        window.del = (code) => {
+            if(confirm("Delete this code?")) remove(ref(db, 'referral_codes/' + code));
+        }
+
+        onValue(ref(db, 'referral_codes'), (snap) => {
+            const list = document.getElementById('list');
+            list.innerHTML = '';
+            if(snap.exists()){
+                snap.forEach(c => {
+                    list.innerHTML += `<div class="code-item"><span>${c.key}</span> <span style="color:red; cursor:pointer;" onclick="del('${c.key}')">X</span></div>`;
+                });
+            }
+        });
+    </script>
+</body>
+</html>

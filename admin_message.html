@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Send Message</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        body { background: #111; color: white; font-family: 'Poppins', sans-serif; padding: 20px; }
+        h2 { text-align: center; color: #00c6ff; margin-bottom: 20px; text-transform: uppercase; }
+
+        .container {
+            background: #1a1a1a; padding: 30px; border-radius: 15px;
+            border: 1px solid #333; max-width: 500px; margin: 0 auto;
+            text-align: center; box-shadow: 0 0 20px rgba(0, 198, 255, 0.1);
+        }
+
+        input, textarea {
+            width: 100%; padding: 12px; margin: 10px 0; background: #0f0f0f;
+            border: 1px solid #444; border-radius: 8px; color: white;
+            box-sizing: border-box; outline: none; font-family: 'Poppins', sans-serif;
+        }
+        input:focus, textarea:focus { border-color: #00c6ff; }
+
+        textarea { height: 120px; resize: none; }
+
+        .btn-send {
+            width: 100%; padding: 12px; background: linear-gradient(45deg, #00c6ff, #0072ff);
+            border: none; border-radius: 8px; color: white; font-weight: bold;
+            cursor: pointer; margin-top: 10px; transition: 0.3s;
+        }
+        .btn-send:hover { opacity: 0.9; transform: translateY(-2px); }
+
+        .back-btn {
+            background: #333; color: white; border: none; padding: 10px 20px;
+            cursor: pointer; border-radius: 5px; margin-bottom: 20px;
+        }
+
+        /* User List for Quick Select */
+        .user-list {
+            margin-top: 20px; max-height: 200px; overflow-y: auto; text-align: left;
+            border-top: 1px solid #333; padding-top: 10px;
+        }
+        .user-item {
+            padding: 8px; background: #222; margin-bottom: 5px; border-radius: 5px;
+            cursor: pointer; font-size: 13px; display: flex; justify-content: space-between;
+        }
+        .user-item:hover { background: #333; color: #00c6ff; }
+    </style>
+</head>
+<body>
+
+    <button class="back-btn" onclick="window.location.href='admin_home.html'"><i class="fas fa-arrow-left"></i> Back</button>
+    <h2>Send Message to User</h2>
+
+    <div class="container">
+        <h3>Compose SMS/Notification</h3>
+        
+        <input type="text" id="targetUid" placeholder="Paste User UID Here">
+        <textarea id="msgBody" placeholder="Write your message here..."></textarea>
+        
+        <button class="btn-send" onclick="sendMessage()"><i class="fas fa-paper-plane"></i> SEND MESSAGE</button>
+
+        <div class="user-list">
+            <h4 style="color:#aaa; margin-bottom:10px;">Click to Select User:</h4>
+            <div id="uList">Loading Users...</div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+        import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+
+        const firebaseConfig = { apiKey: "AIzaSyAvTnq3h4SAsgOZcKg58TioELMZWr-Jp4c", authDomain: "task-d0f72.firebaseapp.com", databaseURL: "https://task-d0f72-default-rtdb.firebaseio.com", projectId: "task-d0f72", storageBucket: "task-d0f72.firebasestorage.app", messagingSenderId: "376760667912", appId: "1:376760667912:web:056595289880d291d5a6bd" };
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // Load Users for Easy Selection
+        onValue(ref(db, 'users'), (snap) => {
+            const list = document.getElementById('uList');
+            list.innerHTML = '';
+            if(snap.exists()){
+                snap.forEach(child => {
+                    const u = child.val();
+                    const uid = child.key;
+                    list.innerHTML += `
+                        <div class="user-item" onclick="selectUser('${uid}')">
+                            <span>${u.username}</span>
+                            <span style="color:#777;">${uid}</span>
+                        </div>
+                    `;
+                });
+            } else {
+                list.innerHTML = "No users found.";
+            }
+        });
+
+        // Function to select user from list
+        window.selectUser = (uid) => {
+            document.getElementById('targetUid').value = uid;
+        }
+
+        // Send Message Function
+        window.sendMessage = () => {
+            const uid = document.getElementById('targetUid').value.trim();
+            const msg = document.getElementById('msgBody').value.trim();
+
+            if(!uid || !msg) return alert("Please select a User ID and write a message!");
+
+            // Push message to user's notification node
+            push(ref(db, `users/${uid}/notifications`), {
+                message: msg,
+                date: new Date().toLocaleString(),
+                isRead: false,
+                from: "Admin"
+            }).then(() => {
+                alert("Message Sent Successfully!");
+                document.getElementById('msgBody').value = ''; // Clear box
+            }).catch((error) => {
+                alert("Error: " + error.message);
+            });
+        }
+    </script>
+</body>
+</html>

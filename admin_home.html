@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background: #111; font-family: 'Poppins', sans-serif; color: white; padding: 20px;
+        }
+        h2 { text-align: center; color: #00c6ff; margin-bottom: 30px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 20px; }
+        .card {
+            background: #222; padding: 30px; border-radius: 15px; text-align: center;
+            cursor: pointer; border: 1px solid #333; transition: 0.3s;
+        }
+        .card:hover { background: #00c6ff; color: #000; transform: translateY(-5px); }
+        .card i { font-size: 40px; margin-bottom: 10px; }
+        .logout { position: absolute; top: 20px; right: 20px; color: red; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</div>
+    <h2>ADMIN PANEL</h2>
+    <div class="grid">
+        <div class="card" onclick="window.location.href='admin_task_request.html'">
+            <i class="fas fa-tasks"></i><br>Task Requests
+        </div>
+        <div class="card" onclick="window.location.href='admin_withdrawal_request.html'">
+            <i class="fas fa-money-bill-wave"></i><br>Withdrawals
+        </div>
+        <div class="card" onclick="window.location.href='admin_referral_generate.html'">
+            <i class="fas fa-ticket-alt"></i><br>Referral Codes
+        </div>
+        <div class="card" onclick="window.location.href='admin_user_details.html'">
+            <i class="fas fa-users"></i><br>User Details
+        </div>
+    </div>
+    <script>
+        if(!localStorage.getItem('adminAuth')) window.location.href='admin_login.html';
+        function logout() {
+            localStorage.removeItem('adminAuth');
+            window.location.href='admin_login.html';
+        }
+    </script>
+</body>
+</html>

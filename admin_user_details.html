@@ -2,57 +2,250 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>User Details</title>
+    <title>All User Database</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;600&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
         body { background: #111; color: white; font-family: 'Poppins', sans-serif; padding: 20px; }
-        table { width: 100%; border-collapse: collapse; background: #222; margin-top: 20px; }
-        th, td { padding: 10px; border: 1px solid #444; text-align: left; font-size: 13px; }
-        th { color: #00c6ff; }
-        h2 { text-align: center; color: white; }
+        h2 { text-align: center; color: #00c6ff; margin-bottom: 20px; text-transform: uppercase; }
+
+        /* Search Bar */
+        .search-box {
+            width: 100%; max-width: 500px; margin: 0 auto 20px auto; position: relative;
+        }
+        .search-input {
+            width: 100%; padding: 12px 20px; background: #1a1a1a; border: 1px solid #333;
+            border-radius: 30px; color: white; outline: none; font-size: 16px; text-align: center;
+        }
+        .search-input:focus { border-color: #00c6ff; }
+
+        /* Table Styles */
+        .table-container { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; background: #1a1a1a; margin-top: 20px; border-radius: 10px; overflow: hidden; }
+        th, td { padding: 15px; border-bottom: 1px solid #333; text-align: left; font-size: 14px; }
+        
+        th { background: #222; color: #00c6ff; text-transform: uppercase; font-size: 12px; letter-spacing: 1px; }
+        tr:hover { background: rgba(0, 198, 255, 0.05); }
+
+        .balance-text { color: #28a745; font-weight: bold; font-size: 15px; }
+        .withdraw-text { color: #ff416c; font-weight: bold; font-size: 15px; }
+        .pass-text { color: #f0ad4e; font-family: monospace; letter-spacing: 1px; }
+        .uid-small { font-size: 11px; color: #777; }
+        
+        .manage-btn {
+            background: #007bff; color: white; border: none; padding: 8px 12px;
+            border-radius: 5px; cursor: pointer; font-size: 12px; font-weight: bold;
+        }
+        .manage-btn:hover { background: #0056b3; }
+
+        .back-btn {
+            background: #333; color: white; border: none; padding: 10px 20px;
+            cursor: pointer; border-radius: 5px; margin-bottom: 20px;
+        }
+
+        /* MODAL (POPUP) STYLES */
+        .modal {
+            display: none; position: fixed; z-index: 999; left: 0; top: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.8); backdrop-filter: blur(5px);
+        }
+        .modal-content {
+            background: #222; margin: 5% auto; padding: 30px; border: 1px solid #444;
+            width: 90%; max-width: 400px; border-radius: 15px; position: relative; text-align: center;
+            box-shadow: 0 0 20px rgba(0, 198, 255, 0.2);
+        }
+        .close { position: absolute; top: 10px; right: 20px; color: #aaa; font-size: 28px; font-weight: bold; cursor: pointer; }
+        .close:hover { color: white; }
+
+        .modal-input {
+            width: 100%; padding: 12px; margin: 10px 0; background: #111; border: 1px solid #444;
+            color: white; border-radius: 5px; box-sizing: border-box; text-align: center;
+        }
+        .modal-label { font-size: 12px; color: #00c6ff; text-transform: uppercase; margin-top: 10px; display: block; }
+        
+        .action-btn { width: 100%; padding: 12px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; margin-top: 5px; color: white; }
+        .update-btn { background: #28a745; }
+        .block-btn { background: #ff416c; }
+        .unblock-btn { background: #28a745; }
     </style>
 </head>
 <body>
-    <h2>All User Database</h2>
-    <button onclick="window.location.href='admin_home.html'" style="padding:10px; background:#333; color:white; border:none; cursor:pointer;">Back</button>
-    <table>
-        <thead>
-            <tr>
-                <th>Name</th>
-                <th>Phone</th>
-                <th>Balance</th>
-                <th>Referred By</th>
-                <th>UID</th>
-            </tr>
-        </thead>
-        <tbody id="uList"></tbody>
-    </table>
+
+    <button class="back-btn" onclick="window.location.href='admin_home.html'"><i class="fas fa-arrow-left"></i> Back</button>
+    <h2>User Database</h2>
+
+    <div class="search-box">
+        <input type="text" id="searchInput" class="search-input" placeholder="Search by Name, Phone or UID..." onkeyup="searchTable()">
+    </div>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>User Info</th>
+                    <th>Password</th>
+                    <th>Balance</th>
+                    <th>Total Withdrawn</th>
+                    <th>Status</th>
+                    <th>Action</th> <!-- New Column -->
+                </tr>
+            </thead>
+            <tbody id="userTable">
+                <tr><td colspan="6" style="text-align:center;">Loading Data...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- MANAGE USER MODAL -->
+    <div id="manageModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h3 style="color:#00c6ff; margin-top:0;">Manage User</h3>
+            <p id="m_uid" style="font-size:11px; color:#555;">UID: ...</p>
+            
+            <label class="modal-label">User Name & Phone</label>
+            <input type="text" id="m_name" class="modal-input" readonly>
+            <input type="text" id="m_phone" class="modal-input" readonly>
+
+            <label class="modal-label">Edit Balance</label>
+            <input type="number" id="m_balance" class="modal-input">
+            <button onclick="updateUserBalance()" class="action-btn update-btn">UPDATE BALANCE</button>
+
+            <hr style="border-color:#333; margin: 20px 0;">
+
+            <p>Account Status: <span id="m_status_text">...</span></p>
+            <button id="blockBtn" onclick="toggleBlockStatus()" class="action-btn block-btn">BLOCK USER</button>
+        </div>
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+        import { getDatabase, ref, onValue, get, update, child } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
         const firebaseConfig = { apiKey: "AIzaSyAvTnq3h4SAsgOZcKg58TioELMZWr-Jp4c", authDomain: "task-d0f72.firebaseapp.com", databaseURL: "https://task-d0f72-default-rtdb.firebaseio.com", projectId: "task-d0f72", storageBucket: "task-d0f72.firebasestorage.app", messagingSenderId: "376760667912", appId: "1:376760667912:web:056595289880d291d5a6bd" };
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        onValue(ref(db, 'users'), (snap) => {
-            const list = document.getElementById('uList');
-            list.innerHTML = '';
-            snap.forEach(c => {
-                const u = c.val();
-                list.innerHTML += `
-                    <tr>
-                        <td>${u.username}</td>
-                        <td>${u.phone}</td>
-                        <td style="color:#00c6ff; font-weight:bold;">৳${u.balance}</td>
-                        <td>${u.usedReferral || 'None'}</td>
-                        <td style="font-size:10px; color:#777;">${c.key}</td>
-                    </tr>
-                `;
-            });
+        let currentModalUid = null;
+
+        // 1. Fetch Withdrawals First
+        get(ref(db, 'withdrawals')).then((withdrawSnap) => {
+            const withdrawalMap = {}; 
+            if(withdrawSnap.exists()) {
+                withdrawSnap.forEach(child => {
+                    const w = child.val();
+                    if(w.status === 'approved') {
+                        if(!withdrawalMap[w.uid]) withdrawalMap[w.uid] = 0;
+                        withdrawalMap[w.uid] += parseInt(w.amount);
+                    }
+                });
+            }
+            loadUsers(withdrawalMap);
         });
+
+        // 2. Load Users
+        function loadUsers(withdrawalMap) {
+            onValue(ref(db, 'users'), (snap) => {
+                const tbody = document.getElementById('userTable');
+                tbody.innerHTML = '';
+
+                if(!snap.exists()) {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No Users Found</td></tr>';
+                    return;
+                }
+
+                snap.forEach(child => {
+                    const u = child.val();
+                    const uid = child.key;
+                    const totalWithdrawn = withdrawalMap[uid] || 0;
+                    
+                    // Fix undefined password issue
+                    const passwordDisplay = u.password ? u.password : "N/A";
+
+                    const isBlocked = u.isBlocked ? '<span style="color:red; font-weight:bold;">BLOCKED</span>' : '<span style="color:green;">Active</span>';
+
+                    const row = `
+                        <tr class="user-row">
+                            <td>
+                                <div><strong>${u.username}</strong></div>
+                                <div><i class="fas fa-phone"></i> ${u.phone}</div>
+                                <div class="uid-small">${uid}</div>
+                            </td>
+                            <td><span class="pass-text">${passwordDisplay}</span></td>
+                            <td><span class="balance-text">৳${u.balance}</span></td>
+                            <td><span class="withdraw-text">৳${totalWithdrawn}</span></td>
+                            <td>${isBlocked}</td>
+                            <td>
+                                <button class="manage-btn" onclick="openManageModal('${uid}')">Manage</button>
+                            </td>
+                        </tr>
+                    `;
+                    tbody.innerHTML += row;
+                });
+            });
+        }
+
+        // 3. Open Modal
+        window.openManageModal = (uid) => {
+            currentModalUid = uid;
+            const modal = document.getElementById('manageModal');
+            modal.style.display = "block";
+            document.getElementById('m_uid').innerText = uid;
+
+            get(child(ref(db), `users/${uid}`)).then((snap) => {
+                const u = snap.val();
+                document.getElementById('m_name').value = u.username;
+                document.getElementById('m_phone').value = u.phone;
+                document.getElementById('m_balance').value = u.balance;
+
+                const statusText = document.getElementById('m_status_text');
+                const btn = document.getElementById('blockBtn');
+
+                if (u.isBlocked) {
+                    statusText.innerHTML = "<span style='color:red'>BLOCKED</span>";
+                    btn.innerText = "UNBLOCK USER";
+                    btn.className = "action-btn unblock-btn";
+                } else {
+                    statusText.innerHTML = "<span style='color:green'>ACTIVE</span>";
+                    btn.innerText = "BLOCK USER";
+                    btn.className = "action-btn block-btn";
+                }
+            });
+        }
+
+        // 4. Update Balance
+        window.updateUserBalance = () => {
+            const newBal = parseInt(document.getElementById('m_balance').value);
+            if(confirm(`Set new balance to ৳${newBal}?`)) {
+                update(ref(db, `users/${currentModalUid}`), { balance: newBal })
+                .then(() => {
+                    alert("Balance Updated!");
+                    closeModal();
+                });
+            }
+        }
+
+        // 5. Toggle Block
+        window.toggleBlockStatus = () => {
+            const btn = document.getElementById('blockBtn');
+            const isBlocking = btn.innerText === "BLOCK USER"; // If true, we are blocking
+            
+            update(ref(db, `users/${currentModalUid}`), { isBlocked: isBlocking })
+            .then(() => {
+                alert(isBlocking ? "User has been BLOCKED!" : "User has been UNBLOCKED!");
+                closeModal();
+            });
+        }
+
+        window.closeModal = () => { document.getElementById('manageModal').style.display = "none"; }
+        window.searchTable = () => {
+            const input = document.getElementById('searchInput').value.toUpperCase();
+            const rows = document.getElementsByClassName('user-row');
+            for (let i = 0; i < rows.length; i++) {
+                const text = rows[i].innerText.toUpperCase();
+                rows[i].style.display = text.indexOf(input) > -1 ? "" : "none";
+            }
+        }
     </script>
 </body>
 </html>

@@ -2,31 +2,84 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Withdraw Requests</title>
+    <title>Withdrawal Manager</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;600&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
         body { background: #111; color: white; font-family: 'Poppins', sans-serif; padding: 20px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: #222; }
-        th, td { padding: 12px; border: 1px solid #333; text-align: left; font-size: 14px; }
-        th { background: #333; color: #00c6ff; }
-        button { padding: 8px 12px; background: #28a745; color: white; border: none; cursor: pointer; border-radius: 4px; }
-        button:disabled { background: #555; }
+        h2 { text-align: center; color: #00c6ff; margin-bottom: 20px; text-transform: uppercase; }
+
+        /* Search Bar */
+        .search-box { width: 100%; max-width: 500px; margin: 0 auto 30px auto; position: relative; }
+        .search-input { width: 100%; padding: 15px 20px; background: #1a1a1a; border: 1px solid #333; border-radius: 30px; color: white; outline: none; font-size: 16px; text-align: center; }
+        .search-input:focus { border-color: #00c6ff; }
+
+        /* Request Card */
+        .request-card { background: #1a1a1a; padding: 15px; margin-bottom: 15px; border-radius: 10px; border: 1px solid #333; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; transition: 0.3s; }
+        .request-card:hover { border-color: #00c6ff; }
+        
+        .info-group { flex: 1; min-width: 200px; }
+        .info-group div { margin: 5px 0; font-size: 14px; color: #ccc; }
+        .info-group span { color: #fff; font-weight: bold; }
+        .hl { color: #00c6ff !important; }
+
+        /* Buttons */
+        .btn-group { display: flex; gap: 10px; }
+        button { padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; color: white; transition: 0.3s; }
+        button:hover { opacity: 0.8; transform: translateY(-2px); }
+
+        .btn-user { background: #6c757d; }   /* User Info - Grey */
+        .btn-approve { background: #28a745; } /* Approve - Green */
+        .btn-reject { background: #dc3545; }  /* Reject - Red */
+        
+        .back-btn { background: #333; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 5px; margin-bottom: 20px; }
+
+        /* MODAL STYLES */
+        .modal { display: none; position: fixed; z-index: 999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); backdrop-filter: blur(5px); }
+        .modal-content { background: #222; margin: 10% auto; padding: 30px; border: 1px solid #444; width: 90%; max-width: 400px; border-radius: 15px; position: relative; text-align: center; box-shadow: 0 0 20px rgba(0, 198, 255, 0.2); }
+        .close { position: absolute; top: 10px; right: 20px; color: #aaa; font-size: 28px; font-weight: bold; cursor: pointer; }
+        
+        .modal-input { width: 100%; padding: 10px; margin: 10px 0; background: #111; border: 1px solid #444; color: white; border-radius: 5px; box-sizing: border-box; text-align: center; }
+        .modal-label { font-size: 12px; color: #00c6ff; text-transform: uppercase; margin-top: 10px; display: block; }
+        .status-blocked { color: red; font-weight: bold; }
+        .status-active { color: green; font-weight: bold; }
     </style>
 </head>
 <body>
-    <h2 style="text-align:center; color:#00c6ff;">Pending Withdrawals</h2>
-    <table>
-        <thead>
-            <tr>
-                <th>User UID</th>
-                <th>Shop ID</th>
-                <th>Amount</th>
-                <th>Action</th>
-            </tr>
-        </thead>
-        <tbody id="wList"></tbody>
-    </table>
+
+    <button class="back-btn" onclick="window.location.href='admin_home.html'"><i class="fas fa-arrow-left"></i> Back</button>
+    <h2>Withdrawal Requests</h2>
+    
+    <div class="search-box">
+        <input type="text" id="searchInput" class="search-input" placeholder="Search by User ID or Shop ID..." onkeyup="searchTable()">
+    </div>
+
+    <div id="requestList">Loading...</div>
+
+    <!-- USER DETAILS MODAL -->
+    <div id="userModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h3 style="color:#00c6ff; margin-top:0;">User Management</h3>
+            <p id="m_uid" style="font-size:11px; color:#555;">UID: ...</p>
+            
+            <label class="modal-label">User Name & Phone</label>
+            <input type="text" id="m_name" class="modal-input" readonly>
+            <input type="text" id="m_phone" class="modal-input" readonly>
+
+            <label class="modal-label">Password</label>
+            <input type="text" id="m_pass" class="modal-input" style="border-color: #ff416c; color: #ff416c;" readonly>
+
+            <label class="modal-label">Current Balance</label>
+            <input type="number" id="m_balance" class="modal-input">
+            <button onclick="updateBalance()" style="width:100%; background: #007bff; margin-bottom: 20px; padding: 10px; border:none; border-radius:5px; color:white; font-weight:bold; cursor:pointer;">UPDATE BALANCE</button>
+
+            <hr style="border-color:#333;">
+            <p>Status: <span id="m_status">...</span></p>
+            <button id="blockBtn" onclick="toggleBlock()" style="width:100%; background: #ff416c; padding: 10px; border:none; border-radius:5px; color:white; font-weight:bold; cursor:pointer;">BLOCK USER</button>
+        </div>
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
@@ -35,39 +88,115 @@
         const firebaseConfig = { apiKey: "AIzaSyAvTnq3h4SAsgOZcKg58TioELMZWr-Jp4c", authDomain: "task-d0f72.firebaseapp.com", databaseURL: "https://task-d0f72-default-rtdb.firebaseio.com", projectId: "task-d0f72", storageBucket: "task-d0f72.firebasestorage.app", messagingSenderId: "376760667912", appId: "1:376760667912:web:056595289880d291d5a6bd" };
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
+        let currentModalUid = null;
 
+        // LOAD REQUESTS
         onValue(ref(db, 'withdrawals'), (snap) => {
-            const list = document.getElementById('wList');
+            const list = document.getElementById('requestList');
             list.innerHTML = '';
-            snap.forEach(c => {
-                const w = c.val();
+            
+            if(!snap.exists()) { list.innerHTML = '<p style="text-align:center;">No Pending Requests</p>'; return; }
+
+            const requests = [];
+            snap.forEach(c => requests.push({...c.val(), key: c.key}));
+            requests.reverse();
+
+            requests.forEach(w => {
                 if(w.status === 'pending') {
-                    list.innerHTML += `
-                        <tr>
-                            <td>${w.uid}</td>
-                            <td>${w.shopId}</td>
-                            <td>৳${w.amount}</td>
-                            <td><button onclick="pay('${c.key}', '${w.uid}', ${w.amount})">Approve & Transfer</button></td>
-                        </tr>
+                    const div = document.createElement('div');
+                    div.className = 'request-card';
+                    div.innerHTML = `
+                        <div class="info-group">
+                            <div>Shop ID: <span class="hl">${w.shopId}</span></div>
+                            <div>Amount: <span class="hl">৳${w.amount}</span></div>
+                            <div style="font-size:11px; color:#777;">UID: ${w.uid}</div>
+                        </div>
+                        <div class="btn-group">
+                            <button class="btn-user" onclick="openUserModal('${w.uid}')"><i class="fas fa-user"></i> Info</button>
+                            <button class="btn-approve" onclick="approve('${w.key}', '${w.uid}', ${w.amount})"><i class="fas fa-check"></i> Pay</button>
+                            <button class="btn-reject" onclick="reject('${w.key}')"><i class="fas fa-times"></i> Reject</button>
+                        </div>
                     `;
+                    list.appendChild(div);
                 }
             });
         });
 
-        window.pay = (key, uid, amount) => {
+        // ACTIONS
+        window.approve = (key, uid, amount) => {
             get(child(ref(db), `users/${uid}/balance`)).then((s) => {
-                const currentBal = s.val() || 0;
-                if(currentBal >= amount) {
-                    // Deduct
-                    update(ref(db, `users/${uid}`), { balance: currentBal - amount });
-                    // Mark Approved
+                const curBal = s.val() || 0;
+                if(curBal >= amount) {
+                    update(ref(db, `users/${uid}`), { balance: curBal - amount });
                     update(ref(db, `withdrawals/${key}`), { status: 'approved' });
-                    alert("Approved! Balance deducted and marked as transferred.");
+                    alert("Approved & Deducted!");
                 } else {
-                    alert("Error: User does not have enough balance anymore!");
+                    alert(`Insufficient Balance! User has ৳${curBal}`);
                 }
             });
         }
+
+        // --- NEW REJECT FUNCTION ---
+        window.reject = (key) => {
+            if(confirm("Are you sure you want to REJECT this request? Money will NOT be deducted.")) {
+                update(ref(db, `withdrawals/${key}`), { status: 'rejected' });
+            }
+        }
+
+        // USER MODAL & SEARCH LOGIC
+        window.openUserModal = (uid) => {
+            currentModalUid = uid;
+            document.getElementById('userModal').style.display = 'block';
+            document.getElementById('m_uid').innerText = uid;
+            
+            get(child(ref(db), `users/${uid}`)).then((snapshot) => {
+                if(snapshot.exists()) {
+                    const u = snapshot.val();
+                    document.getElementById('m_name').value = u.username || 'N/A';
+                    document.getElementById('m_phone').value = u.phone || 'N/A';
+                    document.getElementById('m_pass').value = u.password || 'N/A';
+                    document.getElementById('m_balance').value = u.balance || 0;
+                    
+                    const statusSpan = document.getElementById('m_status');
+                    const blockBtn = document.getElementById('blockBtn');
+                    if(u.isBlocked === true) {
+                        statusSpan.innerHTML = "<span class='status-blocked'>BLOCKED</span>";
+                        blockBtn.innerText = "UNBLOCK USER";
+                        blockBtn.style.background = "#28a745";
+                    } else {
+                        statusSpan.innerHTML = "<span class='status-active'>ACTIVE</span>";
+                        blockBtn.innerText = "BLOCK USER";
+                        blockBtn.style.background = "#ff416c";
+                    }
+                }
+            });
+        }
+
+        window.updateBalance = () => {
+            const newBal = parseInt(document.getElementById('m_balance').value);
+            if(confirm(`Set balance to ৳${newBal}?`)) {
+                update(ref(db, `users/${currentModalUid}`), { balance: newBal }).then(() => alert("Updated!"));
+            }
+        }
+
+        window.toggleBlock = () => {
+            const btnText = document.getElementById('blockBtn').innerText;
+            const isBlocking = btnText === "BLOCK USER";
+            update(ref(db, `users/${currentModalUid}`), { isBlocked: isBlocking }).then(() => {
+                alert(isBlocking ? "Blocked!" : "Unblocked!");
+                openUserModal(currentModalUid);
+            });
+        }
+
+        window.searchTable = () => {
+            const input = document.getElementById('searchInput').value.toUpperCase();
+            const cards = document.getElementsByClassName('request-card');
+            for (let i = 0; i < cards.length; i++) {
+                cards[i].style.display = cards[i].innerText.toUpperCase().indexOf(input) > -1 ? "" : "none";
+            }
+        }
+
+        window.closeModal = () => { document.getElementById('userModal').style.display = 'none'; }
     </script>
 </body>
 </html>

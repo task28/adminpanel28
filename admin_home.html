@@ -16,30 +16,22 @@
             box-shadow: 0 0 20px rgba(0, 198, 255, 0.1);
         }
         
-        /* Time Input Style */
-        .time-input {
-            padding: 10px; width: 100px; background: #333; border: 1px solid #555;
+        .input-group { margin: 15px 0; border-top: 1px solid #333; padding-top: 15px; }
+        .setting-input {
+            padding: 10px; width: 120px; background: #333; border: 1px solid #555;
             color: white; text-align: center; border-radius: 5px; font-weight: bold;
         }
-        
         .save-btn {
             padding: 10px 20px; background: linear-gradient(45deg, #11998e, #38ef7d);
-            border: none; border-radius: 5px; color: white; cursor: pointer; font-weight: bold;
-            margin-left: 10px;
+            border: none; border-radius: 5px; color: white; cursor: pointer; font-weight: bold; margin-left: 10px;
         }
 
-        .switch-btn {
-            padding: 10px 25px; border: none; border-radius: 5px; font-weight: bold;
-            cursor: pointer; margin: 5px; transition: 0.3s; color: white;
-        }
+        .switch-btn { padding: 10px 25px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; margin: 5px; color: white; }
         .btn-on { background: linear-gradient(45deg, #00c6ff, #0072ff); }
         .btn-off { background: linear-gradient(45deg, #ff416c, #ff4b2b); }
 
         .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
-        .card {
-            background: #222; padding: 25px; border-radius: 10px; cursor: pointer;
-            text-align: center; border: 1px solid #333; transition: 0.3s;
-        }
+        .card { background: #222; padding: 25px; border-radius: 10px; cursor: pointer; text-align: center; border: 1px solid #333; transition: 0.3s; }
         .card:hover { background: #00c6ff; color: #000; transform: translateY(-5px); }
         .card i { font-size: 30px; margin-bottom: 10px; display: block; }
     </style>
@@ -47,45 +39,44 @@
 <body>
     <h2>Admin Dashboard</h2>
 
-    <!-- TASK TIME & STATUS CONTROL -->
     <div class="control-box">
         <h3>⚙️ System Settings</h3>
         
-        <!-- Status Switch -->
-        <div style="margin-bottom: 20px;">
+        <!-- Task Status -->
+        <div>
             <p>Task System Status:</p>
             <button class="switch-btn btn-on" onclick="setSystemStatus(true)">TURN ON ✅</button>
             <button class="switch-btn btn-off" onclick="setSystemStatus(false)">TURN OFF ❌</button>
         </div>
 
-        <!-- Timer Setting -->
-        <div style="border-top: 1px solid #333; padding-top: 15px;">
-            <p>Task Interval (Wait Time between Tasks):</p>
-            <input type="number" id="cooldownTime" class="time-input" placeholder="Minutes">
-            <button class="save-btn" onclick="saveTime()">Set Minutes</button>
-            <p style="color:#aaa; font-size:12px;">Current Setting: <span id="curTime" style="color:#00c6ff;">Loading...</span> Minutes</p>
+        <!-- Task Timer Setting -->
+        <div class="input-group">
+            <p>Task Wait Time (Minutes):</p>
+            <input type="number" id="cooldownTime" class="setting-input" placeholder="Min">
+            <button class="save-btn" onclick="saveSetting('cooldown_minutes', 'cooldownTime')">Set Time</button>
+            <span style="font-size:12px; color:#aaa;">Current: <span id="curTime" style="color:#00c6ff;">...</span>m</span>
+        </div>
+
+        <!-- Withdraw Limit Setting -->
+        <div class="input-group">
+            <p>Minimum Withdrawal Limit (৳):</p>
+            <input type="number" id="minWithInput" class="setting-input" placeholder="Amount">
+            <button class="save-btn" onclick="saveSetting('min_withdraw', 'minWithInput')">Set Limit</button>
+            <span style="font-size:12px; color:#aaa;">Current: ৳<span id="curLimit" style="color:#00c6ff;">...</span></span>
         </div>
     </div>
 
     <!-- MENU -->
     <div class="grid">
-        <div class="card" onclick="window.location.href='admin_task_request.html'">
-            <i class="fas fa-tasks"></i><h3>Task Requests</h3>
-        </div>
-        <div class="card" onclick="window.location.href='admin_withdrawal_request.html'">
-            <i class="fas fa-money-bill-wave"></i><h3>Withdrawals</h3>
-        </div>
-        <div class="card" onclick="window.location.href='admin_referral_generate.html'">
-            <i class="fas fa-ticket-alt"></i><h3>Referral Codes</h3>
-        </div>
-        <div class="card" onclick="window.location.href='admin_user_details.html'">
-            <i class="fas fa-users"></i><h3>User Details</h3>
-        </div>
+        <div class="card" onclick="window.location.href='admin_task_request.html'"><i class="fas fa-tasks"></i><h3>Task Requests</h3></div>
+        <div class="card" onclick="window.location.href='admin_withdrawal_request.html'"><i class="fas fa-money-bill-wave"></i><h3>Withdrawals</h3></div>
+        <div class="card" onclick="window.location.href='admin_referral_generate.html'"><i class="fas fa-ticket-alt"></i><h3>Referral Codes</h3></div>
+        <div class="card" onclick="window.location.href='admin_user_details.html'"><i class="fas fa-users"></i><h3>User Details</h3></div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+        import { getDatabase, ref, set, update, onValue } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
         const firebaseConfig = { apiKey: "AIzaSyAvTnq3h4SAsgOZcKg58TioELMZWr-Jp4c", authDomain: "task-d0f72.firebaseapp.com", databaseURL: "https://task-d0f72-default-rtdb.firebaseio.com", projectId: "task-d0f72", storageBucket: "task-d0f72.firebasestorage.app", messagingSenderId: "376760667912", appId: "1:376760667912:web:056595289880d291d5a6bd" };
         const app = initializeApp(firebaseConfig);
@@ -93,27 +84,23 @@
 
         if(!localStorage.getItem('adminAuth')) window.location.href='admin_login.html';
 
-        // Load Current Settings
+        // Load Settings
         onValue(ref(db, 'settings'), (snap) => {
-            const data = snap.val();
-            if(data) {
-                document.getElementById('curTime').innerText = data.cooldown_minutes || 120;
-            }
+            const data = snap.val() || {};
+            document.getElementById('curTime').innerText = data.cooldown_minutes || 120;
+            document.getElementById('curLimit').innerText = data.min_withdraw || 500;
         });
 
         window.setSystemStatus = (status) => {
             set(ref(db, 'settings/task_status'), status).then(() => alert("Status Updated!"));
         }
 
-        window.saveTime = () => {
-            const mins = document.getElementById('cooldownTime').value;
-            if(!mins) return alert("Enter minutes!");
-            update(ref(db, 'settings'), { cooldown_minutes: parseInt(mins) })
-                .then(() => alert("Time Updated Successfully!"));
+        window.saveSetting = (key, inputId) => {
+            const val = document.getElementById(inputId).value;
+            if(!val) return alert("Enter Value!");
+            update(ref(db, 'settings'), { [key]: parseInt(val) })
+                .then(() => alert("Updated Successfully!"));
         }
-
-        // Helper update function since import didn't include it
-        import { update } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
     </script>
 </body>
 </html>

@@ -82,7 +82,6 @@
                 const t = childSnap.val();
                 const key = childSnap.key;
 
-                // STRICT CHECK: Only show tasks that are 'pending' or 'submitted'
                 if (t.status === 'pending' || t.status === 'submitted') {
                     
                     get(child(ref(db), `users/${t.uid}`)).then((userSnap) => {
@@ -91,7 +90,6 @@
                         const div = document.createElement('div');
                         div.className = `task-card status-${t.status}`;
 
-                        // Header Info
                         const userInfo = `
                             <div class="user-info">
                                 <div><i class="fas fa-user"></i> ${u.username}</div>
@@ -103,7 +101,7 @@
                                 ${userInfo}
                                 <div style="text-align:left; color:orange; margin-bottom:5px;">Paste Details:</div>
                                 <textarea id="raw_${key}" placeholder="Paste raw text here..."></textarea>
-                                <input id="tm_${key}" class="time-input" placeholder="Time Limit (e.g. 30 mins)">
+                                <input type="number" id="tm_${key}" class="time-input" placeholder="Time Limit (Minutes e.g. 15)">
                                 <div class="btn-group">
                                     <button class="btn-assign" onclick="parseAndAssign('${key}')">PARSE & SEND</button>
                                     <button class="btn-reject" onclick="reject('${key}')">REJECT</button>
@@ -124,17 +122,17 @@
                                 </div>
                             `;
                         }
-                        
                         list.appendChild(div);
                     });
                 }
             });
         });
 
-        // Smart Parse
         window.parseAndAssign = (key) => {
             const rawText = document.getElementById(`raw_${key}`).value;
-            const timeLimit = document.getElementById(`tm_${key}`).value;
+            // Get time limit, default to 30 mins if empty
+            const timeLimit = document.getElementById(`tm_${key}`).value || 30; 
+            
             if(!rawText) return alert("Paste details first!");
 
             let fname="", lname="", pass="", gmail="", rec="";
@@ -148,16 +146,22 @@
 
             update(ref(db, `tasks/${key}`), {
                 status: 'assigned',
-                data: { fname: fname.trim(), lname: lname.trim(), gmail: gmail.trim(), password: pass.trim(), recovery: rec.trim(), timeLimit: timeLimit || "30m" }
-            }).then(()=> alert("Task Sent!"));
+                assignedTime: Date.now(), // IMPORTANT: Saves current server time
+                data: { 
+                    fname: fname.trim(), 
+                    lname: lname.trim(), 
+                    gmail: gmail.trim(), 
+                    password: pass.trim(), 
+                    recovery: rec.trim(), 
+                    timeLimit: parseInt(timeLimit) // Ensure it is a number
+                }
+            }).then(()=> alert("Task Sent with Timer!"));
         };
 
-        // APPROVE with 24H Logic
         window.approve = (key) => {
             const amount = parseInt(document.getElementById(`reward_${key}`).value);
             if(!amount) return alert("Enter Amount");
-
-            const unlockTime = Date.now() + 86400000; // 24 Hours Added
+            const unlockTime = Date.now() + 86400000; 
 
             update(ref(db, `tasks/${key}`), { 
                 status: 'approved', 

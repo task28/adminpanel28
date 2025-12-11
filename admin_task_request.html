@@ -58,9 +58,12 @@
             cursor: pointer; border-radius: 8px; transition: 0.2s;
         }
         img:hover { border-color: #00c6ff; transform: scale(1.1); }
+
+        .back-btn { margin-bottom: 20px; background: #333; max-width: 100px; }
     </style>
 </head>
 <body>
+    <button class="back-btn" onclick="window.location.href='admin_home.html'"><i class="fas fa-arrow-left"></i> Back</button>
     <h2><i class="fas fa-user-shield"></i> Task Management</h2>
     <div id="taskList" style="max-width: 600px; margin: 0 auto; text-align: center;">Loading...</div>
 
@@ -82,7 +85,7 @@
                 const t = childSnap.val();
                 const key = childSnap.key;
 
-                // STRICT CHECK: Only show tasks that are 'pending' or 'submitted'
+                // Show only 'pending' (New request) or 'submitted' (Needs approval)
                 if (t.status === 'pending' || t.status === 'submitted') {
                     
                     get(child(ref(db), `users/${t.uid}`)).then((userSnap) => {
@@ -91,7 +94,6 @@
                         const div = document.createElement('div');
                         div.className = `task-card status-${t.status}`;
 
-                        // Header Info
                         const userInfo = `
                             <div class="user-info">
                                 <div><i class="fas fa-user"></i> ${u.username}</div>
@@ -101,11 +103,11 @@
                         if(t.status === 'pending') {
                             div.innerHTML = `
                                 ${userInfo}
-                                <div style="text-align:left; color:orange; margin-bottom:5px;">Paste Details:</div>
-                                <textarea id="raw_${key}" placeholder="Paste raw text here..."></textarea>
+                                <div style="text-align:left; color:orange; margin-bottom:5px;">Paste Task Details:</div>
+                                <textarea id="raw_${key}" placeholder="Paste raw text here (Name, Email, Pass)..."></textarea>
                                 <input id="tm_${key}" class="time-input" placeholder="Time Limit (e.g. 30 mins)">
                                 <div class="btn-group">
-                                    <button class="btn-assign" onclick="parseAndAssign('${key}')">PARSE & SEND</button>
+                                    <button class="btn-assign" onclick="parseAndAssign('${key}')">ASSIGN TASK</button>
                                     <button class="btn-reject" onclick="reject('${key}')">REJECT</button>
                                 </div>
                             `;
@@ -131,12 +133,12 @@
             });
         });
 
-        // Smart Parse
         window.parseAndAssign = (key) => {
             const rawText = document.getElementById(`raw_${key}`).value;
             const timeLimit = document.getElementById(`tm_${key}`).value;
             if(!rawText) return alert("Paste details first!");
 
+            // Simple Parsing Logic
             let fname="", lname="", pass="", gmail="", rec="";
             try {
                 fname = rawText.match(/First name:\s*(.*?)\s*Last name/i)?.[1] || "";
@@ -149,15 +151,14 @@
             update(ref(db, `tasks/${key}`), {
                 status: 'assigned',
                 data: { fname: fname.trim(), lname: lname.trim(), gmail: gmail.trim(), password: pass.trim(), recovery: rec.trim(), timeLimit: timeLimit || "30m" }
-            }).then(()=> alert("Task Sent!"));
+            }).then(()=> alert("Task Assigned Successfully!"));
         };
 
-        // APPROVE with 24H Logic
         window.approve = (key) => {
             const amount = parseInt(document.getElementById(`reward_${key}`).value);
             if(!amount) return alert("Enter Amount");
 
-            const unlockTime = Date.now() + 86400000; // 24 Hours Added
+            const unlockTime = Date.now() + 86400000; // 24 Hours
 
             update(ref(db, `tasks/${key}`), { 
                 status: 'approved', 
@@ -165,7 +166,7 @@
                 paymentDue: unlockTime,
                 isPaid: false
             });
-            alert("Approved! User will receive money after 24 Hours.");
+            alert("Approved! User balance will update after 24 hours.");
         };
 
         window.reject = (key) => {

@@ -17,14 +17,8 @@
         }
         
         .input-group { margin: 15px 0; border-top: 1px solid #333; padding-top: 15px; }
-        .setting-input {
-            padding: 10px; width: 120px; background: #333; border: 1px solid #555;
-            color: white; text-align: center; border-radius: 5px; font-weight: bold;
-        }
-        .save-btn {
-            padding: 10px 20px; background: linear-gradient(45deg, #11998e, #38ef7d);
-            border: none; border-radius: 5px; color: white; cursor: pointer; font-weight: bold; margin-left: 10px;
-        }
+        .setting-input { padding: 10px; width: 120px; background: #333; border: 1px solid #555; color: white; text-align: center; border-radius: 5px; font-weight: bold; }
+        .save-btn { padding: 10px 20px; background: linear-gradient(45deg, #11998e, #38ef7d); border: none; border-radius: 5px; color: white; cursor: pointer; font-weight: bold; margin-left: 10px; }
 
         .switch-btn { padding: 10px 25px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; margin: 5px; color: white; }
         .btn-on { background: linear-gradient(45deg, #00c6ff, #0072ff); }
@@ -32,35 +26,24 @@
 
         .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
         
-        /* CARD STYLE */
         .card { 
             background: #222; padding: 25px; border-radius: 10px; cursor: pointer; 
             text-align: center; border: 1px solid #333; transition: 0.3s;
-            position: relative; /* Badge এর জন্য জরুরি */
+            position: relative; 
         }
         .card:hover { background: #00c6ff; color: #000; transform: translateY(-5px); }
         .card i { font-size: 30px; margin-bottom: 10px; display: block; }
 
-        /* NOTIFICATION BADGE DESIGN */
+        /* BADGE CSS */
         .badge {
-            position: absolute;
-            top: -10px;
-            right: -10px;
-            background-color: #ff0000;
-            color: white;
-            border: 2px solid #111;
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-            font-weight: bold;
+            position: absolute; top: -10px; right: -10px;
+            background-color: #ff0000; color: white;
+            border: 2px solid #111; border-radius: 50%;
+            width: 30px; height: 30px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 14px; font-weight: bold;
             box-shadow: 0 4px 8px rgba(255,0,0,0.5);
-            opacity: 0; /* শুরুতে লুকানো থাকবে */
-            transition: 0.3s;
-            z-index: 100;
+            opacity: 0; transition: 0.3s; z-index: 100;
         }
         .badge.show { opacity: 1; transform: scale(1.1); }
     </style>
@@ -70,20 +53,17 @@
 
     <div class="control-box">
         <h3>⚙️ System Settings</h3>
-        
         <div>
             <p>Task System Status:</p>
             <button class="switch-btn btn-on" onclick="setSystemStatus(true)">TURN ON ✅</button>
             <button class="switch-btn btn-off" onclick="setSystemStatus(false)">TURN OFF ❌</button>
         </div>
-
         <div class="input-group">
             <p>Task Wait Time (Minutes):</p>
             <input type="number" id="cooldownTime" class="setting-input" placeholder="Min">
             <button class="save-btn" onclick="saveSetting('cooldown_minutes', 'cooldownTime')">Set Time</button>
             <span style="font-size:12px; color:#aaa;">Current: <span id="curTime" style="color:#00c6ff;">...</span>m</span>
         </div>
-
         <div class="input-group">
             <p>Minimum Withdrawal Limit (৳):</p>
             <input type="number" id="minWithInput" class="setting-input" placeholder="Amount">
@@ -92,17 +72,15 @@
         </div>
     </div>
 
-    <!-- MENU GRID -->
+    <!-- MENU -->
     <div class="grid">
-        
-        <!-- Task Requests (FIXED BADGE) -->
+        <!-- Task Requests (FIXED PATH) -->
         <div class="card" onclick="window.location.href='admin_task_request.html'">
             <div id="taskBadge" class="badge">0</div>
             <i class="fas fa-tasks"></i>
             <h3>Task Requests</h3>
         </div>
 
-        <!-- Withdrawals -->
         <div class="card" onclick="window.location.href='admin_withdrawal_request.html'">
             <div id="withBadge" class="badge">0</div>
             <i class="fas fa-money-bill-wave"></i>
@@ -114,7 +92,6 @@
             <h3>Referral Codes</h3>
         </div>
         
-        <!-- User Details -->
         <div class="card" onclick="window.location.href='admin_user_details.html'">
             <div id="userBadge" class="badge" style="background-color: #28a745;">0</div>
             <i class="fas fa-users"></i>
@@ -149,45 +126,28 @@
         });
 
         // ============================================
-        // 🛠️ FIXED NOTIFICATION LOGIC 🛠️
+        // 🔔 NOTIFICATION FIX (Correct Path: 'tasks')
         // ============================================
 
-        // 1. Task Requests (Advanced Search)
-        // এটি ডাটাবেসের ফোল্ডারের ভেতরে ফোল্ডার চেক করবে
-        onValue(ref(db, 'task_requests'), (snapshot) => {
-            let pendingCount = 0;
-            
-            if (snapshot.exists()) {
-                snapshot.forEach((child) => {
-                    const val = child.val();
-
-                    // Case 1: যদি সরাসরি ডাটা থাকে
-                    if (val.status === 'pending') {
-                        pendingCount++;
-                    } 
-                    // Case 2: যদি ইউজার ID এর ভেতরে ডাটা থাকে (Nested)
-                    else if (typeof val === 'object') {
-                        Object.values(val).forEach(innerItem => {
-                            if (innerItem.status === 'pending') {
-                                pendingCount++;
-                            }
-                        });
-                    }
-                });
-            }
+        onValue(ref(db, 'tasks'), (snapshot) => {
+            let count = 0;
+            snapshot.forEach((child) => {
+                const val = child.val();
+                // Count 'pending' (New Request) AND 'submitted' (Needs Checking)
+                if (val.status === 'pending' || val.status === 'submitted') {
+                    count++;
+                }
+            });
 
             const badge = document.getElementById('taskBadge');
-            console.log("Task Pending Found:", pendingCount); // কনসোলে চেক করুন
-
-            if (pendingCount > 0) {
-                badge.innerText = pendingCount;
+            if (count > 0) {
+                badge.innerText = count;
                 badge.classList.add('show');
             } else {
                 badge.classList.remove('show');
             }
         });
 
-        // 2. Withdrawals
         onValue(ref(db, 'withdrawals'), (snapshot) => {
             let count = 0;
             snapshot.forEach((child) => {
@@ -202,7 +162,6 @@
             }
         });
 
-        // 3. User Details
         onValue(ref(db, 'users'), (snapshot) => {
             const count = snapshot.size;
             const badge = document.getElementById('userBadge');
@@ -212,8 +171,6 @@
             }
         });
 
-        // ============================================
-
         window.setSystemStatus = (status) => {
             set(ref(db, 'settings/task_status'), status).then(() => alert("Status Updated!"));
         }
@@ -221,8 +178,7 @@
         window.saveSetting = (key, inputId) => {
             const val = document.getElementById(inputId).value;
             if(!val) return alert("Enter Value!");
-            update(ref(db, 'settings'), { [key]: parseInt(val) })
-                .then(() => alert("Updated Successfully!"));
+            update(ref(db, 'settings'), { [key]: parseInt(val) }).then(() => alert("Updated!"));
         }
     </script>
 </body>

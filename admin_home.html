@@ -32,11 +32,11 @@
 
         .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
         
-        /* CARD STYLE WITH RELATIVE POSITION FOR NOTIFICATION */
+        /* CARD STYLE */
         .card { 
             background: #222; padding: 25px; border-radius: 10px; cursor: pointer; 
             text-align: center; border: 1px solid #333; transition: 0.3s;
-            position: relative; /* This is important for the badge */
+            position: relative; /* Badge এর জন্য জরুরি */
         }
         .card:hover { background: #00c6ff; color: #000; transform: translateY(-5px); }
         .card i { font-size: 30px; margin-bottom: 10px; display: block; }
@@ -46,7 +46,7 @@
             position: absolute;
             top: -10px;
             right: -10px;
-            background-color: #ff0000; /* Red Color */
+            background-color: #ff0000;
             color: white;
             border: 2px solid #111;
             border-radius: 50%;
@@ -58,7 +58,7 @@
             font-size: 14px;
             font-weight: bold;
             box-shadow: 0 4px 8px rgba(255,0,0,0.5);
-            opacity: 0; /* Hidden by default */
+            opacity: 0; /* শুরুতে লুকানো থাকবে */
             transition: 0.3s;
             z-index: 100;
         }
@@ -71,14 +71,12 @@
     <div class="control-box">
         <h3>⚙️ System Settings</h3>
         
-        <!-- Task Status -->
         <div>
             <p>Task System Status:</p>
             <button class="switch-btn btn-on" onclick="setSystemStatus(true)">TURN ON ✅</button>
             <button class="switch-btn btn-off" onclick="setSystemStatus(false)">TURN OFF ❌</button>
         </div>
 
-        <!-- Task Timer Setting -->
         <div class="input-group">
             <p>Task Wait Time (Minutes):</p>
             <input type="number" id="cooldownTime" class="setting-input" placeholder="Min">
@@ -86,7 +84,6 @@
             <span style="font-size:12px; color:#aaa;">Current: <span id="curTime" style="color:#00c6ff;">...</span>m</span>
         </div>
 
-        <!-- Withdraw Limit Setting -->
         <div class="input-group">
             <p>Minimum Withdrawal Limit (৳):</p>
             <input type="number" id="minWithInput" class="setting-input" placeholder="Amount">
@@ -98,14 +95,14 @@
     <!-- MENU GRID -->
     <div class="grid">
         
-        <!-- 1. Task Requests (Pending Count) -->
+        <!-- Task Requests (FIXED BADGE) -->
         <div class="card" onclick="window.location.href='admin_task_request.html'">
             <div id="taskBadge" class="badge">0</div>
             <i class="fas fa-tasks"></i>
             <h3>Task Requests</h3>
         </div>
 
-        <!-- 2. Withdrawals (Pending Count) -->
+        <!-- Withdrawals -->
         <div class="card" onclick="window.location.href='admin_withdrawal_request.html'">
             <div id="withBadge" class="badge">0</div>
             <i class="fas fa-money-bill-wave"></i>
@@ -117,7 +114,7 @@
             <h3>Referral Codes</h3>
         </div>
         
-        <!-- 3. User Details (Total Users Count) -->
+        <!-- User Details -->
         <div class="card" onclick="window.location.href='admin_user_details.html'">
             <div id="userBadge" class="badge" style="background-color: #28a745;">0</div>
             <i class="fas fa-users"></i>
@@ -145,7 +142,6 @@
 
         if(!localStorage.getItem('adminAuth')) window.location.href='admin_login.html';
 
-        // Load Settings
         onValue(ref(db, 'settings'), (snap) => {
             const data = snap.val() || {};
             document.getElementById('curTime').innerText = data.cooldown_minutes || 120;
@@ -153,20 +149,36 @@
         });
 
         // ============================================
-        // 🔔 NOTIFICATION SYSTEM LOGIC
+        // 🛠️ FIXED NOTIFICATION LOGIC 🛠️
         // ============================================
 
-        // 1. Check Pending Task Requests
+        // 1. Task Requests (Advanced Search)
+        // এটি ডাটাবেসের ফোল্ডারের ভেতরে ফোল্ডার চেক করবে
         onValue(ref(db, 'task_requests'), (snapshot) => {
             let pendingCount = 0;
-            snapshot.forEach((child) => {
-                const req = child.val();
-                if (req.status === 'pending') {
-                    pendingCount++;
-                }
-            });
+            
+            if (snapshot.exists()) {
+                snapshot.forEach((child) => {
+                    const val = child.val();
+
+                    // Case 1: যদি সরাসরি ডাটা থাকে
+                    if (val.status === 'pending') {
+                        pendingCount++;
+                    } 
+                    // Case 2: যদি ইউজার ID এর ভেতরে ডাটা থাকে (Nested)
+                    else if (typeof val === 'object') {
+                        Object.values(val).forEach(innerItem => {
+                            if (innerItem.status === 'pending') {
+                                pendingCount++;
+                            }
+                        });
+                    }
+                });
+            }
 
             const badge = document.getElementById('taskBadge');
+            console.log("Task Pending Found:", pendingCount); // কনসোলে চেক করুন
+
             if (pendingCount > 0) {
                 badge.innerText = pendingCount;
                 badge.classList.add('show');
@@ -175,35 +187,28 @@
             }
         });
 
-        // 2. Check Pending Withdrawals
+        // 2. Withdrawals
         onValue(ref(db, 'withdrawals'), (snapshot) => {
-            let pendingCount = 0;
+            let count = 0;
             snapshot.forEach((child) => {
-                const req = child.val();
-                if (req.status === 'pending') {
-                    pendingCount++;
-                }
+                if(child.val().status === 'pending') count++;
             });
-
             const badge = document.getElementById('withBadge');
-            if (pendingCount > 0) {
-                badge.innerText = pendingCount;
+            if(count > 0) {
+                badge.innerText = count;
                 badge.classList.add('show');
             } else {
                 badge.classList.remove('show');
             }
         });
 
-        // 3. Check Total Users (User Details)
+        // 3. User Details
         onValue(ref(db, 'users'), (snapshot) => {
-            const totalUsers = snapshot.size; // Counts total children in 'users'
-
+            const count = snapshot.size;
             const badge = document.getElementById('userBadge');
-            if (totalUsers > 0) {
-                badge.innerText = totalUsers;
+            if(count > 0) {
+                badge.innerText = count;
                 badge.classList.add('show');
-            } else {
-                badge.classList.remove('show'); // Should usually be shown if > 0
             }
         });
 

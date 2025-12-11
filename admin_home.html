@@ -10,6 +10,7 @@
         body { background: #111; color: white; font-family: 'Poppins', sans-serif; padding: 20px; }
         h2 { text-align: center; color: #00c6ff; margin-bottom: 30px; text-transform: uppercase; }
         
+        /* Settings Control Box */
         .control-box {
             background: #1a1a1a; padding: 20px; border-radius: 15px;
             border: 1px solid #333; text-align: center; margin-bottom: 20px;
@@ -17,26 +18,35 @@
         }
         
         .input-group { margin: 15px 0; border-top: 1px solid #333; padding-top: 15px; }
-        .setting-input { padding: 10px; width: 120px; background: #333; border: 1px solid #555; color: white; text-align: center; border-radius: 5px; font-weight: bold; }
-        .save-btn { padding: 10px 20px; background: linear-gradient(45deg, #11998e, #38ef7d); border: none; border-radius: 5px; color: white; cursor: pointer; font-weight: bold; margin-left: 10px; }
+        .setting-input {
+            padding: 10px; width: 120px; background: #333; border: 1px solid #555;
+            color: white; text-align: center; border-radius: 5px; font-weight: bold;
+        }
+        .save-btn {
+            padding: 10px 20px; background: linear-gradient(45deg, #11998e, #38ef7d);
+            border: none; border-radius: 5px; color: white; cursor: pointer; font-weight: bold; margin-left: 10px;
+        }
 
         .switch-btn { padding: 10px 25px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; margin: 5px; color: white; }
         .btn-on { background: linear-gradient(45deg, #00c6ff, #0072ff); }
         .btn-off { background: linear-gradient(45deg, #ff416c, #ff4b2b); }
 
+        /* Grid Layout */
         .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
         
+        /* Card Styles */
         .card { 
             background: #222; padding: 25px; border-radius: 10px; cursor: pointer; 
             text-align: center; border: 1px solid #333; transition: 0.3s;
-            position: relative; 
+            position: relative; /* Badge Positioning */
         }
         .card:hover { background: #00c6ff; color: #000; transform: translateY(-5px); }
         .card i { font-size: 30px; margin-bottom: 10px; display: block; }
 
-        /* BADGE CSS */
+        /* Notification Badge Style */
         .badge {
-            position: absolute; top: -10px; right: -10px;
+            position: absolute;
+            top: -10px; right: -10px;
             background-color: #ff0000; color: white;
             border: 2px solid #111; border-radius: 50%;
             width: 30px; height: 30px;
@@ -51,19 +61,23 @@
 <body>
     <h2>Admin Dashboard</h2>
 
+    <!-- System Settings -->
     <div class="control-box">
         <h3>⚙️ System Settings</h3>
+        
         <div>
             <p>Task System Status:</p>
             <button class="switch-btn btn-on" onclick="setSystemStatus(true)">TURN ON ✅</button>
             <button class="switch-btn btn-off" onclick="setSystemStatus(false)">TURN OFF ❌</button>
         </div>
+
         <div class="input-group">
             <p>Task Wait Time (Minutes):</p>
             <input type="number" id="cooldownTime" class="setting-input" placeholder="Min">
             <button class="save-btn" onclick="saveSetting('cooldown_minutes', 'cooldownTime')">Set Time</button>
             <span style="font-size:12px; color:#aaa;">Current: <span id="curTime" style="color:#00c6ff;">...</span>m</span>
         </div>
+
         <div class="input-group">
             <p>Minimum Withdrawal Limit (৳):</p>
             <input type="number" id="minWithInput" class="setting-input" placeholder="Amount">
@@ -72,53 +86,67 @@
         </div>
     </div>
 
-    <!-- MENU -->
+    <!-- Navigation Menu -->
     <div class="grid">
-        <!-- Task Requests (FIXED PATH) -->
+        
+        <!-- Task Requests -->
         <div class="card" onclick="window.location.href='admin_task_request.html'">
             <div id="taskBadge" class="badge">0</div>
             <i class="fas fa-tasks"></i>
             <h3>Task Requests</h3>
         </div>
 
+        <!-- Withdrawals -->
         <div class="card" onclick="window.location.href='admin_withdrawal_request.html'">
             <div id="withBadge" class="badge">0</div>
             <i class="fas fa-money-bill-wave"></i>
             <h3>Withdrawals</h3>
         </div>
 
+        <!-- Referral Codes -->
         <div class="card" onclick="window.location.href='admin_referral_generate.html'">
             <i class="fas fa-ticket-alt"></i>
             <h3>Referral Codes</h3>
         </div>
         
+        <!-- User Details -->
         <div class="card" onclick="window.location.href='admin_user_details.html'">
             <div id="userBadge" class="badge" style="background-color: #28a745;">0</div>
             <i class="fas fa-users"></i>
             <h3>User Details</h3>
         </div>
 
+        <!-- Send Message -->
         <div class="card" onclick="window.location.href='admin_message.html'">
             <i class="fas fa-comment-dots"></i>
             <h3>Send Message</h3>
         </div>
 
+        <!-- Payment Cycle -->
         <div class="card" onclick="window.location.href='admin_payment_settings.html'">
             <i class="fas fa-stopwatch"></i>
             <h3>Payment Cycle</h3>
+        </div>
+
+        <!-- Super Admin Button -->
+        <div class="card" style="border-color: #ff0055;" onclick="window.location.href='super_login.html'">
+            <i class="fas fa-user-secret" style="color: #ff0055;"></i>
+            <h3 style="color: #ff0055;">Super Admin</h3>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-        import { getDatabase, ref, set, update, onValue } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+        import { getDatabase, ref, set, update, onValue, push, onDisconnect, remove } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
         const firebaseConfig = { apiKey: "AIzaSyAvTnq3h4SAsgOZcKg58TioELMZWr-Jp4c", authDomain: "task-d0f72.firebaseapp.com", databaseURL: "https://task-d0f72-default-rtdb.firebaseio.com", projectId: "task-d0f72", storageBucket: "task-d0f72.firebasestorage.app", messagingSenderId: "376760667912", appId: "1:376760667912:web:056595289880d291d5a6bd" };
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
+        // Auth Check
         if(!localStorage.getItem('adminAuth')) window.location.href='admin_login.html';
 
+        // Load Settings
         onValue(ref(db, 'settings'), (snap) => {
             const data = snap.val() || {};
             document.getElementById('curTime').innerText = data.cooldown_minutes || 120;
@@ -126,19 +154,18 @@
         });
 
         // ============================================
-        // 🔔 NOTIFICATION FIX (Correct Path: 'tasks')
+        // 🔔 1. NOTIFICATION BADGES (FIXED)
         // ============================================
 
+        // Tasks: Count 'pending' or 'submitted'
         onValue(ref(db, 'tasks'), (snapshot) => {
             let count = 0;
             snapshot.forEach((child) => {
                 const val = child.val();
-                // Count 'pending' (New Request) AND 'submitted' (Needs Checking)
                 if (val.status === 'pending' || val.status === 'submitted') {
                     count++;
                 }
             });
-
             const badge = document.getElementById('taskBadge');
             if (count > 0) {
                 badge.innerText = count;
@@ -148,6 +175,7 @@
             }
         });
 
+        // Withdrawals: Count 'pending'
         onValue(ref(db, 'withdrawals'), (snapshot) => {
             let count = 0;
             snapshot.forEach((child) => {
@@ -162,6 +190,7 @@
             }
         });
 
+        // User Details: Count Total Users
         onValue(ref(db, 'users'), (snapshot) => {
             const count = snapshot.size;
             const badge = document.getElementById('userBadge');
@@ -171,6 +200,33 @@
             }
         });
 
+        // ============================================
+        // 🕵️ 2. SUPER ADMIN TRACKING CODE
+        // ============================================
+        
+        // Register Session
+        const sessionRef = push(ref(db, 'admin_sessions'));
+        set(sessionRef, {
+            device: navigator.userAgent.substring(0, 50) + "...", // Device Name
+            loginTime: Date.now(),
+            status: 'active'
+        });
+
+        // Remove session if tab closed
+        onDisconnect(sessionRef).remove();
+
+        // Listen if Kicked by Super Admin
+        onValue(sessionRef, (snap) => {
+            // If the node is deleted by Super Admin while page is open
+            if(!snap.exists()) {
+                alert("You have been logged out by Super Admin!");
+                localStorage.removeItem('adminAuth'); 
+                window.location.href = 'admin_login.html';
+            }
+        });
+
+        // ============================================
+
         window.setSystemStatus = (status) => {
             set(ref(db, 'settings/task_status'), status).then(() => alert("Status Updated!"));
         }
@@ -178,7 +234,8 @@
         window.saveSetting = (key, inputId) => {
             const val = document.getElementById(inputId).value;
             if(!val) return alert("Enter Value!");
-            update(ref(db, 'settings'), { [key]: parseInt(val) }).then(() => alert("Updated!"));
+            update(ref(db, 'settings'), { [key]: parseInt(val) })
+                .then(() => alert("Updated Successfully!"));
         }
     </script>
 </body>

@@ -31,9 +31,31 @@
         .btn-off { background: linear-gradient(45deg, #ff416c, #ff4b2b); }
 
         .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
-        .card { background: #222; padding: 25px; border-radius: 10px; cursor: pointer; text-align: center; border: 1px solid #333; transition: 0.3s; }
+        
+        /* Card Styles with Relative positioning for Badge */
+        .card { 
+            background: #222; padding: 25px; border-radius: 10px; cursor: pointer; 
+            text-align: center; border: 1px solid #333; transition: 0.3s;
+            position: relative; /* Essential for badge positioning */
+        }
         .card:hover { background: #00c6ff; color: #000; transform: translateY(-5px); }
         .card i { font-size: 30px; margin-bottom: 10px; display: block; }
+
+        /* Notification Badge Style */
+        .badge {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            background-color: #ff0000;
+            color: white;
+            border-radius: 50%;
+            padding: 5px 10px;
+            font-size: 14px;
+            font-weight: bold;
+            box-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
+            display: none; /* Hidden by default */
+            border: 2px solid #111;
+        }
     </style>
 </head>
 <body>
@@ -68,14 +90,40 @@
 
     <!-- MENU -->
     <div class="grid">
-        <div class="card" onclick="window.location.href='admin_task_request.html'"><i class="fas fa-tasks"></i><h3>Task Requests</h3></div>
-        <div class="card" onclick="window.location.href='admin_withdrawal_request.html'"><i class="fas fa-money-bill-wave"></i><h3>Withdrawals</h3></div>
-        <div class="card" onclick="window.location.href='admin_referral_generate.html'"><i class="fas fa-ticket-alt"></i><h3>Referral Codes</h3></div>
-        <div class="card" onclick="window.location.href='admin_user_details.html'"><i class="fas fa-users"></i><h3>User Details</h3></div>
-   <div class="card" onclick="window.location.href='admin_message.html'">
-    <i class="fas fa-comment-dots"></i>
-    <h3>Send Message</h3>
-</div>
+        <!-- Task Requests with Notification -->
+        <div class="card" onclick="window.location.href='admin_task_request.html'">
+            <div id="taskBadge" class="badge">0</div>
+            <i class="fas fa-tasks"></i>
+            <h3>Task Requests</h3>
+        </div>
+
+        <!-- Withdrawals with Notification -->
+        <div class="card" onclick="window.location.href='admin_withdrawal_request.html'">
+            <div id="withdrawBadge" class="badge">0</div>
+            <i class="fas fa-money-bill-wave"></i>
+            <h3>Withdrawals</h3>
+        </div>
+
+        <div class="card" onclick="window.location.href='admin_referral_generate.html'">
+            <i class="fas fa-ticket-alt"></i>
+            <h3>Referral Codes</h3>
+        </div>
+        
+        <div class="card" onclick="window.location.href='admin_user_details.html'">
+            <i class="fas fa-users"></i>
+            <h3>User Details</h3>
+        </div>
+
+        <div class="card" onclick="window.location.href='admin_message.html'">
+            <i class="fas fa-comment-dots"></i>
+            <h3>Send Message</h3>
+        </div>
+
+        <!-- NEW BUTTON: Payment Cycle Settings -->
+        <div class="card" onclick="window.location.href='admin_payment_settings.html'">
+            <i class="fas fa-stopwatch"></i>
+            <h3>Payment Cycle</h3>
+        </div>
     </div>
 
     <script type="module">
@@ -94,6 +142,46 @@
             document.getElementById('curTime').innerText = data.cooldown_minutes || 120;
             document.getElementById('curLimit').innerText = data.min_withdraw || 500;
         });
+
+        // ============================================
+        // NOTIFICATION LOGIC (Task & Withdraw)
+        // ============================================
+        
+        // 1. Count Pending Task Requests
+        onValue(ref(db, 'task_requests'), (snapshot) => {
+            let count = 0;
+            snapshot.forEach((child) => {
+                if(child.val().status === 'pending') {
+                    count++;
+                }
+            });
+            const badge = document.getElementById('taskBadge');
+            if(count > 0) {
+                badge.style.display = 'block';
+                badge.innerText = count;
+            } else {
+                badge.style.display = 'none';
+            }
+        });
+
+        // 2. Count Pending Withdrawals
+        onValue(ref(db, 'withdrawals'), (snapshot) => {
+            let count = 0;
+            snapshot.forEach((child) => {
+                if(child.val().status === 'pending') {
+                    count++;
+                }
+            });
+            const badge = document.getElementById('withdrawBadge');
+            if(count > 0) {
+                badge.style.display = 'block';
+                badge.innerText = count;
+            } else {
+                badge.style.display = 'none';
+            }
+        });
+
+        // ============================================
 
         window.setSystemStatus = (status) => {
             set(ref(db, 'settings/task_status'), status).then(() => alert("Status Updated!"));

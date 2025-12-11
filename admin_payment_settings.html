@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Payment Cycle Settings</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;600&display=swap" rel="stylesheet">
+    <style>
+        body { background: #111; color: white; font-family: 'Poppins', sans-serif; padding: 20px; text-align: center; }
+        .container { max-width: 500px; margin: 40px auto; background: #1a1a1a; padding: 30px; border-radius: 15px; border: 1px solid #333; }
+        
+        h2 { color: #00c6ff; margin-bottom: 20px; }
+        p { color: #aaa; margin-bottom: 30px; line-height: 1.6; }
+        
+        .activate-btn {
+            width: 100%; padding: 15px; font-size: 18px; font-weight: bold;
+            background: linear-gradient(45deg, #ff416c, #ff4b2b);
+            border: none; border-radius: 10px; color: white; cursor: pointer;
+            transition: 0.3s; margin-bottom: 15px;
+        }
+        .activate-btn:hover { transform: scale(1.02); box-shadow: 0 5px 15px rgba(255, 75, 43, 0.4); }
+
+        .back-btn {
+            background: transparent; border: 1px solid #555; color: #ccc;
+            padding: 10px 20px; border-radius: 5px; cursor: pointer;
+        }
+
+        .status-box {
+            margin-top: 20px; padding: 15px; background: rgba(0, 198, 255, 0.1);
+            border-radius: 8px; border: 1px solid rgba(0, 198, 255, 0.3);
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2><i class="fas fa-stopwatch"></i> Payment Cycle</h2>
+        <p>
+            Clicking the button below will enable <b>Bkash, Nagad, and USDT (BEP20)</b> withdrawal methods for all users.
+            <br><br>
+            These methods will remain active for exactly <b>14 days</b>, then they will automatically disappear.
+        </p>
+
+        <button class="activate-btn" onclick="activatePromo()">ACTIVATE 14 DAYS CYCLE</button>
+        
+        <div id="statusMsg" class="status-box">
+            ✅ <b>Active!</b> Days Remaining: <span id="daysLeft">--</span>
+        </div>
+
+        <br><br>
+        <button class="back-btn" onclick="window.location.href='admin_home.html'">Back to Dashboard</button>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+        import { getDatabase, ref, update, onValue } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+
+        const firebaseConfig = { apiKey: "AIzaSyAvTnq3h4SAsgOZcKg58TioELMZWr-Jp4c", authDomain: "task-d0f72.firebaseapp.com", databaseURL: "https://task-d0f72-default-rtdb.firebaseio.com", projectId: "task-d0f72", storageBucket: "task-d0f72.firebasestorage.app", messagingSenderId: "376760667912", appId: "1:376760667912:web:056595289880d291d5a6bd" };
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // Check current status
+        onValue(ref(db, 'settings'), (snap) => {
+            const data = snap.val() || {};
+            const startTime = data.promo_start_time || 0;
+            const now = Date.now();
+            const daysPassed = (now - startTime) / (1000 * 3600 * 24);
+
+            if (daysPassed < 14) {
+                document.getElementById('statusMsg').style.display = 'block';
+                document.getElementById('daysLeft').innerText = Math.ceil(14 - daysPassed);
+            } else {
+                document.getElementById('statusMsg').style.display = 'none';
+            }
+        });
+
+        window.activatePromo = () => {
+            const confirmAction = confirm("Are you sure you want to start the 14-day payment cycle?");
+            if(confirmAction) {
+                update(ref(db, 'settings'), {
+                    promo_start_time: Date.now()
+                }).then(() => {
+                    alert("Success! Payment methods are now active for 14 days.");
+                });
+            }
+        }
+    </script>
+</body>
+</html>

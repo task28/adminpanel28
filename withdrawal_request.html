@@ -2,23 +2,101 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Admin - Withdrawals</title>
+    <title>Withdrawal Management</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        body { background: #222; color: #ddd; font-family: monospace; padding: 20px; }
-        .item { border: 1px solid #555; padding: 10px; margin-bottom: 10px; background: #333; display: flex; justify-content: space-between; align-items: center; }
-        .details { flex: 1; }
-        .actions button { padding: 5px 10px; margin-left: 5px; cursor: pointer; }
-        .btn-ok { background: green; color: white; border: none; }
-        .btn-no { background: red; color: white; border: none; }
+        body { background: #0f0c29; color: #eee; font-family: 'Segoe UI', sans-serif; padding: 20px; }
+        
+        /* SECTION STYLES */
+        .section-card {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,215,0,0.2);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        h2 { margin-top: 0; color: #FFD700; font-size: 1.2rem; display: flex; align-items: center; gap: 10px; }
+        
+        /* SETTINGS FORM */
+        .settings-box { display: flex; gap: 10px; align-items: center; }
+        .settings-box input {
+            padding: 10px;
+            background: #000;
+            border: 1px solid #555;
+            color: #fff;
+            border-radius: 5px;
+            flex: 1;
+        }
+        .btn-gold {
+            background: #FFD700;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        /* REQUEST LIST */
+        .req-item {
+            background: rgba(0,0,0,0.3);
+            border-left: 4px solid #555;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: 0.3s;
+        }
+        .req-item:hover { background: rgba(255,255,255,0.05); }
+        .req-info div { margin-bottom: 5px; }
+        .amount-tag { color: #FFD700; font-size: 1.2rem; font-weight: bold; }
+        
+        .actions button {
+            padding: 8px 15px;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+            font-weight: bold;
+            margin-left: 5px;
+        }
+        .btn-accept { background: #2ecc71; color: white; }
+        .btn-reject { background: #e74c3c; color: white; }
+
+        /* Method Badge */
+        .method-badge {
+            background: rgba(255,255,255,0.1);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            color: #aaa;
+        }
     </style>
 </head>
 <body>
-    <h1>Pending Withdrawals</h1>
-    <div id="list">Loading...</div>
+
+    <!-- SECTION 1: MINIMUM WITHDRAWAL SETUP -->
+    <div class="section-card">
+        <h2><i class="fas fa-cogs"></i> Withdrawal Settings</h2>
+        <p style="opacity:0.7; font-size:0.9rem;">Set the minimum amount a user needs to withdraw.</p>
+        <div class="settings-box">
+            <input type="number" id="minLimitInput" placeholder="Enter Amount (e.g. 50)">
+            <button class="btn-gold" onclick="saveLimit()">Save Limit</button>
+        </div>
+        <p style="color:#2ecc71; font-size:0.9rem; display:none;" id="saveMsg">Limit Updated Successfully!</p>
+    </div>
+
+    <!-- SECTION 2: PENDING REQUESTS -->
+    <div class="section-card">
+        <h2><i class="fas fa-list"></i> Pending Requests</h2>
+        <div id="list">Loading requests...</div>
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-        import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+        import { getDatabase, ref, onValue, update, set, get } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
         
         const firebaseConfig = { apiKey: "AIzaSyB2YLhAvSF12ZZx7LSnbqcCjtS2_8QLt4o", authDomain: "task-f6078.firebaseapp.com", databaseURL: "https://task-f6078-default-rtdb.firebaseio.com", projectId: "task-f6078", storageBucket: "task-f6078.firebasestorage.app", messagingSenderId: "887907470692", appId: "1:887907470692:web:c4142ac9573e19d29d3e71" };
         const app = initializeApp(firebaseConfig);
@@ -26,33 +104,67 @@
 
         if(!sessionStorage.getItem('admin')) window.location.href = 'index.html';
 
+        // --- 1. LOAD & SAVE LIMIT ---
+        const limitRef = ref(db, 'settings/min_withdrawal');
+
+        // Load current limit
+        get(limitRef).then(snapshot => {
+            if(snapshot.exists()) {
+                document.getElementById('minLimitInput').value = snapshot.val();
+            }
+        });
+
+        window.saveLimit = () => {
+            const val = document.getElementById('minLimitInput').value;
+            if(!val) return alert("Enter a value");
+            
+            set(limitRef, parseInt(val)).then(() => {
+                const msg = document.getElementById('saveMsg');
+                msg.style.display = 'block';
+                setTimeout(() => msg.style.display = 'none', 3000);
+            });
+        };
+
+        // --- 2. LOAD WITHDRAWAL REQUESTS ---
         onValue(ref(db, 'withdrawals'), snapshot => {
             const list = document.getElementById('list');
             list.innerHTML = "";
+            let hasPending = false;
+
             snapshot.forEach(child => {
                 const id = child.key;
                 const data = child.val();
                 
                 if(data.status === 'pending') {
+                    hasPending = true;
+                    let methodDisplay = data.method.toUpperCase();
+                    if(data.method === 'shopping28') methodDisplay = 'Shopping28';
+
                     list.innerHTML += `
-                    <div class="item">
-                        <div class="details">
-                            <strong>UID:</strong> ${data.uid.substring(0,6)}...<br>
-                            <strong>Method:</strong> ${data.method} | <strong>Wallet:</strong> ${data.wallet}<br>
-                            <strong style="color:yellow; font-size:1.2rem">${data.amount} TK</strong>
+                    <div class="req-item">
+                        <div class="req-info">
+                            <span class="method-badge">${methodDisplay}</span>
+                            <div style="margin-top:5px; font-weight:bold;">${data.wallet}</div>
+                            <div style="font-size:0.8rem; opacity:0.6;">UID: ${data.uid}</div>
                         </div>
-                        <div class="actions">
-                            <button class="btn-ok" onclick="window.setStatus('${id}', 'success')">Accept</button>
-                            <button class="btn-no" onclick="window.setStatus('${id}', 'rejected')">Reject</button>
+                        <div style="text-align:right;">
+                            <div class="amount-tag">${data.amount} TK</div>
+                            <div class="actions">
+                                <button class="btn-accept" onclick="window.setStatus('${id}', 'success')"><i class="fas fa-check"></i></button>
+                                <button class="btn-reject" onclick="window.setStatus('${id}', 'rejected')"><i class="fas fa-times"></i></button>
+                            </div>
                         </div>
                     </div>`;
                 }
             });
-            if(list.innerHTML === "") list.innerHTML = "No pending requests.";
+
+            if(!hasPending) list.innerHTML = "<div style='text-align:center; opacity:0.5; padding:20px;'>No pending requests.</div>";
         });
 
         window.setStatus = (id, status) => {
-            update(ref(db, 'withdrawals/' + id), { status: status });
+            if(confirm(`Mark this request as ${status}?`)) {
+                update(ref(db, 'withdrawals/' + id), { status: status });
+            }
         };
     </script>
 </body>

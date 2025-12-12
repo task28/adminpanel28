@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Working Time</title>
+    <style>
+        body { background: #222; color: #ddd; font-family: monospace; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .box { background: #333; padding: 30px; border: 1px solid #555; text-align: center; }
+        input { padding: 10px; margin: 10px; background: #000; color: #fff; border: 1px solid #555; }
+        button { padding: 10px 20px; background: #ffd700; border: none; font-weight: bold; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>Site Working Hours</h1>
+    <div class="box">
+        <label>Open Time (24h format, e.g. 10):</label><br>
+        <input type="number" id="openTime" placeholder="10"><br>
+        
+        <label>Close Time (24h format, e.g. 22):</label><br>
+        <input type="number" id="closeTime" placeholder="22"><br>
+        
+        <button onclick="saveSettings()">Save Settings</button>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+        import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+        
+        const firebaseConfig = { apiKey: "AIzaSyB2YLhAvSF12ZZx7LSnbqcCjtS2_8QLt4o", authDomain: "task-f6078.firebaseapp.com", databaseURL: "https://task-f6078-default-rtdb.firebaseio.com", projectId: "task-f6078", storageBucket: "task-f6078.firebasestorage.app", messagingSenderId: "887907470692", appId: "1:887907470692:web:c4142ac9573e19d29d3e71" };
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        if(!sessionStorage.getItem('admin')) window.location.href = 'index.html';
+
+        // Load current settings
+        get(ref(db, 'settings/working_hours')).then(snapshot => {
+            if(snapshot.exists()){
+                const data = snapshot.val();
+                document.getElementById('openTime').value = data.open;
+                document.getElementById('closeTime').value = data.close;
+            }
+        });
+
+        window.saveSettings = () => {
+            const open = document.getElementById('openTime').value;
+            const close = document.getElementById('closeTime').value;
+            
+            set(ref(db, 'settings/working_hours'), {
+                open: parseInt(open),
+                close: parseInt(close)
+            });
+            alert("Time Updated!");
+        };
+    </script>
+</body>
+</html>

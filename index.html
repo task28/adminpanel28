@@ -2,32 +2,32 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Admin Loading</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;600&display=swap" rel="stylesheet">
+    <title>Admin Login</title>
     <style>
-        body {
-            margin: 0; padding: 0;
-            background: linear-gradient(135deg, #000000, #1a1a1a);
-            height: 100vh; display: flex; justify-content: center; align-items: center;
-            font-family: 'Poppins', sans-serif; color: #00c6ff;
-        }
-        .loader {
-            border: 5px solid rgba(255,255,255,0.1);
-            border-top: 5px solid #00c6ff;
-            border-radius: 50%; width: 50px; height: 50px;
-            animation: spin 1s linear infinite; margin-bottom: 20px;
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        body { background: #111; color: #fff; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: sans-serif; }
+        .box { padding: 40px; border: 1px solid #333; border-radius: 10px; text-align: center; }
+        input { padding: 10px; margin: 10px 0; display: block; width: 100%; }
+        button { padding: 10px 20px; background: red; color: white; border: none; cursor: pointer; }
     </style>
 </head>
 <body>
-    <div style="text-align:center;">
-        <div class="loader" style="margin: 0 auto;"></div>
-        <h3>INITIALIZING ADMIN PANEL...</h3>
+    <div class="box">
+        <h2>ADMIN PANEL</h2>
+        <input type="text" id="admPhone" placeholder="Phone">
+        <input type="password" id="admPass" placeholder="Password">
+        <button onclick="login()">LOGIN</button>
     </div>
     <script>
-        setTimeout(() => { window.location.href = "admin_login.html"; }, 2000);
+        function login() {
+            const p = document.getElementById('admPhone').value;
+            const pass = document.getElementById('admPass').value;
+            if(p === '01310504728' && pass === 'RAFSAN20') {
+                sessionStorage.setItem('admin', 'true');
+                window.location.href = 'home.html';
+            } else {
+                alert("Wrong Credentials");
+            }
+        }
     </script>
 </body>
 </html>

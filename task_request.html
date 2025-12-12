@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Task Requests</title>
+    <style>
+        body { background: #222; color: #ddd; font-family: monospace; padding: 20px; }
+        .req-box { border: 1px solid #555; padding: 10px; margin-bottom: 10px; background: #333; }
+        .action-area { margin-top: 10px; border-top: 1px dashed #777; padding-top: 5px; }
+        input { background: #000; color: #fff; border: 1px solid #555; padding: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Task Requests</h1>
+    <div id="list">Loading...</div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+        import { getDatabase, ref, onValue, update, get, remove } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+        
+        const firebaseConfig = { apiKey: "AIzaSyB2YLhAvSF12ZZx7LSnbqcCjtS2_8QLt4o", authDomain: "task-f6078.firebaseapp.com", databaseURL: "https://task-f6078-default-rtdb.firebaseio.com", projectId: "task-f6078", storageBucket: "task-f6078.firebasestorage.app", messagingSenderId: "887907470692", appId: "1:887907470692:web:c4142ac9573e19d29d3e71" };
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        if(!sessionStorage.getItem('admin')) window.location.href = 'index.html';
+
+        const list = document.getElementById('list');
+
+        onValue(ref(db, 'task_requests'), snapshot => {
+            list.innerHTML = "";
+            snapshot.forEach(child => {
+                const uid = child.key;
+                const data = child.val();
+                
+                let html = `<div class="req-box">
+                    <strong>User:</strong> ${data.userPhone} <br>
+                    <strong>Status:</strong> <span style="color:yellow">${data.status}</span><br>`;
+
+                // STEP 1: Admin gives task
+                if (data.status === 'requested') {
+                    html += `<div class="action-area">
+                        <h4>Assign Task Data:</h4>
+                        <input id="fn_${uid}" placeholder="First Name"><br>
+                        <input id="ln_${uid}" placeholder="Last Name"><br>
+                        <input id="pass_${uid}" placeholder="Password"><br>
+                        <input id="em_${uid}" placeholder="Req Email"><br>
+                        <input id="rec_${uid}" placeholder="Recovery Email"><br>
+                        <button onclick="window.assign('${uid}')">Send to User</button>
+                    </div>`;
+                }
+
+                // STEP 2: User submitted, Admin checks
+                if (data.status === 'submitted') {
+                    html += `<div class="action-area">
+                        <h4>User Submission:</h4>
+                        <p>Email: ${data.submission.email}</p>
+                        <p>Pass: ${data.submission.password}</p>
+                        <input id="amt_${uid}" type="number" placeholder="Amount (e.g. 15)">
+                        <button onclick="window.approve('${uid}')">Approve & Pay</button>
+                        <button onclick="window.reject('${uid}')">Reject</button>
+                    </div>`;
+                }
+                
+                html += `</div>`;
+                list.innerHTML += html;
+            });
+        });
+
+        // Function to Assign Task
+        window.assign = (uid) => {
+            update(ref(db, `task_requests/${uid}`), {
+                status: 'assigned',
+                adminData: {
+                    firstName: document.getElementById(`fn_${uid}`).value,
+                    lastName: document.getElementById(`ln_${uid}`).value,
+                    reqPass: document.getElementById(`pass_${uid}`).value,
+                    reqEmail: document.getElementById(`em_${uid}`).value,
+                    recovery: document.getElementById(`rec_${uid}`).value
+                }
+            });
+        };
+
+        // Function to Approve (Core Logic: Balance + Referral)
+        window.approve = async (uid) => {
+            const amount = parseInt(document.getElementById(`amt_${uid}`).value);
+            if(!amount) return alert("Enter amount");
+
+            // 1. Get User Data
+            const userRef = ref(db, `users/${uid}`);
+            const userSnap = await get(userRef);
+            const user = userSnap.val();
+
+            // 2. Update User Balance
+            const newBal = (user.balance || 0) + amount;
+            await update(userRef, { balance: newBal });
+
+            // 3. Referral Logic (20%)
+            if (user.referredBy) {
+                // Find referrer user by searching all users who have this referralCode
+                // (Note: In a better DB design, we'd store referrer UID directly. Here we scan.)
+                const refProfit = amount * 0.20;
+                
+                // Assuming 'referredBy' stores the Code (e.g., RAFSAN1234)
+                // We need to find which UID owns that code. 
+                // For simplicity in this demo, I will assume we stored UID in referredBy during registration. 
+                // If not, we have to query. Let's assume we query:
+                
+                const allUsers = await get(ref(db, 'users'));
+                allUsers.forEach(u => {
+                    if(u.val().referralCode === user.referredBy) {
+                        const referrerUid = u.key;
+                        const referrerBal = (u.val().balance || 0) + refProfit;
+                        update(ref(db, `users/${referrerUid}`), { balance: referrerBal });
+                    }
+                });
+            }
+
+            // 4. Clear Request
+            remove(ref(db, `task_requests/${uid}`));
+            alert("Approved & Paid!");
+        };
+
+        window.reject = (uid) => {
+            remove(ref(db, `task_requests/${uid}`)); // Or set status to 'rejected'
+            alert("Rejected");
+        };
+    </script>
+</body>
+</html>

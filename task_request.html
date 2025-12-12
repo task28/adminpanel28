@@ -2,17 +2,130 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Task Requests</title>
+    <title>Task Requests - Admin</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        body { background: #222; color: #ddd; font-family: monospace; padding: 20px; }
-        .req-box { border: 1px solid #555; padding: 10px; margin-bottom: 10px; background: #333; }
-        .action-area { margin-top: 10px; border-top: 1px dashed #777; padding-top: 5px; }
-        input { background: #000; color: #fff; border: 1px solid #555; padding: 5px; }
+        /* PREMIUM DARK THEME CSS */
+        body { 
+            background: linear-gradient(135deg, #050505, #1a1a2e); 
+            color: #e0e0e0; 
+            font-family: 'Segoe UI', sans-serif; 
+            padding: 20px; 
+            margin: 0;
+            min-height: 100vh;
+        }
+        
+        h1 { 
+            color: #FFD700; 
+            border-bottom: 1px solid rgba(255, 215, 0, 0.2); 
+            padding-bottom: 15px; 
+            margin-bottom: 30px; 
+            font-weight: 300;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* CARD DESIGN */
+        .req-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-left: 5px solid #FFD700; /* Gold Accent */
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            transition: 0.3s;
+            backdrop-filter: blur(10px);
+        }
+        .req-card:hover {
+            transform: translateY(-5px);
+            background: rgba(255, 255, 255, 0.05);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.5);
+        }
+
+        .user-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            padding-bottom: 10px;
+        }
+        .uid-text { font-family: monospace; color: #aaa; font-size: 0.9rem; }
+        .user-phone { font-size: 1.2rem; font-weight: bold; color: #fff; }
+        .status-badge { 
+            padding: 5px 12px; 
+            border-radius: 20px; 
+            font-size: 0.8rem; 
+            font-weight: bold; 
+            text-transform: uppercase; 
+        }
+        .status-req { background: rgba(255, 215, 0, 0.2); color: #FFD700; border: 1px solid #FFD700; }
+        .status-sub { background: rgba(46, 204, 113, 0.2); color: #2ecc71; border: 1px solid #2ecc71; }
+
+        /* PASTE AREA DESIGN */
+        .paste-box {
+            width: 100%;
+            height: 150px;
+            background: #000;
+            border: 1px solid #444;
+            color: #0f0; /* Matrix Green Text */
+            font-family: 'Courier New', monospace;
+            padding: 15px;
+            border-radius: 8px;
+            resize: vertical;
+            box-sizing: border-box;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+        .paste-box:focus { outline: none; border-color: #FFD700; }
+        .paste-box::placeholder { color: #555; }
+
+        /* ACTION AREA */
+        .action-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            align-items: center;
+        }
+        
+        .input-money {
+            padding: 10px;
+            background: #111;
+            border: 1px solid #555;
+            color: #fff;
+            border-radius: 5px;
+            width: 150px;
+        }
+
+        button {
+            padding: 10px 25px;
+            border: none;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+        }
+        .btn-send { background: linear-gradient(45deg, #FFD700, #ff8c00); color: #000; }
+        .btn-send:hover { box-shadow: 0 0 15px rgba(255, 215, 0, 0.4); }
+        
+        .btn-approve { background: linear-gradient(45deg, #2ecc71, #27ae60); color: white; }
+        .btn-reject { background: #e74c3c; color: white; }
+
+        .helper-text { font-size: 0.8rem; color: #888; margin-bottom: 5px; display: block; }
     </style>
 </head>
 <body>
-    <h1>Task Requests</h1>
-    <div id="list">Loading...</div>
+
+    <h1><i class="fas fa-tasks"></i> Task Requests</h1>
+    <div id="list">
+        <div style="text-align:center; padding: 50px; color:#666;">Loading Requests...</div>
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
@@ -28,85 +141,118 @@
 
         onValue(ref(db, 'task_requests'), snapshot => {
             list.innerHTML = "";
+            let hasData = false;
+
             snapshot.forEach(child => {
+                hasData = true;
                 const uid = child.key;
                 const data = child.val();
                 
-                let html = `<div class="req-box">
-                    <strong>User:</strong> ${data.userPhone} <br>
-                    <strong>Status:</strong> <span style="color:yellow">${data.status}</span><br>`;
+                // HEADER PART
+                let html = `
+                <div class="req-card">
+                    <div class="user-header">
+                        <div>
+                            <div class="user-phone"><i class="fas fa-user"></i> ${data.userPhone || 'Unknown'}</div>
+                            <div class="uid-text">UID: ${uid}</div>
+                        </div>
+                        <span class="status-badge ${data.status === 'requested' ? 'status-req' : 'status-sub'}">
+                            ${data.status.toUpperCase()}
+                        </span>
+                    </div>`;
 
-                // STEP 1: Admin gives task
+                // --- STEP 1: ADMIN ASSIGNS TASK (PASTE SYSTEM) ---
                 if (data.status === 'requested') {
-                    html += `<div class="action-area">
-                        <h4>Assign Task Data:</h4>
-                        <input id="fn_${uid}" placeholder="First Name"><br>
-                        <input id="ln_${uid}" placeholder="Last Name"><br>
-                        <input id="pass_${uid}" placeholder="Password"><br>
-                        <input id="em_${uid}" placeholder="Req Email"><br>
-                        <input id="rec_${uid}" placeholder="Recovery Email"><br>
-                        <button onclick="window.assign('${uid}')">Send to User</button>
+                    html += `
+                    <div>
+                        <span class="helper-text">Paste the details below (First Name, Last Name, Pass, Email, Recovery):</span>
+                        <textarea id="paste_${uid}" class="paste-box" placeholder="First name: Wendy&#10;Last name: Garza&#10;Password: ...&#10;Email: ...&#10;Recovery email: ..."></textarea>
+                        
+                        <div class="action-row">
+                            <button class="btn-send" onclick="window.parseAndAssign('${uid}')">
+                                <i class="fas fa-paper-plane"></i> Send to User
+                            </button>
+                        </div>
                     </div>`;
                 }
 
-                // STEP 2: User submitted, Admin checks
+                // --- STEP 2: USER SUBMITTED, ADMIN CHECKS ---
                 if (data.status === 'submitted') {
-                    html += `<div class="action-area">
-                        <h4>User Submission:</h4>
-                        <p>Email: ${data.submission.email}</p>
-                        <p>Pass: ${data.submission.password}</p>
-                        <input id="amt_${uid}" type="number" placeholder="Amount (e.g. 15)">
-                        <button onclick="window.approve('${uid}')">Approve & Pay</button>
-                        <button onclick="window.reject('${uid}')">Reject</button>
+                    html += `
+                    <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; margin-bottom:15px;">
+                        <div style="color:#aaa; font-size:0.9rem;">User Submission:</div>
+                        <div style="color:#fff; margin-top:5px;"><strong>Email:</strong> ${data.submission.email}</div>
+                        <div style="color:#fff;"><strong>Pass:</strong> ${data.submission.password}</div>
+                    </div>
+                    
+                    <div class="action-row">
+                        <input id="amt_${uid}" class="input-money" type="number" placeholder="Reward (TK)">
+                        <button class="btn-approve" onclick="window.approve('${uid}')">Approve & Pay</button>
+                        <button class="btn-reject" onclick="window.reject('${uid}')">Reject</button>
                     </div>`;
                 }
                 
-                html += `</div>`;
+                html += `</div>`; // Close Card
                 list.innerHTML += html;
             });
+
+            if(!hasData) list.innerHTML = "<div style='text-align:center; padding: 50px; color:#888;'>No pending requests.</div>";
         });
 
-        // Function to Assign Task
-        window.assign = (uid) => {
+        // --- SMART PARSING FUNCTION ---
+        window.parseAndAssign = (uid) => {
+            const rawText = document.getElementById(`paste_${uid}`).value;
+            
+            if(!rawText.trim()) return alert("Please paste the details first!");
+
+            // Default Object
+            let parsedData = {
+                firstName: "", lastName: "", reqPass: "", reqEmail: "", recovery: ""
+            };
+
+            // Logic to split by new lines and find keys
+            const lines = rawText.split(/\n/);
+            lines.forEach(line => {
+                if(line.toLowerCase().includes("first name:")) parsedData.firstName = line.split(":")[1].trim();
+                else if(line.toLowerCase().includes("last name:")) parsedData.lastName = line.split(":")[1].trim();
+                else if(line.toLowerCase().includes("password:")) parsedData.reqPass = line.split(":")[1].trim();
+                else if(line.toLowerCase().includes("recovery email:")) parsedData.recovery = line.split(":")[1].trim();
+                // Check "Email:" last so it doesn't confuse with "Recovery email"
+                else if(line.toLowerCase().includes("email:") && !line.toLowerCase().includes("recovery")) parsedData.reqEmail = line.split(":")[1].trim();
+            });
+
+            // Validation: Check if we found at least an email and pass
+            if(!parsedData.reqEmail || !parsedData.reqPass) {
+                if(!confirm("Could not detect all fields automatically. Send anyway?")) return;
+            }
+
+            // Update Database
             update(ref(db, `task_requests/${uid}`), {
                 status: 'assigned',
-                adminData: {
-                    firstName: document.getElementById(`fn_${uid}`).value,
-                    lastName: document.getElementById(`ln_${uid}`).value,
-                    reqPass: document.getElementById(`pass_${uid}`).value,
-                    reqEmail: document.getElementById(`em_${uid}`).value,
-                    recovery: document.getElementById(`rec_${uid}`).value
-                }
+                adminData: parsedData
             });
+            alert("Task Assigned Successfully!");
         };
 
-        // Function to Approve (Core Logic: Balance + Referral)
+        // --- APPROVE & REJECT FUNCTIONS ---
         window.approve = async (uid) => {
             const amount = parseInt(document.getElementById(`amt_${uid}`).value);
-            if(!amount) return alert("Enter amount");
+            if(!amount) return alert("Enter reward amount!");
 
-            // 1. Get User Data
             const userRef = ref(db, `users/${uid}`);
             const userSnap = await get(userRef);
             const user = userSnap.val();
 
-            // 2. Update User Balance
+            // Add Balance
             const newBal = (user.balance || 0) + amount;
             await update(userRef, { balance: newBal });
 
-            // 3. Referral Logic (20%)
+            // Referral Logic (20%)
             if (user.referredBy) {
-                // Find referrer user by searching all users who have this referralCode
-                // (Note: In a better DB design, we'd store referrer UID directly. Here we scan.)
                 const refProfit = amount * 0.20;
-                
-                // Assuming 'referredBy' stores the Code (e.g., RAFSAN1234)
-                // We need to find which UID owns that code. 
-                // For simplicity in this demo, I will assume we stored UID in referredBy during registration. 
-                // If not, we have to query. Let's assume we query:
-                
-                const allUsers = await get(ref(db, 'users'));
-                allUsers.forEach(u => {
+                // Search for referrer
+                const allUsersSnap = await get(ref(db, 'users'));
+                allUsersSnap.forEach(u => {
                     if(u.val().referralCode === user.referredBy) {
                         const referrerUid = u.key;
                         const referrerBal = (u.val().balance || 0) + refProfit;
@@ -115,14 +261,16 @@
                 });
             }
 
-            // 4. Clear Request
+            // Remove Request
             remove(ref(db, `task_requests/${uid}`));
             alert("Approved & Paid!");
         };
 
         window.reject = (uid) => {
-            remove(ref(db, `task_requests/${uid}`)); // Or set status to 'rejected'
-            alert("Rejected");
+            if(confirm("Reject this submission?")) {
+                remove(ref(db, `task_requests/${uid}`));
+                alert("Rejected");
+            }
         };
     </script>
 </body>

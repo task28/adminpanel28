@@ -1,23 +1,73 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
     <title>Admin Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        body { background: #222; color: white; font-family: sans-serif; padding: 20px; }
-        .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
-        .btn { padding: 40px; background: #333; text-align: center; font-size: 1.2rem; cursor: pointer; border: 1px solid #444; }
-        .btn:hover { background: #444; }
+        body { background: #0f0c29; color: white; font-family: 'Poppins', sans-serif; padding: 20px; }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,215,0,0.3); padding-bottom: 15px; margin-bottom: 30px; }
+        h1 { margin: 0; color: #FFD700; font-size: 1.5rem; }
+        .logout { color: #ff4444; text-decoration: none; border: 1px solid #ff4444; padding: 5px 15px; border-radius: 20px; transition: 0.3s; }
+        .logout:hover { background: #ff4444; color: white; }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 30px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.3s;
+            backdrop-filter: blur(5px);
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            background: rgba(255,215,0,0.1);
+            border-color: #FFD700;
+        }
+        .card i { font-size: 2.5rem; color: #FFD700; margin-bottom: 15px; }
+        .card h3 { margin: 0; font-size: 1rem; font-weight: normal; }
+
     </style>
 </head>
 <body>
-    <h1>Admin Dashboard</h1>
-    <div class="grid">
-        <div class="btn" onclick="location.href='user_details.html'">User Details</div>
-        <div class="btn" onclick="location.href='task_request.html'">Task Requests</div>
-        <div class="btn" onclick="location.href='withdrawal_request.html'">Withdrawal Requests</div>
-        <div class="btn" onclick="location.href='balance_setting.html'">Balance Setting</div>
-        <div class="btn" onclick="location.href='working_time.html'">Working Time</div>
+    <div class="header">
+        <h1>Admin Panel</h1>
+        <a href="index.html" class="logout" onclick="sessionStorage.clear()">Logout</a>
     </div>
+
+    <div class="dashboard-grid">
+        <div class="card" onclick="location.href='user_details.html'">
+            <i class="fas fa-users"></i>
+            <h3>User Details</h3>
+        </div>
+        <div class="card" onclick="location.href='task_request.html'">
+            <i class="fas fa-tasks"></i>
+            <h3>Task Requests</h3>
+        </div>
+        <div class="card" onclick="location.href='withdrawal_request.html'">
+            <i class="fas fa-money-bill-wave"></i>
+            <h3>Withdrawals</h3>
+        </div>
+        <div class="card" onclick="location.href='balance_setting.html'">
+            <i class="fas fa-edit"></i>
+            <h3>Balance Edit</h3>
+        </div>
+        <div class="card" onclick="location.href='working_time.html'">
+            <i class="fas fa-clock"></i>
+            <h3>Working Time</h3>
+        </div>
+    </div>
+
     <script>
         if(!sessionStorage.getItem('admin')) window.location.href = 'index.html';
     </script>

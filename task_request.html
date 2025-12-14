@@ -39,6 +39,7 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.3);
             transition: 0.3s;
             backdrop-filter: blur(10px);
+            position: relative;
         }
         .req-card:hover {
             transform: translateY(-5px);
@@ -67,6 +68,16 @@
         }
         .status-req { background: rgba(255, 215, 0, 0.2); color: #FFD700; border: 1px solid #FFD700; }
         .status-sub { background: rgba(46, 204, 113, 0.2); color: #2ecc71; border: 1px solid #2ecc71; }
+        
+        /* TIME DISPLAY */
+        .time-display {
+            font-size: 0.85rem;
+            color: #ff6b6b;
+            margin-top: 5px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
 
         /* SMART PASTE BOX */
         .paste-box {
@@ -115,13 +126,14 @@
             text-transform: uppercase;
             font-size: 0.85rem;
         }
-        .btn-send { background: linear-gradient(45deg, #FFD700, #ff8c00); color: #000; }
+        .btn-send { background: linear-gradient(45deg, #FFD700, #ff8c00); color: #000; flex: 1; }
         .btn-send:hover { box-shadow: 0 0 15px rgba(255, 215, 0, 0.4); }
         
         .btn-approve { background: linear-gradient(45deg, #2ecc71, #27ae60); color: white; }
         .btn-approve:hover { box-shadow: 0 0 15px rgba(46, 204, 113, 0.4); }
         
-        .btn-reject { background: #e74c3c; color: white; }
+        .btn-reject { background: #c0392b; color: white; }
+        .btn-reject:hover { background: #e74c3c; box-shadow: 0 0 10px rgba(231, 76, 60, 0.4); }
 
         .helper-text { font-size: 0.8rem; color: #888; margin-bottom: 5px; display: block; }
         
@@ -157,6 +169,24 @@
 
         const list = document.getElementById('list');
 
+        // Helper: Calculate Time Ago
+        function getTimeAgo(timestamp) {
+            if(!timestamp) return 'Unknown Time';
+            const seconds = Math.floor((Date.now() - timestamp) / 1000);
+            
+            let interval = seconds / 31536000;
+            if (interval > 1) return Math.floor(interval) + " years ago";
+            interval = seconds / 2592000;
+            if (interval > 1) return Math.floor(interval) + " months ago";
+            interval = seconds / 86400;
+            if (interval > 1) return Math.floor(interval) + " days ago";
+            interval = seconds / 3600;
+            if (interval > 1) return Math.floor(interval) + " hours ago";
+            interval = seconds / 60;
+            if (interval > 1) return Math.floor(interval) + " mins ago";
+            return Math.floor(seconds) + " seconds ago";
+        }
+
         // --- LISTEN FOR REQUESTS ---
         onValue(ref(db, 'task_requests'), snapshot => {
             list.innerHTML = "";
@@ -173,6 +203,7 @@
                     <div class="user-header">
                         <div>
                             <div class="user-phone"><i class="fas fa-user-circle"></i> ${data.userPhone || 'User'}</div>
+                            <div class="time-display"><i class="far fa-clock"></i> ${getTimeAgo(data.createdAt || data.timestamp)}</div>
                             <div class="uid-text">${uid}</div>
                         </div>
                         <span class="status-badge ${data.status === 'requested' ? 'status-req' : 'status-sub'}">
@@ -180,28 +211,32 @@
                         </span>
                     </div>`;
 
-                // --- 1. ADMIN ASSIGNS TASK (SMART PASTE) ---
+                // --- 1. ADMIN ASSIGNS TASK ---
                 if (data.status === 'requested') {
                     html += `
                     <div>
-                        <span class="helper-text"><i class="fas fa-magic"></i> Smart Paste (Paste the full block here):</span>
-                        <textarea id="paste_${uid}" class="paste-box" placeholder="First name: John&#10;Last name: Doe&#10;Password: pass123&#10;Email: john@gmail.com&#10;Recovery email: rec@outlook.com"></textarea>
+                        <span class="helper-text"><i class="fas fa-magic"></i> Smart Paste Details:</span>
+                        <textarea id="paste_${uid}" class="paste-box" placeholder="Paste full details here..."></textarea>
                         
                         <div class="action-row">
                             <button class="btn-send" onclick="window.parseAndAssign('${uid}')">
-                                <i class="fas fa-paper-plane"></i> Send to User
+                                <i class="fas fa-paper-plane"></i> Send Task
+                            </button>
+                            <!-- NEW: REJECT BUTTON -->
+                            <button class="btn-reject" onclick="window.reject('${uid}')">
+                                <i class="fas fa-trash"></i> Cancel
                             </button>
                         </div>
                     </div>`;
                 }
 
-                // --- 2. USER SUBMITTED (REVIEW & APPROVE) ---
+                // --- 2. USER SUBMITTED ---
                 if (data.status === 'submitted') {
                     html += `
                     <div class="submission-box">
                         <div style="color:#aaa; font-size:0.8rem; margin-bottom:5px;">USER SUBMITTED:</div>
-                        <div style="color:#fff;"><strong>Email:</strong> <span style="color:#2ecc71">${data.submission.email}</span></div>
-                        <div style="color:#fff;"><strong>Pass:</strong> <span style="color:#f1c40f">${data.submission.password}</span></div>
+                        <div style="color:#fff;"><strong>Email:</strong> <span style="color:#2ecc71">${data.submission?.email || 'N/A'}</span></div>
+                        <div style="color:#fff;"><strong>Pass:</strong> <span style="color:#f1c40f">${data.submission?.password || 'N/A'}</span></div>
                     </div>
                     
                     <div class="action-row">
@@ -221,19 +256,16 @@
         // --- LOGIC: SMART PARSE ---
         window.parseAndAssign = (uid) => {
             const rawText = document.getElementById(`paste_${uid}`).value;
-            
             if(!rawText.trim()) return alert("Please paste the details!");
 
-            // Initialize empty
             let parsedData = { firstName: "", lastName: "", reqPass: "", reqEmail: "", recovery: "" };
 
-            // Parsing Logic (Splits lines, looks for keywords)
             const lines = rawText.split(/\n/);
             lines.forEach(line => {
                 const lowerLine = line.toLowerCase();
                 if(lowerLine.includes(':')) {
                     const parts = line.split(':');
-                    const value = parts.slice(1).join(':').trim(); // Join back if value has colons
+                    const value = parts.slice(1).join(':').trim();
                     
                     if(lowerLine.includes("first name")) parsedData.firstName = value;
                     else if(lowerLine.includes("last name")) parsedData.lastName = value;
@@ -243,23 +275,21 @@
                 }
             });
 
-            // Send to DB
+            // Update with assigned timestamp so timer resets for user if needed
             update(ref(db, `task_requests/${uid}`), {
                 status: 'assigned',
+                assignedAt: Date.now(),
                 adminData: parsedData
             });
             alert("Task Assigned!");
         };
 
-        // --- LOGIC: APPROVE & FIX COOLDOWN ---
+        // --- LOGIC: APPROVE ---
         window.approve = async (uid) => {
             const amountInput = document.getElementById(`amt_${uid}`);
             const amount = parseInt(amountInput.value);
 
-            if(!amount) {
-                amountInput.style.borderColor = "red";
-                return alert("Please enter the reward amount!");
-            }
+            if(!amount) return alert("Please enter the reward amount!");
 
             const userRef = ref(db, `users/${uid}`);
             const userSnap = await get(userRef);
@@ -267,14 +297,11 @@
             if(!userSnap.exists()) return alert("User not found!");
             
             const user = userSnap.val();
-
-            // 1. Update Balance
             const newBal = (user.balance || 0) + amount;
 
-            // 2. REFERRAL COMMISSION (20%)
+            // Commission Logic
             if (user.referredBy) {
                 const commission = amount * 0.20;
-                // Find referrer UID by searching all users (Inefficient but works for small apps)
                 const allUsersSnap = await get(ref(db, 'users'));
                 allUsersSnap.forEach(u => {
                     if(u.val().referralCode === user.referredBy) {
@@ -285,21 +312,19 @@
                 });
             }
 
-            // 3. CRITICAL: UPDATE BALANCE & TIME (This starts the cooldown)
             await update(userRef, { 
                 balance: newBal,
-                lastTaskTime: Date.now(), // Saves current time
+                lastTaskTime: Date.now(),
                 lastEarned: amount
             });
 
-            // 4. Clean up request
             remove(ref(db, `task_requests/${uid}`));
             alert(`Approved! User rewarded ${amount} TK.`);
         };
 
-        // --- LOGIC: REJECT ---
+        // --- LOGIC: REJECT / CANCEL ---
         window.reject = (uid) => {
-            if(confirm("Are you sure you want to reject this submission?")) {
+            if(confirm("Are you sure you want to REJECT/CANCEL this task?")) {
                 remove(ref(db, `task_requests/${uid}`));
             }
         };

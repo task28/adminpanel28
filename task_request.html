@@ -68,6 +68,7 @@
         }
         .status-req { background: rgba(255, 215, 0, 0.2); color: #FFD700; border: 1px solid #FFD700; }
         .status-sub { background: rgba(46, 204, 113, 0.2); color: #2ecc71; border: 1px solid #2ecc71; }
+        .status-asgn { background: rgba(52, 152, 219, 0.2); color: #3498db; border: 1px solid #3498db; }
         
         /* TIME DISPLAY */
         .time-display {
@@ -144,6 +145,15 @@
             margin-bottom: 15px;
             border: 1px dashed #555;
         }
+        
+        .waiting-box {
+            background: rgba(52, 152, 219, 0.1);
+            border: 1px solid rgba(52, 152, 219, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            color: #3498db;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -197,6 +207,11 @@
                 const uid = child.key;
                 const data = child.val();
                 
+                // Determine Badge Color
+                let badgeClass = 'status-req';
+                if(data.status === 'submitted') badgeClass = 'status-sub';
+                if(data.status === 'assigned') badgeClass = 'status-asgn';
+
                 // Card Header
                 let html = `
                 <div class="req-card">
@@ -206,12 +221,12 @@
                             <div class="time-display"><i class="far fa-clock"></i> ${getTimeAgo(data.createdAt || data.timestamp)}</div>
                             <div class="uid-text">${uid}</div>
                         </div>
-                        <span class="status-badge ${data.status === 'requested' ? 'status-req' : 'status-sub'}">
+                        <span class="status-badge ${badgeClass}">
                             ${data.status.toUpperCase()}
                         </span>
                     </div>`;
 
-                // --- 1. ADMIN ASSIGNS TASK ---
+                // --- 1. ADMIN ASSIGNS TASK (Requested Mode) ---
                 if (data.status === 'requested') {
                     html += `
                     <div>
@@ -222,7 +237,6 @@
                             <button class="btn-send" onclick="window.parseAndAssign('${uid}')">
                                 <i class="fas fa-paper-plane"></i> Send Task
                             </button>
-                            <!-- NEW: REJECT BUTTON -->
                             <button class="btn-reject" onclick="window.reject('${uid}')">
                                 <i class="fas fa-trash"></i> Cancel
                             </button>
@@ -230,7 +244,21 @@
                     </div>`;
                 }
 
-                // --- 2. USER SUBMITTED ---
+                // --- 2. TASK ASSIGNED (Waiting for User) - NEW FEATURE ---
+                if (data.status === 'assigned') {
+                    html += `
+                    <div class="waiting-box">
+                        <i class="fas fa-spinner fa-spin"></i> Waiting for user to submit proof...
+                    </div>
+                    <div class="action-row">
+                        <button class="btn-reject" style="width:100%" onclick="window.reject('${uid}')">
+                            <i class="fas fa-ban"></i> Cancel / Revoke Task
+                        </button>
+                    </div>
+                    `;
+                }
+
+                // --- 3. USER SUBMITTED (Review Mode) ---
                 if (data.status === 'submitted') {
                     html += `
                     <div class="submission-box">
@@ -275,7 +303,6 @@
                 }
             });
 
-            // Update with assigned timestamp so timer resets for user if needed
             update(ref(db, `task_requests/${uid}`), {
                 status: 'assigned',
                 assignedAt: Date.now(),
@@ -299,7 +326,6 @@
             const user = userSnap.val();
             const newBal = (user.balance || 0) + amount;
 
-            // Commission Logic
             if (user.referredBy) {
                 const commission = amount * 0.20;
                 const allUsersSnap = await get(ref(db, 'users'));
@@ -322,9 +348,9 @@
             alert(`Approved! User rewarded ${amount} TK.`);
         };
 
-        // --- LOGIC: REJECT / CANCEL ---
+        // --- LOGIC: REJECT / CANCEL (Works for Requested, Assigned, Submitted) ---
         window.reject = (uid) => {
-            if(confirm("Are you sure you want to REJECT/CANCEL this task?")) {
+            if(confirm("Are you sure you want to REJECT/CANCEL this task? This will delete the request.")) {
                 remove(ref(db, `task_requests/${uid}`));
             }
         };

@@ -28,6 +28,7 @@
             cursor: pointer;
             transition: 0.3s;
             backdrop-filter: blur(5px);
+            position: relative; /* Badge এর জন্য */
         }
         .card:hover {
             transform: translateY(-5px);
@@ -37,6 +38,32 @@
         .card i { font-size: 2.5rem; color: #FFD700; margin-bottom: 15px; }
         .card h3 { margin: 0; font-size: 1rem; font-weight: normal; }
 
+        /* Notification Badge Style */
+        .notification-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #ff4444;
+            color: white;
+            border-radius: 50%;
+            width: 25px;
+            height: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: bold;
+            box-shadow: 0 0 10px rgba(255, 68, 68, 0.6);
+            display: none; /* ডিফল্টভাবে হাইড থাকবে */
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
     </style>
 </head>
 <body>
@@ -45,19 +72,28 @@
         <a href="index.html" class="logout" onclick="sessionStorage.clear()">Logout</a>
     </div>
 
+    <!-- Hidden Audio for Notification -->
+    <audio id="notifSound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"></audio>
+
     <div class="dashboard-grid">
         <div class="card" onclick="location.href='user_details.html'">
             <i class="fas fa-users"></i>
             <h3>User Details</h3>
         </div>
+        
+        <!-- Task Requests Card with Notification Badge -->
         <div class="card" onclick="location.href='task_request.html'">
+            <div class="notification-badge" id="taskBadge">0</div>
             <i class="fas fa-tasks"></i>
             <h3>Task Requests</h3>
         </div>
+
         <div class="card" onclick="location.href='withdrawal_request.html'">
+            <div class="notification-badge" id="withdrawBadge">0</div>
             <i class="fas fa-money-bill-wave"></i>
             <h3>Withdrawals</h3>
         </div>
+
         <div class="card" onclick="location.href='balance_setting.html'">
             <i class="fas fa-edit"></i>
             <h3>Balance Edit</h3>
@@ -66,10 +102,115 @@
             <i class="fas fa-clock"></i>
             <h3>Working Time</h3>
         </div>
+        
+        <div class="card" onclick="location.href='set_bonus.html'">
+            <i class="fas fa-gift"></i>
+            <h3>Set Reg. Bonus</h3>
+        </div>
     </div>
 
-    <script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+
+        const firebaseConfig = { 
+            apiKey: "AIzaSyB2YLhAvSF12ZZx7LSnbqcCjtS2_8QLt4o", 
+            authDomain: "task-f6078.firebaseapp.com", 
+            databaseURL: "https://task-f6078-default-rtdb.firebaseio.com", 
+            projectId: "task-f6078", 
+            storageBucket: "task-f6078.firebasestorage.app", 
+            messagingSenderId: "887907470692", 
+            appId: "1:887907470692:web:c4142ac9573e19d29d3e71" 
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // Security Check
         if(!sessionStorage.getItem('admin')) window.location.href = 'index.html';
+
+        // Notification Function (Vibrate + Sound)
+        function triggerNotification() {
+            // Play Sound
+            const sound = document.getElementById("notifSound");
+            sound.play().catch(error => {
+                console.log("Audio play blocked until user interacts: ", error);
+            });
+
+            // Vibrate Phone (200ms vibrate, 100ms pause, 200ms vibrate)
+            if (navigator.vibrate) {
+                navigator.vibrate([200, 100, 200]);
+            }
+        }
+
+        // --- 1. Monitor Task Requests ---
+        const taskRef = ref(db, 'taskRequests'); // আপনার ডাটাবেস পাথ অনুযায়ী 'taskRequests' নাম হতে হবে
+        let initialTaskLoad = true;
+        let lastTaskCount = 0;
+
+        onValue(taskRef, (snapshot) => {
+            const data = snapshot.val();
+            let count = 0;
+
+            if (data) {
+                // শুধু 'Pending' স্ট্যাটাসগুলো গুনবে
+                count = Object.values(data).filter(item => item.status === 'pending').length;
+            }
+
+            const badge = document.getElementById('taskBadge');
+            
+            if (count > 0) {
+                badge.style.display = 'flex';
+                badge.innerText = count;
+            } else {
+                badge.style.display = 'none';
+            }
+
+            // নতুন রিকোয়েস্ট আসলে ভাইব্রেট করবে (প্রথম লোড বাদে)
+            if (!initialTaskLoad && count > lastTaskCount) {
+                triggerNotification();
+            }
+
+            lastTaskCount = count;
+            initialTaskLoad = false;
+        });
+
+        // --- 2. Monitor Withdrawal Requests ---
+        const withdrawRef = ref(db, 'withdrawals'); // আপনার ডাটাবেস পাথ অনুযায়ী 'withdrawals' নাম হতে হবে
+        let initialWithdrawLoad = true;
+        let lastWithdrawCount = 0;
+
+        onValue(withdrawRef, (snapshot) => {
+            const data = snapshot.val();
+            let count = 0;
+
+            if (data) {
+                count = Object.values(data).filter(item => item.status === 'pending').length;
+            }
+
+            const badge = document.getElementById('withdrawBadge');
+
+            if (count > 0) {
+                badge.style.display = 'flex';
+                badge.innerText = count;
+            } else {
+                badge.style.display = 'none';
+            }
+
+            if (!initialWithdrawLoad && count > lastWithdrawCount) {
+                triggerNotification();
+            }
+
+            lastWithdrawCount = count;
+            initialWithdrawLoad = false;
+        });
+
+        // ব্রাউজার পলিসির কারণে সাউন্ড অটো-প্লে হয় না, তাই ইউজার একবার ক্লিক করলে সাউন্ড পারমিশন একটিভ হবে
+        document.body.addEventListener('click', () => {
+            const sound = document.getElementById("notifSound");
+            sound.muted = false;
+        }, { once: true });
+
     </script>
 </body>
 </html>

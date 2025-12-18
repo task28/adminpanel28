@@ -13,30 +13,6 @@
         .logout { color: #ff4444; text-decoration: none; border: 1px solid #ff4444; padding: 5px 15px; border-radius: 20px; transition: 0.3s; }
         .logout:hover { background: #ff4444; color: white; }
 
-        /* Sound Enable Button Style */
-        .enable-sound-btn {
-            background: #FFD700;
-            color: black;
-            border: none;
-            padding: 12px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 1rem;
-            margin-bottom: 25px;
-            display: block;
-            width: 100%;
-            text-align: center;
-            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
-            transition: 0.3s;
-        }
-        .enable-sound-btn:active { transform: scale(0.98); }
-        .enable-sound-btn.active {
-            background: #28a745; /* Green */
-            color: white;
-            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
-        }
-
         .dashboard-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -95,10 +71,7 @@
         <a href="index.html" class="logout" onclick="sessionStorage.clear()">Logout</a>
     </div>
 
-    <!-- 1. Sound Activation Button -->
-    <button id="soundBtn" class="enable-sound-btn" onclick="activateVoiceSystem()">
-        <i class="fas fa-volume-mute"></i> Click to Enable Voice Alerts
-    </button>
+    <!-- এখানে কোনো বাটন নেই, সিস্টেম অটোমেটিক কাজ করবে -->
 
     <div class="dashboard-grid">
         <div class="card" onclick="location.href='user_details.html'">
@@ -154,45 +127,43 @@
 
         if(!sessionStorage.getItem('admin')) window.location.href = 'index.html';
 
-        // --- Voice Notification System (Text-to-Speech) ---
+        // --- Silent Audio Unlocker ---
+        // ব্রাউজার বা অ্যাপে প্রথমবার টাচ করলেই অডিও সিস্টেম রেডি হয়ে যাবে
+        let audioUnlocked = false;
         
-        let isVoiceEnabled = false;
-
-        // এই ফাংশনটি ভয়েস জেনারেট করে
-        function speakMessage(message) {
-            if (!isVoiceEnabled) return;
-
-            // মোবাইলে ভাইব্রেশন (1 সেকেন্ড)
-            if (navigator.vibrate) {
-                navigator.vibrate([500, 200, 500]); 
-            }
-
-            // ব্রাউজার স্পিচ ইঞ্জিন
-            const utterance = new SpeechSynthesisUtterance(message);
-            utterance.lang = 'en-US'; // ইংরেজিতে বলবে
-            utterance.rate = 1;       // কথা বলার গতি
-            utterance.pitch = 1.1;    // গলার স্বর
-            utterance.volume = 1;     // ভলিউম (সর্বোচ্চ)
-
-            window.speechSynthesis.speak(utterance);
+        function unlockAudioSystem() {
+            if(audioUnlocked) return;
+            
+            // সাইলেন্ট স্পিচ দিয়ে ইঞ্জিন স্টার্ট করা
+            const silent = new SpeechSynthesisUtterance("");
+            window.speechSynthesis.speak(silent);
+            
+            audioUnlocked = true;
+            console.log("Audio System Unlocked via User Interaction");
         }
 
-        // বাটন ক্লিক ফাংশন (অবশ্যই ক্লিক করতে হবে)
-        window.activateVoiceSystem = function() {
-            isVoiceEnabled = true;
-            const btn = document.getElementById('soundBtn');
-            btn.innerHTML = '<i class="fas fa-volume-up"></i> Voice Alerts Active ✅ (Test OK)';
-            btn.classList.add('active');
+        // পুরো স্ক্রিনে যেকোনো জায়গায় ক্লিক বা টাচ করলেই আনলক হবে
+        document.body.addEventListener('click', unlockAudioSystem, { once: true });
+        document.body.addEventListener('touchstart', unlockAudioSystem, { once: true });
 
-            // টেস্ট মেসেজ (ব্যবহারকারী ক্লিক করার সাথে সাথে বলবে)
-            speakMessage("System Online. You will be notified of new tasks.");
-        };
+        // --- Notification Function ---
+        function triggerAlert(message) {
+            // 1. Voice
+            const utterance = new SpeechSynthesisUtterance(message);
+            utterance.lang = 'en-US';
+            utterance.rate = 1.0; 
+            window.speechSynthesis.speak(utterance);
 
+            // 2. Vibration (APK/Mobile) - 500ms vibrate, 200ms pause, 500ms vibrate
+            if (navigator.vibrate) {
+                navigator.vibrate([500, 200, 500, 200, 1000]);
+            }
+        }
 
         // --- Firebase Listeners ---
 
         // 1. Task Requests Logic
-        const taskRef = ref(db, 'taskRequests');
+        const taskRef = ref(db, 'task_requests'); // আপনার ডাটাবেস পাথ 'task_requests' বা 'taskRequests' চেক করে নিন
         let lastTaskCount = 0;
         let initialTaskLoad = true;
 
@@ -201,8 +172,10 @@
             let count = 0;
 
             if (data) {
-                // শুধু 'pending' গুলো গুনবে
-                count = Object.values(data).filter(item => item.status === 'pending').length;
+                // শুধু 'pending' বা 'requested' গুলো গুনবে
+                count = Object.values(data).filter(item => 
+                    item.status === 'pending' || item.status === 'requested' || item.status === 'submitted'
+                ).length;
             }
 
             // Badge আপডেট করা
@@ -214,10 +187,9 @@
                 badge.style.display = 'none';
             }
 
-            // যদি নতুন রিকোয়েস্ট আসে (আগের সংখ্যার চেয়ে বেশি হয়)
+            // নতুন রিকোয়েস্ট আসলে ভয়েস দিবে (প্রথম লোড বাদে)
             if (!initialTaskLoad && count > lastTaskCount) {
-                // আপনার দেওয়া টেক্সট এখানে বসানো হয়েছে
-                speakMessage("Task application has come, please check task fast");
+                triggerAlert("New task request received! Please check immediately.");
             }
 
             lastTaskCount = count;
@@ -245,9 +217,8 @@
                 badge.style.display = 'none';
             }
 
-            // উইথড্রর জন্য আলাদা ভয়েস
             if (!initialWithdrawLoad && count > lastWithdrawCount) {
-                speakMessage("New withdrawal request received. Please verify.");
+                triggerAlert("New money withdrawal request detected.");
             }
 
             lastWithdrawCount = count;

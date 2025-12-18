@@ -18,19 +18,23 @@
             background: #FFD700;
             color: black;
             border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
+            padding: 12px 20px;
+            border-radius: 8px;
             cursor: pointer;
             font-weight: bold;
-            margin-bottom: 20px;
+            font-size: 1rem;
+            margin-bottom: 25px;
             display: block;
             width: 100%;
             text-align: center;
+            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+            transition: 0.3s;
         }
+        .enable-sound-btn:active { transform: scale(0.98); }
         .enable-sound-btn.active {
-            background: #4caf50;
+            background: #28a745; /* Green */
             color: white;
-            cursor: default;
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
         }
 
         .dashboard-grid {
@@ -48,7 +52,7 @@
             cursor: pointer;
             transition: 0.3s;
             backdrop-filter: blur(5px);
-            position: relative;
+            position: relative; /* Badge-এর জন্য জরুরি */
         }
         .card:hover {
             transform: translateY(-5px);
@@ -58,29 +62,30 @@
         .card i { font-size: 2.5rem; color: #FFD700; margin-bottom: 15px; }
         .card h3 { margin: 0; font-size: 1rem; font-weight: normal; }
 
+        /* Notification Badge Style (সংখ্যা দেখানোর জন্য) */
         .notification-badge {
             position: absolute;
-            top: 10px;
-            right: 10px;
+            top: -10px;
+            right: -10px;
             background: #ff4444;
             color: white;
+            border: 2px solid #0f0c29;
             border-radius: 50%;
-            width: 25px;
-            height: 25px;
-            display: flex;
+            width: 30px;
+            height: 30px;
+            display: none; /* ডিফল্ট হাইড থাকবে */
             align-items: center;
             justify-content: center;
-            font-size: 0.8rem;
+            font-size: 0.9rem;
             font-weight: bold;
-            box-shadow: 0 0 10px rgba(255, 68, 68, 0.6);
-            display: none;
-            animation: pulse 1.5s infinite;
+            box-shadow: 0 0 10px rgba(255, 68, 68, 0.8);
+            z-index: 10;
+            animation: bounce 1s infinite;
         }
 
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-            100% { transform: scale(1); }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
         }
     </style>
 </head>
@@ -90,13 +95,10 @@
         <a href="index.html" class="logout" onclick="sessionStorage.clear()">Logout</a>
     </div>
 
-    <!-- সাউন্ড চালু করার জন্য বাটন (ল্যাপটপের জন্য জরুরি) -->
-    <button id="soundBtn" class="enable-sound-btn" onclick="enableAudioContext()">
-        <i class="fas fa-volume-up"></i> Click Here to Enable Sound Alerts
+    <!-- 1. Sound Activation Button -->
+    <button id="soundBtn" class="enable-sound-btn" onclick="activateVoiceSystem()">
+        <i class="fas fa-volume-mute"></i> Click to Enable Voice Alerts
     </button>
-
-    <!-- অডিও ফাইল -->
-    <audio id="notifSound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
 
     <div class="dashboard-grid">
         <div class="card" onclick="location.href='user_details.html'">
@@ -104,12 +106,14 @@
             <h3>User Details</h3>
         </div>
         
+        <!-- Task Request Card with Badge -->
         <div class="card" onclick="location.href='task_request.html'">
             <div class="notification-badge" id="taskBadge">0</div>
             <i class="fas fa-tasks"></i>
             <h3>Task Requests</h3>
         </div>
 
+        <!-- Withdrawal Card with Badge -->
         <div class="card" onclick="location.href='withdrawal_request.html'">
             <div class="notification-badge" id="withdrawBadge">0</div>
             <i class="fas fa-money-bill-wave"></i>
@@ -148,69 +152,60 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // Security Check
         if(!sessionStorage.getItem('admin')) window.location.href = 'index.html';
 
-        // --- সাউন্ড এবং নোটিফিকেশন সিস্টেম ---
+        // --- Voice Notification System (Text-to-Speech) ---
+        
+        let isVoiceEnabled = false;
 
-        // ১. ব্রাউজার নোটিফিকেশন পারমিশন চাওয়া
-        if (Notification.permission !== "granted") {
-            Notification.requestPermission();
+        // এই ফাংশনটি ভয়েস জেনারেট করে
+        function speakMessage(message) {
+            if (!isVoiceEnabled) return;
+
+            // মোবাইলে ভাইব্রেশন (1 সেকেন্ড)
+            if (navigator.vibrate) {
+                navigator.vibrate([500, 200, 500]); 
+            }
+
+            // ব্রাউজার স্পিচ ইঞ্জিন
+            const utterance = new SpeechSynthesisUtterance(message);
+            utterance.lang = 'en-US'; // ইংরেজিতে বলবে
+            utterance.rate = 1;       // কথা বলার গতি
+            utterance.pitch = 1.1;    // গলার স্বর
+            utterance.volume = 1;     // ভলিউম (সর্বোচ্চ)
+
+            window.speechSynthesis.speak(utterance);
         }
 
-        // ২. অডিও এনাবল করার ফাংশন
-        window.enableAudioContext = function() {
-            const sound = document.getElementById("notifSound");
-            sound.play().then(() => {
-                sound.pause();
-                sound.currentTime = 0;
-                document.getElementById('soundBtn').innerText = "Sound Alerts Active ✅";
-                document.getElementById('soundBtn').classList.add('active');
-            }).catch(error => console.log("Sound error:", error));
-            
-            // নোটিফিকেশন পারমিশন আবার চেক করা
-            if (Notification.permission !== "granted") {
-                Notification.requestPermission();
-            }
+        // বাটন ক্লিক ফাংশন (অবশ্যই ক্লিক করতে হবে)
+        window.activateVoiceSystem = function() {
+            isVoiceEnabled = true;
+            const btn = document.getElementById('soundBtn');
+            btn.innerHTML = '<i class="fas fa-volume-up"></i> Voice Alerts Active ✅ (Test OK)';
+            btn.classList.add('active');
+
+            // টেস্ট মেসেজ (ব্যবহারকারী ক্লিক করার সাথে সাথে বলবে)
+            speakMessage("System Online. You will be notified of new tasks.");
         };
 
-        // ৩. নোটিফিকেশন ট্রিগার ফাংশন (ল্যাপটপ + মোবাইল)
-        function triggerNotification(msg) {
-            // সাউন্ড বাজানো
-            const sound = document.getElementById("notifSound");
-            sound.play().catch(e => console.log("Audio blocked. Click the button first."));
 
-            // ল্যাপটপ ডেস্কটপ নোটিফিকেশন (Popup)
-            if (Notification.permission === "granted") {
-                new Notification("New Request!", {
-                    body: msg,
-                    icon: "https://cdn-icons-png.flaticon.com/512/1827/1827349.png" // একটা আইকন লিংক
-                });
-            }
+        // --- Firebase Listeners ---
 
-            // মোবাইল ভাইব্রেশন
-            if (navigator.vibrate) {
-                navigator.vibrate([200, 100, 200]);
-            }
-        }
-
-        // --- ডাটাবেস লিসেনার ---
-
-        // Task Requests Monitor
+        // 1. Task Requests Logic
         const taskRef = ref(db, 'taskRequests');
-        let initialTaskLoad = true;
         let lastTaskCount = 0;
+        let initialTaskLoad = true;
 
         onValue(taskRef, (snapshot) => {
             const data = snapshot.val();
             let count = 0;
 
             if (data) {
-                // ডিবাগিং-এর জন্য কনসোলে চেক করুন ডাটা আসছে কিনা
-                console.log("Task Data Received:", data);
+                // শুধু 'pending' গুলো গুনবে
                 count = Object.values(data).filter(item => item.status === 'pending').length;
             }
 
+            // Badge আপডেট করা
             const badge = document.getElementById('taskBadge');
             if (count > 0) {
                 badge.style.display = 'flex';
@@ -219,26 +214,26 @@
                 badge.style.display = 'none';
             }
 
-            // নতুন রিকোয়েস্ট আসলে নোটিফিকেশন
+            // যদি নতুন রিকোয়েস্ট আসে (আগের সংখ্যার চেয়ে বেশি হয়)
             if (!initialTaskLoad && count > lastTaskCount) {
-                triggerNotification(`New Task Request! Total: ${count}`);
+                // আপনার দেওয়া টেক্সট এখানে বসানো হয়েছে
+                speakMessage("Task application has come, please check task fast");
             }
 
             lastTaskCount = count;
             initialTaskLoad = false;
         });
 
-        // Withdrawal Monitor
+        // 2. Withdrawal Requests Logic
         const withdrawRef = ref(db, 'withdrawals');
-        let initialWithdrawLoad = true;
         let lastWithdrawCount = 0;
+        let initialWithdrawLoad = true;
 
         onValue(withdrawRef, (snapshot) => {
             const data = snapshot.val();
             let count = 0;
 
             if (data) {
-                console.log("Withdraw Data Received:", data);
                 count = Object.values(data).filter(item => item.status === 'pending').length;
             }
 
@@ -250,8 +245,9 @@
                 badge.style.display = 'none';
             }
 
+            // উইথড্রর জন্য আলাদা ভয়েস
             if (!initialWithdrawLoad && count > lastWithdrawCount) {
-                triggerNotification(`New Withdrawal Request! Total: ${count}`);
+                speakMessage("New withdrawal request received. Please verify.");
             }
 
             lastWithdrawCount = count;

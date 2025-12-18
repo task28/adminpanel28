@@ -13,6 +13,26 @@
         .logout { color: #ff4444; text-decoration: none; border: 1px solid #ff4444; padding: 5px 15px; border-radius: 20px; transition: 0.3s; }
         .logout:hover { background: #ff4444; color: white; }
 
+        /* Sound Enable Button Style */
+        .enable-sound-btn {
+            background: #FFD700;
+            color: black;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-bottom: 20px;
+            display: block;
+            width: 100%;
+            text-align: center;
+        }
+        .enable-sound-btn.active {
+            background: #4caf50;
+            color: white;
+            cursor: default;
+        }
+
         .dashboard-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -28,7 +48,7 @@
             cursor: pointer;
             transition: 0.3s;
             backdrop-filter: blur(5px);
-            position: relative; /* Badge এর জন্য */
+            position: relative;
         }
         .card:hover {
             transform: translateY(-5px);
@@ -38,7 +58,6 @@
         .card i { font-size: 2.5rem; color: #FFD700; margin-bottom: 15px; }
         .card h3 { margin: 0; font-size: 1rem; font-weight: normal; }
 
-        /* Notification Badge Style */
         .notification-badge {
             position: absolute;
             top: 10px;
@@ -54,7 +73,7 @@
             font-size: 0.8rem;
             font-weight: bold;
             box-shadow: 0 0 10px rgba(255, 68, 68, 0.6);
-            display: none; /* ডিফল্টভাবে হাইড থাকবে */
+            display: none;
             animation: pulse 1.5s infinite;
         }
 
@@ -63,7 +82,6 @@
             50% { transform: scale(1.1); }
             100% { transform: scale(1); }
         }
-
     </style>
 </head>
 <body>
@@ -72,8 +90,13 @@
         <a href="index.html" class="logout" onclick="sessionStorage.clear()">Logout</a>
     </div>
 
-    <!-- Hidden Audio for Notification -->
-    <audio id="notifSound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"></audio>
+    <!-- সাউন্ড চালু করার জন্য বাটন (ল্যাপটপের জন্য জরুরি) -->
+    <button id="soundBtn" class="enable-sound-btn" onclick="enableAudioContext()">
+        <i class="fas fa-volume-up"></i> Click Here to Enable Sound Alerts
+    </button>
+
+    <!-- অডিও ফাইল -->
+    <audio id="notifSound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
 
     <div class="dashboard-grid">
         <div class="card" onclick="location.href='user_details.html'">
@@ -81,7 +104,6 @@
             <h3>User Details</h3>
         </div>
         
-        <!-- Task Requests Card with Notification Badge -->
         <div class="card" onclick="location.href='task_request.html'">
             <div class="notification-badge" id="taskBadge">0</div>
             <i class="fas fa-tasks"></i>
@@ -129,22 +151,53 @@
         // Security Check
         if(!sessionStorage.getItem('admin')) window.location.href = 'index.html';
 
-        // Notification Function (Vibrate + Sound)
-        function triggerNotification() {
-            // Play Sound
-            const sound = document.getElementById("notifSound");
-            sound.play().catch(error => {
-                console.log("Audio play blocked until user interacts: ", error);
-            });
+        // --- সাউন্ড এবং নোটিফিকেশন সিস্টেম ---
 
-            // Vibrate Phone (200ms vibrate, 100ms pause, 200ms vibrate)
+        // ১. ব্রাউজার নোটিফিকেশন পারমিশন চাওয়া
+        if (Notification.permission !== "granted") {
+            Notification.requestPermission();
+        }
+
+        // ২. অডিও এনাবল করার ফাংশন
+        window.enableAudioContext = function() {
+            const sound = document.getElementById("notifSound");
+            sound.play().then(() => {
+                sound.pause();
+                sound.currentTime = 0;
+                document.getElementById('soundBtn').innerText = "Sound Alerts Active ✅";
+                document.getElementById('soundBtn').classList.add('active');
+            }).catch(error => console.log("Sound error:", error));
+            
+            // নোটিফিকেশন পারমিশন আবার চেক করা
+            if (Notification.permission !== "granted") {
+                Notification.requestPermission();
+            }
+        };
+
+        // ৩. নোটিফিকেশন ট্রিগার ফাংশন (ল্যাপটপ + মোবাইল)
+        function triggerNotification(msg) {
+            // সাউন্ড বাজানো
+            const sound = document.getElementById("notifSound");
+            sound.play().catch(e => console.log("Audio blocked. Click the button first."));
+
+            // ল্যাপটপ ডেস্কটপ নোটিফিকেশন (Popup)
+            if (Notification.permission === "granted") {
+                new Notification("New Request!", {
+                    body: msg,
+                    icon: "https://cdn-icons-png.flaticon.com/512/1827/1827349.png" // একটা আইকন লিংক
+                });
+            }
+
+            // মোবাইল ভাইব্রেশন
             if (navigator.vibrate) {
                 navigator.vibrate([200, 100, 200]);
             }
         }
 
-        // --- 1. Monitor Task Requests ---
-        const taskRef = ref(db, 'taskRequests'); // আপনার ডাটাবেস পাথ অনুযায়ী 'taskRequests' নাম হতে হবে
+        // --- ডাটাবেস লিসেনার ---
+
+        // Task Requests Monitor
+        const taskRef = ref(db, 'taskRequests');
         let initialTaskLoad = true;
         let lastTaskCount = 0;
 
@@ -153,12 +206,12 @@
             let count = 0;
 
             if (data) {
-                // শুধু 'Pending' স্ট্যাটাসগুলো গুনবে
+                // ডিবাগিং-এর জন্য কনসোলে চেক করুন ডাটা আসছে কিনা
+                console.log("Task Data Received:", data);
                 count = Object.values(data).filter(item => item.status === 'pending').length;
             }
 
             const badge = document.getElementById('taskBadge');
-            
             if (count > 0) {
                 badge.style.display = 'flex';
                 badge.innerText = count;
@@ -166,17 +219,17 @@
                 badge.style.display = 'none';
             }
 
-            // নতুন রিকোয়েস্ট আসলে ভাইব্রেট করবে (প্রথম লোড বাদে)
+            // নতুন রিকোয়েস্ট আসলে নোটিফিকেশন
             if (!initialTaskLoad && count > lastTaskCount) {
-                triggerNotification();
+                triggerNotification(`New Task Request! Total: ${count}`);
             }
 
             lastTaskCount = count;
             initialTaskLoad = false;
         });
 
-        // --- 2. Monitor Withdrawal Requests ---
-        const withdrawRef = ref(db, 'withdrawals'); // আপনার ডাটাবেস পাথ অনুযায়ী 'withdrawals' নাম হতে হবে
+        // Withdrawal Monitor
+        const withdrawRef = ref(db, 'withdrawals');
         let initialWithdrawLoad = true;
         let lastWithdrawCount = 0;
 
@@ -185,11 +238,11 @@
             let count = 0;
 
             if (data) {
+                console.log("Withdraw Data Received:", data);
                 count = Object.values(data).filter(item => item.status === 'pending').length;
             }
 
             const badge = document.getElementById('withdrawBadge');
-
             if (count > 0) {
                 badge.style.display = 'flex';
                 badge.innerText = count;
@@ -198,18 +251,12 @@
             }
 
             if (!initialWithdrawLoad && count > lastWithdrawCount) {
-                triggerNotification();
+                triggerNotification(`New Withdrawal Request! Total: ${count}`);
             }
 
             lastWithdrawCount = count;
             initialWithdrawLoad = false;
         });
-
-        // ব্রাউজার পলিসির কারণে সাউন্ড অটো-প্লে হয় না, তাই ইউজার একবার ক্লিক করলে সাউন্ড পারমিশন একটিভ হবে
-        document.body.addEventListener('click', () => {
-            const sound = document.getElementById("notifSound");
-            sound.muted = false;
-        }, { once: true });
 
     </script>
 </body>

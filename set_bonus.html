@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Set Bonus - Admin</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { background: #0f0c29; color: white; font-family: 'Poppins', sans-serif; padding: 20px; margin: 0; }
+        
+        /* Header Style from Admin Panel */
+        .header { display: flex; align-items: center; border-bottom: 1px solid rgba(255,215,0,0.3); padding-bottom: 15px; margin-bottom: 30px; }
+        .back-btn { color: #FFD700; text-decoration: none; font-size: 1.2rem; margin-right: 20px; }
+        h1 { margin: 0; color: #FFD700; font-size: 1.5rem; flex-grow: 1; }
+
+        .container {
+            max-width: 500px;
+            margin: 50px auto;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+
+        .input-group { margin-bottom: 25px; text-align: left; }
+        label { display: block; margin-bottom: 10px; color: #ddd; }
+        
+        input[type="number"] {
+            width: 100%;
+            padding: 15px;
+            box-sizing: border-box;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid #444;
+            border-radius: 8px;
+            color: #FFD700;
+            font-size: 1.2rem;
+            outline: none;
+            text-align: center;
+        }
+        input:focus { border-color: #FFD700; }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            background: #FFD700;
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        button:hover { background: #ffed4a; transform: scale(1.02); }
+
+        .current-val {
+            margin-top: 30px;
+            padding: 20px;
+            background: rgba(255, 215, 0, 0.1);
+            border: 1px dashed #FFD700;
+            border-radius: 10px;
+        }
+        .current-val h2 { margin: 0; font-size: 2.5rem; color: #FFD700; }
+        .current-val p { margin: 5px 0 0; color: #aaa; }
+
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <!-- Back Button to Home -->
+        <a href="home.html" class="back-btn"><i class="fas fa-arrow-left"></i></a> 
+        <h1>Registration Bonus</h1>
+    </div>
+
+    <div class="container">
+        <div class="input-group">
+            <label><i class="fas fa-coins"></i> Set New Bonus Amount (TK)</label>
+            <input type="number" id="bonusInput" placeholder="0">
+        </div>
+        
+        <button onclick="updateBonus()">UPDATE BONUS</button>
+
+        <div class="current-val">
+            <h2 id="currentBonusDisplay">...</h2>
+            <p>Current Active Bonus</p>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+
+        const firebaseConfig = { 
+            apiKey: "AIzaSyB2YLhAvSF12ZZx7LSnbqcCjtS2_8QLt4o", 
+            authDomain: "task-f6078.firebaseapp.com", 
+            databaseURL: "https://task-f6078-default-rtdb.firebaseio.com", 
+            projectId: "task-f6078", 
+            storageBucket: "task-f6078.firebasestorage.app", 
+            messagingSenderId: "887907470692", 
+            appId: "1:887907470692:web:c4142ac9573e19d29d3e71" 
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // Realtime View
+        const bonusRef = ref(db, 'adminSettings/registrationBonus');
+        onValue(bonusRef, (snapshot) => {
+            const val = snapshot.exists() ? snapshot.val() : 0;
+            document.getElementById('currentBonusDisplay').innerText = val;
+            document.getElementById('bonusInput').value = val;
+        });
+
+        // Update Function
+        window.updateBonus = function() {
+            const amount = document.getElementById('bonusInput').value;
+            if(amount === "") { alert("Please enter amount"); return; }
+
+            set(bonusRef, parseInt(amount))
+            .then(() => alert("Bonus Updated Successfully!"))
+            .catch((e) => alert(e.message));
+        }
+
+        // Security Check
+        if(!sessionStorage.getItem('admin')) window.location.href = 'index.html';
+    </script>
+</body>
+</html>

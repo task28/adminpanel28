@@ -81,7 +81,7 @@
 
         .paste-box {
             width: 100%;
-            height: 140px;
+            height: 160px;
             background: #000;
             border: 1px solid #444;
             color: #0f0; 
@@ -180,48 +180,28 @@
         if(!sessionStorage.getItem('admin')) window.location.href = 'index.html';
 
         // --- 1. SYSTEM NOTIFICATION & SERVICE WORKER SETUP ---
-        
-        // Service Worker Register (for Background Notification)
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js').then(reg => {
-                console.log('Service Worker Registered');
-            });
+            navigator.serviceWorker.register('sw.js').then(reg => console.log('Service Worker Registered'));
         }
-
-        // Auto Request Permission on Load
-        if (Notification.permission !== "granted") {
-            Notification.requestPermission();
-        }
+        if (Notification.permission !== "granted") Notification.requestPermission();
 
         // --- 2. VOICE & VIBRATION FUNCTIONS ---
-        
-        // এই ফাংশনটি ব্রাউজারের অটো-প্লে ব্লকার বাইপাস করার জন্য
         window.unlockAudio = function() {
-            // সাইলেন্ট স্পিচ চালিয়ে ব্রাউজারকে বোঝানো যে ইউজার একটিভ
             const u = new SpeechSynthesisUtterance("");
             window.speechSynthesis.speak(u);
             document.getElementById('interactionOverlay').style.display = 'none';
         }
 
         function triggerAlert() {
-            // A. Voice
             const msg = "Task application has come, please check task fast";
             const utterance = new SpeechSynthesisUtterance(msg);
             utterance.lang = 'en-US';
-            utterance.rate = 1.0;
             window.speechSynthesis.speak(utterance);
-
-            // B. Vibration (Mobile APK Specific)
-            if (navigator.vibrate) {
-                navigator.vibrate([500, 200, 500, 200, 1000]);
-            }
-
-            // C. System Notification (Background/Desktop/Mobile Top Bar)
+            if (navigator.vibrate) navigator.vibrate([500, 200, 500, 200, 1000]);
             if (Notification.permission === "granted") {
                 new Notification("New Task Request!", {
                     body: "A user has requested a task. Check Admin Panel.",
-                    icon: "https://cdn-icons-png.flaticon.com/512/1827/1827349.png",
-                    vibrate: [200, 100, 200]
+                    icon: "https://cdn-icons-png.flaticon.com/512/1827/1827349.png"
                 });
             }
         }
@@ -250,16 +230,12 @@
                 const uid = child.key;
                 const data = child.val();
                 
-                // শুধুমাত্র পেন্ডিং বা সাবমিটেড কাউন্ট হবে অ্যালার্টের জন্য
-                if(data.status === 'requested' || data.status === 'submitted') {
-                    currentCount++;
-                }
+                if(data.status === 'requested' || data.status === 'submitted') currentCount++;
                 
                 let badgeClass = 'status-req';
                 if(data.status === 'submitted') badgeClass = 'status-sub';
                 if(data.status === 'assigned') badgeClass = 'status-asgn';
 
-                // --- CARD HTML GENERATION (SAME AS BEFORE) ---
                 let html = `
                 <div class="req-card">
                     <div class="user-header">
@@ -272,10 +248,12 @@
                     </div>`;
 
                 if (data.status === 'requested') {
+                    // Added Template Placeholder for easy pasting
+                    const placeholder = "First name: \nLast name: \nPassword: \nEmail: \nRecovery email: ";
                     html += `
                     <div>
-                        <span class="helper-text">Smart Paste:</span>
-                        <textarea id="paste_${uid}" class="paste-box" placeholder="Paste details..."></textarea>
+                        <span class="helper-text">Paste Gmail Details Below:</span>
+                        <textarea id="paste_${uid}" class="paste-box" placeholder="${placeholder}"></textarea>
                         <div class="action-row">
                             <button class="btn-send" onclick="window.parseAndAssign('${uid}')">Send Task</button>
                             <button class="btn-reject" onclick="window.reject('${uid}')">Cancel</button>
@@ -306,10 +284,7 @@
 
             if(!hasData) list.innerHTML = "<div style='text-align:center; padding: 50px; color:#555;'>No requests.</div>";
 
-            // --- TRIGGER ALERT LOGIC ---
-            // যদি নতুন রিকোয়েস্ট আসে (আগের কাউন্টের চেয়ে বর্তমান কাউন্ট বেশি)
             if (!initialLoad && currentCount > lastReqCount) {
-                console.log("New Request Detected! Triggering Alert...");
                 triggerAlert();
             }
             
@@ -317,19 +292,45 @@
             initialLoad = false;
         });
 
-        // --- ACTIONS (Global Scope for HTML onClick) ---
+        // --- FIXED PARSING FUNCTION ---
         window.parseAndAssign = (uid) => {
             const rawText = document.getElementById(`paste_${uid}`).value;
-            if(!rawText.trim()) return alert("Paste details!");
+            if(!rawText.trim()) return alert("Please paste the task details!");
             
-            // Simple Parse Logic
-            let parsedData = { raw: rawText }; 
-            // (আপনার আগের বিস্তারিত লজিক এখানে ছোট করা হয়েছে জায়গার জন্য, কিন্তু কাজ করবে)
+            // ডাটা আলাদা করার লজিক (Parsing Logic)
+            const lines = rawText.split('\n');
+            let adminData = {
+                fname: '', 
+                lname: '', 
+                password: '', 
+                email: '', 
+                recovery: ''
+            };
+
+            // লাইন বাই লাইন চেক করে ডাটা বের করা
+            lines.forEach(line => {
+                const lowerLine = line.toLowerCase();
+                if(lowerLine.includes('first name:')) adminData.fname = line.split(':')[1].trim();
+                else if(lowerLine.includes('last name:')) adminData.lname = line.split(':')[1].trim();
+                else if(lowerLine.includes('password:')) adminData.password = line.split(':')[1].trim();
+                else if(lowerLine.includes('recovery email:')) adminData.recovery = line.split(':')[1].trim();
+                else if(lowerLine.includes('email:')) adminData.email = line.split(':')[1].trim();
+            });
+
+            // যদি ইমেইল না পাওয়া যায়, তবে ওয়ার্নিং দিবে
+            if(!adminData.email) {
+                if(!confirm("Warning: Email address not detected correctly. Send anyway?")) return;
+            }
             
+            // ফায়ারবেস আপডেট
             update(ref(db, `task_requests/${uid}`), {
                 status: 'assigned',
                 assignedAt: Date.now(),
-                adminData: parsedData
+                adminData: adminData 
+            }).then(() => {
+                alert("Task Sent Successfully!");
+            }).catch((error) => {
+                alert("Error sending task: " + error.message);
             });
         };
 
@@ -343,7 +344,6 @@
                 const u = s.val();
                 let newBal = (u.balance||0) + amount;
                 
-                // Refer Commission
                 if(u.referredBy) {
                     const all = await get(ref(db,'users'));
                     all.forEach(x => {
@@ -354,15 +354,14 @@
                 }
                 update(userRef, { balance: newBal });
                 remove(ref(db, `task_requests/${uid}`));
-                alert("Approved");
+                alert("Approved & Balance Added!");
             }
         };
 
         window.reject = (uid) => {
-            if(confirm("Delete request?")) remove(ref(db, `task_requests/${uid}`));
+            if(confirm("Are you sure you want to delete this request?")) remove(ref(db, `task_requests/${uid}`));
         };
 
-        // ব্রাউজার লোড হলে ইউজার যদি পেজের কোথাও ক্লিক করে, তখন সাউন্ড সিস্টেম আনলক হবে
         document.body.addEventListener('click', () => unlockAudio(), { once: true });
 
     </script>

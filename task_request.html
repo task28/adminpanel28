@@ -28,6 +28,30 @@
             gap: 10px;
         }
 
+        /* Sound Enable Button Style */
+        .enable-sound-btn {
+            background: #FFD700;
+            color: black;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1rem;
+            margin-bottom: 25px;
+            display: block;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+            transition: 0.3s;
+        }
+        .enable-sound-btn:active { transform: scale(0.98); }
+        .enable-sound-btn.active {
+            background: #28a745; /* Green */
+            color: white;
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+        }
+
         /* REQUEST CARD */
         .req-card {
             background: rgba(255, 255, 255, 0.03);
@@ -154,9 +178,22 @@
             color: #3498db;
             text-align: center;
         }
+
+        /* Back Button */
+        .back-nav { margin-bottom: 20px; }
+        .back-nav a { color: #FFD700; text-decoration: none; font-size: 1.2rem; }
     </style>
 </head>
 <body>
+
+    <div class="back-nav">
+        <a href="home.html"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
+    </div>
+
+    <!-- Sound Button added here -->
+    <button id="soundBtn" class="enable-sound-btn" onclick="activateVoiceSystem()">
+        <i class="fas fa-volume-mute"></i> Click to Enable Live Alerts
+    </button>
 
     <h1><i class="fas fa-tasks"></i> Task Requests</h1>
     
@@ -177,9 +214,36 @@
         // Security Check
         if(!sessionStorage.getItem('admin')) window.location.href = 'index.html';
 
+        // --- SOUND & NOTIFICATION LOGIC ---
+        let isVoiceEnabled = false;
+        let lastReqCount = 0;
+        let initialLoad = true;
+
+        // 1. Voice Generator
+        function speakMessage(message) {
+            if (!isVoiceEnabled) return;
+
+            // Vibrate Phone
+            if (navigator.vibrate) navigator.vibrate([500, 200, 500]); 
+
+            // Text to Speech
+            const utterance = new SpeechSynthesisUtterance(message);
+            utterance.lang = 'en-US'; 
+            window.speechSynthesis.speak(utterance);
+        }
+
+        // 2. Activate Button Function
+        window.activateVoiceSystem = function() {
+            isVoiceEnabled = true;
+            const btn = document.getElementById('soundBtn');
+            btn.innerHTML = '<i class="fas fa-volume-up"></i> Live Alerts Active ✅';
+            btn.classList.add('active');
+            speakMessage("Voice notification system active.");
+        };
+        // ----------------------------------
+
         const list = document.getElementById('list');
 
-        // Helper: Calculate Time Ago
         function getTimeAgo(timestamp) {
             if(!timestamp) return 'Unknown Time';
             const seconds = Math.floor((Date.now() - timestamp) / 1000);
@@ -201,18 +265,18 @@
         onValue(ref(db, 'task_requests'), snapshot => {
             list.innerHTML = "";
             let hasData = false;
+            let currentCount = 0;
 
             snapshot.forEach(child => {
                 hasData = true;
+                currentCount++; // Count requests
                 const uid = child.key;
                 const data = child.val();
                 
-                // Determine Badge Color
                 let badgeClass = 'status-req';
                 if(data.status === 'submitted') badgeClass = 'status-sub';
                 if(data.status === 'assigned') badgeClass = 'status-asgn';
 
-                // Card Header
                 let html = `
                 <div class="req-card">
                     <div class="user-header">
@@ -226,7 +290,6 @@
                         </span>
                     </div>`;
 
-                // --- 1. ADMIN ASSIGNS TASK (Requested Mode) ---
                 if (data.status === 'requested') {
                     html += `
                     <div>
@@ -244,7 +307,6 @@
                     </div>`;
                 }
 
-                // --- 2. TASK ASSIGNED (Waiting for User) - NEW FEATURE ---
                 if (data.status === 'assigned') {
                     html += `
                     <div class="waiting-box">
@@ -258,7 +320,6 @@
                     `;
                 }
 
-                // --- 3. USER SUBMITTED (Review Mode) ---
                 if (data.status === 'submitted') {
                     html += `
                     <div class="submission-box">
@@ -274,14 +335,21 @@
                     </div>`;
                 }
                 
-                html += `</div>`; // End Card
+                html += `</div>`;
                 list.innerHTML += html;
             });
 
             if(!hasData) list.innerHTML = "<div style='text-align:center; padding: 50px; color:#555;'>No pending task requests.</div>";
+
+            // --- CHECK FOR NEW REQUESTS (SOUND) ---
+            if (!initialLoad && currentCount > lastReqCount) {
+                speakMessage("New Task Activity Detected! Check list.");
+            }
+            lastReqCount = currentCount;
+            initialLoad = false;
         });
 
-        // --- LOGIC: SMART PARSE ---
+        // --- ACTIONS ---
         window.parseAndAssign = (uid) => {
             const rawText = document.getElementById(`paste_${uid}`).value;
             if(!rawText.trim()) return alert("Please paste the details!");
@@ -294,7 +362,6 @@
                 if(lowerLine.includes(':')) {
                     const parts = line.split(':');
                     const value = parts.slice(1).join(':').trim();
-                    
                     if(lowerLine.includes("first name")) parsedData.firstName = value;
                     else if(lowerLine.includes("last name")) parsedData.lastName = value;
                     else if(lowerLine.includes("password")) parsedData.reqPass = value;
@@ -311,7 +378,6 @@
             alert("Task Assigned!");
         };
 
-        // --- LOGIC: APPROVE ---
         window.approve = async (uid) => {
             const amountInput = document.getElementById(`amt_${uid}`);
             const amount = parseInt(amountInput.value);
@@ -320,7 +386,6 @@
 
             const userRef = ref(db, `users/${uid}`);
             const userSnap = await get(userRef);
-            
             if(!userSnap.exists()) return alert("User not found!");
             
             const user = userSnap.val();
@@ -343,14 +408,12 @@
                 lastTaskTime: Date.now(),
                 lastEarned: amount
             });
-
             remove(ref(db, `task_requests/${uid}`));
             alert(`Approved! User rewarded ${amount} TK.`);
         };
 
-        // --- LOGIC: REJECT / CANCEL (Works for Requested, Assigned, Submitted) ---
         window.reject = (uid) => {
-            if(confirm("Are you sure you want to REJECT/CANCEL this task? This will delete the request.")) {
+            if(confirm("Are you sure you want to REJECT/CANCEL?")) {
                 remove(ref(db, `task_requests/${uid}`));
             }
         };

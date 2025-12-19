@@ -312,9 +312,9 @@
                 // Check for your specific labels
                 if(lowerLine.includes('first name:')) {
                     adminData.fname = line.split(':')[1].trim();
-                } else if(lowerLine.includes('password:')) {
+                } else if(lowerLine.includes('gmail:')) {
                     adminData.password = line.split(':')[1].trim();
-                } else if(lowerLine.includes('gmail:') || lowerLine.includes('email:')) {
+                } else if(lowerLine.includes('password:') || lowerLine.includes('email:')) {
                     // Works for both 'Gmail:' and 'Email:'
                     adminData.email = line.split(':')[1].trim();
                 }

@@ -36,9 +36,13 @@
             border-color: #FFD700;
         }
         .card i { font-size: 2.5rem; color: #FFD700; margin-bottom: 15px; }
+        /* Task 2 Icon Color Distinction */
+        .card.task2 i { color: #00d2ff; }
+        .card.task2:hover { background: rgba(0, 210, 255, 0.1); border-color: #00d2ff; }
+
         .card h3 { margin: 0; font-size: 1rem; font-weight: normal; }
 
-        /* Notification Badge Style (সংখ্যা দেখানোর জন্য) */
+        /* Notification Badge Style */
         .notification-badge {
             position: absolute;
             top: -10px;
@@ -71,22 +75,27 @@
         <a href="index.html" class="logout" onclick="sessionStorage.clear()">Logout</a>
     </div>
 
-    <!-- এখানে কোনো বাটন নেই, সিস্টেম অটোমেটিক কাজ করবে -->
-
     <div class="dashboard-grid">
         <div class="card" onclick="location.href='user_details.html'">
             <i class="fas fa-users"></i>
             <h3>User Details</h3>
         </div>
         
-        <!-- Task Request Card with Badge -->
+        <!-- Task 1 Card -->
         <div class="card" onclick="location.href='task_request.html'">
             <div class="notification-badge" id="taskBadge">0</div>
             <i class="fas fa-tasks"></i>
-            <h3>Task Requests</h3>
+            <h3>Task 1 Requests</h3>
         </div>
 
-        <!-- Withdrawal Card with Badge -->
+        <!-- NEW: Task 2 Card (Added Here) -->
+        <div class="card task2" onclick="location.href='task_request_2.html'">
+            <div class="notification-badge" id="task2Badge">0</div>
+            <i class="fas fa-envelope-open-text"></i>
+            <h3>Task 2 Requests</h3>
+        </div>
+
+        <!-- Withdrawal Card -->
         <div class="card" onclick="location.href='withdrawal_request.html'">
             <div class="notification-badge" id="withdrawBadge">0</div>
             <i class="fas fa-money-bill-wave"></i>
@@ -128,33 +137,22 @@
         if(!sessionStorage.getItem('admin')) window.location.href = 'index.html';
 
         // --- Silent Audio Unlocker ---
-        // ব্রাউজার বা অ্যাপে প্রথমবার টাচ করলেই অডিও সিস্টেম রেডি হয়ে যাবে
         let audioUnlocked = false;
-        
         function unlockAudioSystem() {
             if(audioUnlocked) return;
-            
-            // সাইলেন্ট স্পিচ দিয়ে ইঞ্জিন স্টার্ট করা
             const silent = new SpeechSynthesisUtterance("");
             window.speechSynthesis.speak(silent);
-            
             audioUnlocked = true;
-            console.log("Audio System Unlocked via User Interaction");
         }
-
-        // পুরো স্ক্রিনে যেকোনো জায়গায় ক্লিক বা টাচ করলেই আনলক হবে
         document.body.addEventListener('click', unlockAudioSystem, { once: true });
         document.body.addEventListener('touchstart', unlockAudioSystem, { once: true });
 
         // --- Notification Function ---
         function triggerAlert(message) {
-            // 1. Voice
             const utterance = new SpeechSynthesisUtterance(message);
             utterance.lang = 'en-US';
             utterance.rate = 1.0; 
             window.speechSynthesis.speak(utterance);
-
-            // 2. Vibration (APK/Mobile) - 500ms vibrate, 200ms pause, 500ms vibrate
             if (navigator.vibrate) {
                 navigator.vibrate([500, 200, 500, 200, 1000]);
             }
@@ -162,41 +160,52 @@
 
         // --- Firebase Listeners ---
 
-        // 1. Task Requests Logic
-        const taskRef = ref(db, 'task_requests'); // আপনার ডাটাবেস পাথ 'task_requests' বা 'taskRequests' চেক করে নিন
+        // 1. Task 1 Requests Logic
+        const taskRef = ref(db, 'task_requests'); 
         let lastTaskCount = 0;
         let initialTaskLoad = true;
 
         onValue(taskRef, (snapshot) => {
             const data = snapshot.val();
             let count = 0;
-
             if (data) {
-                // শুধু 'pending' বা 'requested' গুলো গুনবে
                 count = Object.values(data).filter(item => 
-                    item.status === 'pending' || item.status === 'requested' || item.status === 'submitted'
+                    item.status === 'requested' || item.status === 'submitted'
                 ).length;
             }
+            updateBadge('taskBadge', count);
 
-            // Badge আপডেট করা
-            const badge = document.getElementById('taskBadge');
-            if (count > 0) {
-                badge.style.display = 'flex';
-                badge.innerText = count;
-            } else {
-                badge.style.display = 'none';
-            }
-
-            // নতুন রিকোয়েস্ট আসলে ভয়েস দিবে (প্রথম লোড বাদে)
             if (!initialTaskLoad && count > lastTaskCount) {
-                triggerAlert("New task request received! Please check immediately.");
+                triggerAlert("New Task 1 request received!");
             }
-
             lastTaskCount = count;
             initialTaskLoad = false;
         });
 
-        // 2. Withdrawal Requests Logic
+        // 2. NEW: Task 2 Requests Logic
+        const task2Ref = ref(db, 'task2_requests'); // Task 2 node
+        let lastTask2Count = 0;
+        let initialTask2Load = true;
+
+        onValue(task2Ref, (snapshot) => {
+            const data = snapshot.val();
+            let count = 0;
+            if (data) {
+                // Filter for 'requested' (New apply) or 'submitted' (Done work)
+                count = Object.values(data).filter(item => 
+                    item.status === 'requested' || item.status === 'submitted'
+                ).length;
+            }
+            updateBadge('task2Badge', count);
+
+            if (!initialTask2Load && count > lastTask2Count) {
+                triggerAlert("Alert! New Task 2 request detected.");
+            }
+            lastTask2Count = count;
+            initialTask2Load = false;
+        });
+
+        // 3. Withdrawal Requests Logic
         const withdrawRef = ref(db, 'withdrawals');
         let lastWithdrawCount = 0;
         let initialWithdrawLoad = true;
@@ -204,26 +213,28 @@
         onValue(withdrawRef, (snapshot) => {
             const data = snapshot.val();
             let count = 0;
-
             if (data) {
                 count = Object.values(data).filter(item => item.status === 'pending').length;
             }
+            updateBadge('withdrawBadge', count);
 
-            const badge = document.getElementById('withdrawBadge');
+            if (!initialWithdrawLoad && count > lastWithdrawCount) {
+                triggerAlert("New money withdrawal request.");
+            }
+            lastWithdrawCount = count;
+            initialWithdrawLoad = false;
+        });
+
+        // Helper to update badges
+        function updateBadge(elementId, count) {
+            const badge = document.getElementById(elementId);
             if (count > 0) {
                 badge.style.display = 'flex';
                 badge.innerText = count;
             } else {
                 badge.style.display = 'none';
             }
-
-            if (!initialWithdrawLoad && count > lastWithdrawCount) {
-                triggerAlert("New money withdrawal request detected.");
-            }
-
-            lastWithdrawCount = count;
-            initialWithdrawLoad = false;
-        });
+        }
 
     </script>
 </body>

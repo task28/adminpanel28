@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        /* PREMIUM DARK ADMIN THEME (SAME AS TASK 1) */
+        /* PREMIUM DARK ADMIN THEME */
         body { 
             background: linear-gradient(135deg, #050505, #1a1a2e); 
             color: #e0e0e0; 
@@ -17,7 +17,7 @@
         }
         
         h1 { 
-            color: #00d2ff; /* Task 2 uses Blue/Cyan theme accent */
+            color: #00d2ff; 
             border-bottom: 1px solid rgba(0, 210, 255, 0.2); 
             padding-bottom: 15px; 
             margin-bottom: 30px; 
@@ -79,24 +79,23 @@
             gap: 5px;
         }
 
-        /* INPUTS FOR TASK 2 */
-        .admin-input-group {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-        .admin-input {
+        /* TEXT AREA FOR PASTING DATA */
+        .paste-box {
             width: 100%;
+            height: 120px;
             background: #000;
             border: 1px solid #444;
-            color: #fff; 
-            padding: 12px;
+            color: #00d2ff; 
+            font-family: 'Courier New', monospace;
+            padding: 15px;
             border-radius: 8px;
+            resize: vertical;
             box-sizing: border-box;
             font-size: 0.9rem;
+            line-height: 1.4;
         }
-        .admin-input:focus { outline: none; border-color: #00d2ff; }
+        .paste-box:focus { outline: none; border-color: #00d2ff; }
+        .paste-box::placeholder { color: #555; }
 
         .action-row {
             display: flex;
@@ -180,7 +179,7 @@
         const db = getDatabase(app);
 
         // Security Check
-        // if(!sessionStorage.getItem('admin')) window.location.href = 'index.html'; // Uncomment this to secure page
+        // if(!sessionStorage.getItem('admin')) window.location.href = 'index.html';
 
         // --- 1. NOTIFICATION SETUP ---
         if ('serviceWorker' in navigator) {
@@ -216,7 +215,7 @@
             return Math.floor(mins / 60) + "h ago";
         }
 
-        // LISTENING TO 'task2_requests' (Note the '2')
+        // LISTENING TO 'task2_requests'
         onValue(ref(db, 'task2_requests'), snapshot => {
             list.innerHTML = "";
             let hasData = false;
@@ -244,18 +243,18 @@
                         <span class="status-badge ${badgeClass}">${data.status.toUpperCase()}</span>
                     </div>`;
 
-                // --- REQUESTED: ADMIN ENTERS 3 FIELDS ---
+                // --- REQUESTED: SINGLE PASTE BOX ---
                 if (data.status === 'requested') {
+                    // Placeholder shows exactly what you wanted
+                    const ph = "First name: \nPassword: \nGmail: ";
+                    
                     html += `
                     <div>
-                        <span class="helper-text">Assign Task Details:</span>
-                        <div class="admin-input-group">
-                            <input type="text" id="fn_${uid}" class="admin-input" placeholder="First Name">
-                            <input type="text" id="em_${uid}" class="admin-input" placeholder="Req. Email">
-                            <input type="text" id="pw_${uid}" class="admin-input" placeholder="Password">
-                        </div>
+                        <span class="helper-text">Paste Details Here:</span>
+                        <textarea id="paste_${uid}" class="paste-box" placeholder="${ph}"></textarea>
+                        
                         <div class="action-row">
-                            <button class="btn-send" onclick="window.assignTask2('${uid}')">ASSIGN & SEND</button>
+                            <button class="btn-send" onclick="window.parseAndAssign2('${uid}')">SEND TASK</button>
                             <button class="btn-reject" onclick="window.rejectTask('${uid}')">CANCEL</button>
                         </div>
                     </div>`;
@@ -295,21 +294,44 @@
             initialLoad = false;
         });
 
-        // --- ACTIONS FOR TASK 2 ---
-        
-        window.assignTask2 = (uid) => {
-            const fname = document.getElementById(`fn_${uid}`).value;
-            const email = document.getElementById(`em_${uid}`).value;
-            const pass = document.getElementById(`pw_${uid}`).value;
+        // --- NEW PARSING FUNCTION (Smart Logic) ---
+        window.parseAndAssign2 = (uid) => {
+            const rawText = document.getElementById(`paste_${uid}`).value;
+            if(!rawText.trim()) return alert("Box is empty! Please paste details.");
 
-            if(!fname || !email || !pass) return alert("Please fill all 3 fields (Name, Email, Pass)");
+            // Smart Parsing Logic
+            const lines = rawText.split('\n');
+            let adminData = {
+                fname: '',
+                password: '',
+                email: ''
+            };
 
+            lines.forEach(line => {
+                const lowerLine = line.toLowerCase();
+                // Check for your specific labels
+                if(lowerLine.includes('first name:')) {
+                    adminData.fname = line.split(':')[1].trim();
+                } else if(lowerLine.includes('password:')) {
+                    adminData.password = line.split(':')[1].trim();
+                } else if(lowerLine.includes('gmail:') || lowerLine.includes('email:')) {
+                    // Works for both 'Gmail:' and 'Email:'
+                    adminData.email = line.split(':')[1].trim();
+                }
+            });
+
+            // Validation check
+            if(!adminData.email || !adminData.password) {
+                if(!confirm("Warning: System couldn't auto-detect Email or Password properly. Send anyway?")) return;
+            }
+
+            // Send to Firebase
             update(ref(db, `task2_requests/${uid}`), {
                 status: 'assigned',
                 assignedAt: Date.now(),
-                adminData: { fname: fname, email: email, password: pass }
+                adminData: adminData 
             }).then(() => {
-                alert("Task Sent to User!");
+                alert("Task Sent Successfully!");
             });
         };
 
@@ -319,24 +341,21 @@
 
             const userRef = ref(db, `users/${uid}`);
             
-            // Get user data to update balance
             const s = await get(userRef);
             if(s.exists()){
                 const u = s.val();
                 let newBal = (u.balance || 0) + amount;
                 
-                // Referral Bonus Logic (Optional - kept for consistency)
+                // Referral Logic
                 if(u.referredBy) {
                     const allUsers = await get(ref(db,'users'));
                     allUsers.forEach(x => {
                         if(x.val().referralCode === u.referredBy) {
-                            // 20% bonus to referrer
                             update(ref(db,`users/${x.key}`), { balance: (x.val().balance||0) + (amount*0.20) });
                         }
                     });
                 }
 
-                // Update Balance & Remove Request
                 update(userRef, { balance: newBal });
                 remove(ref(db, `task2_requests/${uid}`));
                 alert(`Success! Paid ${amount} TK.`);

@@ -117,8 +117,9 @@
             <h3>Set Reg. Bonus</h3>
         </div>
 
-        <!-- NEW: Monthly Salary Admin Button -->
+        <!-- Monthly Salary Card (With Notification Badge) -->
         <div class="card" onclick="location.href='admin_salary.html'">
+            <div class="notification-badge" id="salaryBadge">0</div>
             <i class="fas fa-crown"></i>
             <h3>Monthly Salary</h3>
         </div>
@@ -229,6 +230,34 @@
             }
             lastWithdrawCount = count;
             initialWithdrawLoad = false;
+        });
+
+        // 4. Monthly Salary Notification Logic (NEW ADDED)
+        const salaryRef = ref(db, 'users');
+        let lastSalaryCount = 0;
+        let initialSalaryLoad = true;
+
+        onValue(salaryRef, (snapshot) => {
+            const data = snapshot.val();
+            let count = 0;
+            if (data) {
+                // Loop through all users to find salary requests
+                Object.values(data).forEach(user => {
+                    if (user.salaryTarget) {
+                        // Check for 'pending' (New Application) or 'claimable' (Request for Payment)
+                        if (user.salaryTarget.status === 'pending' || user.salaryTarget.status === 'claimable') {
+                            count++;
+                        }
+                    }
+                });
+            }
+            updateBadge('salaryBadge', count);
+
+            if (!initialSalaryLoad && count > lastSalaryCount) {
+                triggerAlert("Please check the monthly salary application");
+            }
+            lastSalaryCount = count;
+            initialSalaryLoad = false;
         });
 
         // Helper to update badges

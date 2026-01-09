@@ -7,166 +7,45 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         /* PREMIUM DARK ADMIN THEME */
-        body { 
-            background: linear-gradient(135deg, #050505, #1a1a2e); 
-            color: #e0e0e0; 
-            font-family: 'Segoe UI', sans-serif; 
-            padding: 20px; 
-            margin: 0;
-            min-height: 100vh;
+        body { background: linear-gradient(135deg, #050505, #1a1a2e); color: #e0e0e0; font-family: 'Segoe UI', sans-serif; padding: 20px; margin: 0; min-height: 100vh; }
+        
+        h1 { color: #FFD700; border-bottom: 1px solid rgba(255, 215, 0, 0.2); padding-bottom: 15px; margin-bottom: 30px; font-weight: 300; }
+
+        .req-card {
+            background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1);
+            border-left: 5px solid #FFD700; border-radius: 12px; padding: 25px; margin-bottom: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3); backdrop-filter: blur(10px);
         }
         
-        h1 { 
-            color: #FFD700; 
-            border-bottom: 1px solid rgba(255, 215, 0, 0.2); 
-            padding-bottom: 15px; 
-            margin-bottom: 30px; 
-            font-weight: 300;
-            letter-spacing: 1px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        /* REQUEST CARD */
-        .req-card {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-left: 5px solid #FFD700; 
-            border-radius: 12px;
-            padding: 25px;
-            margin-bottom: 25px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            transition: 0.3s;
-            backdrop-filter: blur(10px);
-            position: relative;
-        }
-        .req-card:hover {
-            transform: translateY(-5px);
-            background: rgba(255, 255, 255, 0.05);
-            box-shadow: 0 15px 40px rgba(0,0,0,0.5);
-        }
-
-        /* USER HEADER INFO */
-        .user-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-            padding-bottom: 10px;
-        }
-        .uid-text { font-family: monospace; color: #aaa; font-size: 0.8rem; }
+        .user-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 10px; }
         .user-phone { font-size: 1.2rem; font-weight: bold; color: #fff; }
         
-        .status-badge { 
-            padding: 5px 12px; 
-            border-radius: 20px; 
-            font-size: 0.8rem; 
-            font-weight: bold; 
-            text-transform: uppercase; 
-        }
+        .status-badge { padding: 5px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; text-transform: uppercase; }
         .status-req { background: rgba(255, 215, 0, 0.2); color: #FFD700; border: 1px solid #FFD700; }
         .status-sub { background: rgba(46, 204, 113, 0.2); color: #2ecc71; border: 1px solid #2ecc71; }
-        .status-asgn { background: rgba(52, 152, 219, 0.2); color: #3498db; border: 1px solid #3498db; }
         
-        .time-display {
-            font-size: 0.85rem;
-            color: #ff6b6b;
-            margin-top: 5px;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .paste-box {
-            width: 100%;
-            height: 160px;
-            background: #000;
-            border: 1px solid #444;
-            color: #0f0; 
-            font-family: 'Courier New', monospace;
-            padding: 15px;
-            border-radius: 8px;
-            resize: vertical;
-            box-sizing: border-box;
-            font-size: 0.85rem;
-            line-height: 1.4;
-        }
-        .paste-box:focus { outline: none; border-color: #FFD700; }
-
-        .action-row {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
+        .paste-box { width: 100%; height: 160px; background: #000; border: 1px solid #444; color: #0f0; padding: 15px; border-radius: 8px; box-sizing: border-box; font-family: monospace; }
         
-        .input-money {
-            padding: 12px;
-            background: #111;
-            border: 1px solid #555;
-            color: #fff;
-            border-radius: 5px;
-            width: 120px;
-            font-weight: bold;
-        }
+        .action-row { display: flex; gap: 10px; margin-top: 15px; align-items: center; flex-wrap: wrap; }
+        .input-money { padding: 12px; background: #111; border: 1px solid #555; color: #fff; border-radius: 5px; width: 120px; font-weight: bold; }
 
-        button {
-            padding: 12px 25px;
-            border: none;
-            border-radius: 5px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: 0.3s;
-            text-transform: uppercase;
-            font-size: 0.85rem;
-        }
+        button { padding: 12px 25px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; transition: 0.3s; text-transform: uppercase; font-size: 0.85rem; }
         .btn-send { background: linear-gradient(45deg, #FFD700, #ff8c00); color: #000; flex: 1; }
-        .btn-send:hover { box-shadow: 0 0 15px rgba(255, 215, 0, 0.4); }
         .btn-approve { background: linear-gradient(45deg, #2ecc71, #27ae60); color: white; }
         .btn-reject { background: #c0392b; color: white; }
 
-        .helper-text { font-size: 0.8rem; color: #888; margin-bottom: 5px; display: block; }
-        
-        .submission-box {
-            background: rgba(0,0,0,0.3);
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            border: 1px dashed #555;
-        }
-        
-        .waiting-box {
-            background: rgba(52, 152, 219, 0.1);
-            border: 1px solid rgba(52, 152, 219, 0.3);
-            padding: 15px;
-            border-radius: 8px;
-            color: #3498db;
-            text-align: center;
-        }
-
-        .back-nav { margin-bottom: 20px; }
+        .submission-box { background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px dashed #555; }
         .back-nav a { color: #FFD700; text-decoration: none; font-size: 1.2rem; }
     </style>
 </head>
 <body>
 
-    <div class="back-nav">
-        <a href="home.html"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
-    </div>
-
+    <div class="back-nav"><a href="home.html"><i class="fas fa-arrow-left"></i> Back to Dashboard</a></div>
     <h1><i class="fas fa-tasks"></i> Task Requests</h1>
     
     <div id="list">
-        <div style="text-align:center; padding: 50px; color:#666;">
-            <i class="fas fa-spinner fa-spin"></i> Loading...
-        </div>
+        <div style="text-align:center; padding: 50px; color:#666;">Loading...</div>
     </div>
-
-    <!-- Hidden Audio Trigger -->
-    <div id="interactionOverlay" style="position:fixed; top:0; left:0; width:100%; height:100%; z-index:9999; opacity:0; cursor:default;" onclick="unlockAudio()"></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
@@ -176,97 +55,35 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // Security Check
         if(!sessionStorage.getItem('admin')) window.location.href = 'index.html';
 
-        // --- 1. SYSTEM NOTIFICATION & SERVICE WORKER SETUP ---
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js').then(reg => console.log('Service Worker Registered'));
-        }
-        if (Notification.permission !== "granted") Notification.requestPermission();
-
-        // --- 2. VOICE & VIBRATION FUNCTIONS ---
-        window.unlockAudio = function() {
-            const u = new SpeechSynthesisUtterance("");
-            window.speechSynthesis.speak(u);
-            document.getElementById('interactionOverlay').style.display = 'none';
-        }
-
-        function triggerAlert() {
-            const msg = "Task application has come, please check task fast";
-            const utterance = new SpeechSynthesisUtterance(msg);
-            utterance.lang = 'en-US';
-            window.speechSynthesis.speak(utterance);
-            if (navigator.vibrate) navigator.vibrate([500, 200, 500, 200, 1000]);
-            if (Notification.permission === "granted") {
-                new Notification("New Task Request!", {
-                    body: "A user has requested a task. Check Admin Panel.",
-                    icon: "https://cdn-icons-png.flaticon.com/512/1827/1827349.png"
-                });
-            }
-        }
-
-        // --- 3. FIREBASE LOGIC ---
         const list = document.getElementById('list');
-        let lastReqCount = 0;
-        let initialLoad = true;
-
-        function getTimeAgo(timestamp) {
-            if(!timestamp) return 'Just now';
-            const seconds = Math.floor((Date.now() - timestamp) / 1000);
-            if(seconds < 60) return seconds + "s ago";
-            const mins = Math.floor(seconds / 60);
-            if(mins < 60) return mins + "m ago";
-            return Math.floor(mins / 60) + "h ago";
-        }
 
         onValue(ref(db, 'task_requests'), snapshot => {
             list.innerHTML = "";
             let hasData = false;
-            let currentCount = 0;
-
             snapshot.forEach(child => {
                 hasData = true;
                 const uid = child.key;
                 const data = child.val();
-                
-                if(data.status === 'requested' || data.status === 'submitted') currentCount++;
-                
-                let badgeClass = 'status-req';
-                if(data.status === 'submitted') badgeClass = 'status-sub';
-                if(data.status === 'assigned') badgeClass = 'status-asgn';
-
                 let html = `
                 <div class="req-card">
                     <div class="user-header">
-                        <div>
-                            <div class="user-phone"><i class="fas fa-user-circle"></i> ${data.userPhone || 'User'}</div>
-                            <div class="time-display"><i class="far fa-clock"></i> ${getTimeAgo(data.createdAt || data.timestamp)}</div>
-                            <div class="uid-text">${uid}</div>
-                        </div>
-                        <span class="status-badge ${badgeClass}">${data.status.toUpperCase()}</span>
+                        <div class="user-phone">${data.userPhone || 'User'}</div>
+                        <span class="status-badge ${data.status === 'submitted' ? 'status-sub' : 'status-req'}">${data.status}</span>
                     </div>`;
 
                 if (data.status === 'requested') {
-                    // Added Template Placeholder for easy pasting
                     const placeholder = "First name: \nLast name: \nPassword: \nEmail: \nRecovery email: ";
                     html += `
                     <div>
-                        <span class="helper-text">Paste Gmail Details Below:</span>
                         <textarea id="paste_${uid}" class="paste-box" placeholder="${placeholder}"></textarea>
                         <div class="action-row">
                             <button class="btn-send" onclick="window.parseAndAssign('${uid}')">Send Task</button>
-                            <button class="btn-reject" onclick="window.reject('${uid}')">Cancel</button>
+                            <button class="btn-reject" onclick="window.rejectWithReason('${uid}')">Reject</button>
                         </div>
                     </div>`;
-                }
-
-                if (data.status === 'assigned') {
-                    html += `<div class="waiting-box">Waiting for proof...</div>
-                    <div class="action-row"><button class="btn-reject" style="width:100%" onclick="window.reject('${uid}')">Revoke</button></div>`;
-                }
-
-                if (data.status === 'submitted') {
+                } else if (data.status === 'submitted') {
                     html += `
                     <div class="submission-box">
                         <div style="color:#fff;">Email: <span style="color:#2ecc71">${data.submission?.email}</span></div>
@@ -275,39 +92,21 @@
                     <div class="action-row">
                         <input id="amt_${uid}" class="input-money" type="number" placeholder="TK">
                         <button class="btn-approve" onclick="window.approve('${uid}')">Approve</button>
-                        <button class="btn-reject" onclick="window.reject('${uid}')">Reject</button>
+                        <button class="btn-reject" onclick="window.rejectWithReason('${uid}')">Reject</button>
                     </div>`;
                 }
                 html += `</div>`;
                 list.innerHTML += html;
             });
-
             if(!hasData) list.innerHTML = "<div style='text-align:center; padding: 50px; color:#555;'>No requests.</div>";
-
-            if (!initialLoad && currentCount > lastReqCount) {
-                triggerAlert();
-            }
-            
-            lastReqCount = currentCount;
-            initialLoad = false;
         });
 
-        // --- FIXED PARSING FUNCTION ---
         window.parseAndAssign = (uid) => {
             const rawText = document.getElementById(`paste_${uid}`).value;
-            if(!rawText.trim()) return alert("Please paste the task details!");
+            if(!rawText.trim()) return alert("Paste task details!");
             
-            // ডাটা আলাদা করার লজিক (Parsing Logic)
             const lines = rawText.split('\n');
-            let adminData = {
-                fname: '', 
-                lname: '', 
-                password: '', 
-                email: '', 
-                recovery: ''
-            };
-
-            // লাইন বাই লাইন চেক করে ডাটা বের করা
+            let adminData = { fname: '', lname: '', password: '', email: '', recovery: '' };
             lines.forEach(line => {
                 const lowerLine = line.toLowerCase();
                 if(lowerLine.includes('first name:')) adminData.fname = line.split(':')[1].trim();
@@ -317,21 +116,11 @@
                 else if(lowerLine.includes('email:')) adminData.email = line.split(':')[1].trim();
             });
 
-            // যদি ইমেইল না পাওয়া যায়, তবে ওয়ার্নিং দিবে
-            if(!adminData.email) {
-                if(!confirm("Warning: Email address not detected correctly. Send anyway?")) return;
-            }
-            
-            // ফায়ারবেস আপডেট
             update(ref(db, `task_requests/${uid}`), {
                 status: 'assigned',
                 assignedAt: Date.now(),
                 adminData: adminData 
-            }).then(() => {
-                alert("Task Sent Successfully!");
-            }).catch((error) => {
-                alert("Error sending task: " + error.message);
-            });
+            }).then(() => alert("Task Sent!"));
         };
 
         window.approve = async (uid) => {
@@ -343,26 +132,38 @@
             if(s.exists()){
                 const u = s.val();
                 let newBal = (u.balance||0) + amount;
-                
-                if(u.referredBy) {
-                    const all = await get(ref(db,'users'));
-                    all.forEach(x => {
-                        if(x.val().referralCode === u.referredBy) {
-                            update(ref(db,`users/${x.key}`), { balance: (x.val().balance||0) + (amount*0.20) });
-                        }
-                    });
-                }
-                update(userRef, { balance: newBal });
+                update(userRef, { 
+                    balance: newBal,
+                    tasksCompleted: (u.tasksCompleted || 0) + 1 // Count task for Monthly Salary
+                });
                 remove(ref(db, `task_requests/${uid}`));
-                alert("Approved & Balance Added!");
+                alert("Approved!");
             }
         };
 
-        window.reject = (uid) => {
-            if(confirm("Are you sure you want to delete this request?")) remove(ref(db, `task_requests/${uid}`));
-        };
+        // --- NEW REJECTION WITH REASON LOGIC ---
+        window.rejectWithReason = async (uid) => {
+            // 1. Ask Admin for reason
+            const reason = prompt("Enter Reason for Rejection:", "Incorrect Password / Fake Details");
+            if(!reason) return; // If cancelled
 
-        document.body.addEventListener('click', () => unlockAudio(), { once: true });
+            // 2. Update User's Profile with rejection info
+            const userRef = ref(db, `users/${uid}`);
+            const snapshot = await get(userRef);
+            if(snapshot.exists()) {
+                const userData = snapshot.val();
+                const currentRejects = (userData.rejectCount || 0) + 1;
+
+                update(userRef, {
+                    lastRejectReason: reason,
+                    rejectCount: currentRejects
+                });
+            }
+
+            // 3. Delete the request
+            remove(ref(db, `task_requests/${uid}`));
+            alert("Request Rejected with reason sent to user.");
+        };
 
     </script>
 </body>

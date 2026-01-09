@@ -9,10 +9,10 @@
         table { width: 100%; border-collapse: collapse; margin-top: 20px; border: 1px solid #444; }
         th, td { border: 1px solid #444; padding: 10px; text-align: left; vertical-align: top; }
         th { background: #222; color: #ffd700; }
-        .btn { padding: 5px 10px; cursor: pointer; border: none; border-radius: 3px; font-weight: bold; margin-right: 5px; }
+        .btn { padding: 5px 10px; cursor: pointer; border: none; border-radius: 3px; font-weight: bold; margin-right: 5px; margin-top: 5px;}
         .btn-approve { background: #2ecc71; color: #fff; }
         .btn-pay { background: #ffd700; color: #000; }
-        .btn-reject { background: #e74c3c; color: #fff; }
+        .btn-reject { background: #e74c3c; color: #fff; } /* Red Color for Cancel/Reject */
         .stat-badge { background: #333; padding: 3px 6px; border-radius: 4px; font-size: 0.85rem; }
         .stat-badge b { color: #00d2ff; }
     </style>
@@ -56,13 +56,12 @@
                 if (u.salaryTarget && u.salaryTarget.month === currentMonth) {
                     const t = u.salaryTarget;
                     
-                    // --- CALCULATE REAL-TIME STATS (FRESH LOGIC) ---
-                    const startTime = t.startDate || 0; // If pending, 0 (shows all just for ref), if active, shows valid ones
+                    // --- CALCULATE REAL-TIME STATS ---
+                    const startTime = t.startDate || 0; 
                     let validRef = 0;
                     let validTasks = 0;
 
                     if (t.status === 'active' || t.status === 'claimable') {
-                        // Strict counting for active plans
                         snap.forEach(sub => {
                             const subUser = sub.val();
                             const joinTime = subUser.joinedAt || 0;
@@ -72,7 +71,6 @@
                             }
                         });
                     } else {
-                        // If pending, showing 0 is better as plan hasn't started
                         validRef = 0;
                         validTasks = 0;
                     }
@@ -90,13 +88,17 @@
                     }
                     else if (t.status === 'active') {
                         statusColor = "#3498db";
-                        actionHtml = "Running...";
+                        // ADDED: Cancel button for Active plans
+                        actionHtml = `
+                            Running... <br>
+                            <button class="btn btn-reject" onclick="cancelActivePlan('${uid}')">CANCEL PLAN</button>
+                        `;
                     }
                     else if (t.status === 'claimable') {
                         statusColor = "#ffd700";
                         const goalMet = (validRef >= t.reqRefs && validTasks >= t.reqTasks);
                         const btnText = goalMet ? `PAY ${t.amount} TK` : `PAY ANYWAY (Goal not met)`;
-                        const btnStyle = goalMet ? 'btn-pay' : 'btn-reject'; // Warning style if paying without goal
+                        const btnStyle = goalMet ? 'btn-pay' : 'btn-reject'; 
                         
                         actionHtml = `<button class="btn ${btnStyle}" onclick="payUser('${uid}', ${t.amount}, ${u.balance||0})">${btnText}</button>`;
                     }
@@ -133,7 +135,7 @@
             
             update(ref(db, 'users/' + uid + '/salaryTarget'), {
                 status: 'active',
-                startDate: now, // Important: Sets the baseline for fresh counting
+                startDate: now, 
                 endDate: now + days30
             });
         };
@@ -147,7 +149,14 @@
         };
 
         window.rejectReq = (uid) => {
-            if(!confirm("Reject?")) return;
+            if(!confirm("Reject Application?")) return;
+            update(ref(db, 'users/' + uid + '/salaryTarget'), null);
+        };
+
+        // NEW FUNCTION: Cancel Active Plan
+        window.cancelActivePlan = (uid) => {
+            if(!confirm("⚠️ WARNING: Are you sure you want to CANCEL this running plan?\n\nThe user's progress will be stopped and reset.")) return;
+            // Deleting the salaryTarget node cancels it
             update(ref(db, 'users/' + uid + '/salaryTarget'), null);
         };
     </script>

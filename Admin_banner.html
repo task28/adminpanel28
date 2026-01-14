@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Banner Settings</title>
+
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <!-- FIREBASE -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDR38gO9SBcE3qcVvFHlpyE5YdEqo0n2XU",
+            authDomain: "task38-f7daa.firebaseapp.com",
+            databaseURL: "https://task38-f7daa-default-rtdb.firebaseio.com",
+            projectId: "task38-f7daa",
+            storageBucket: "task38-f7daa.firebasestorage.app",
+            messagingSenderId: "655282407518",
+            appId: "1:655282407518:web:637dd6ac82b6c5e6018ccf"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const auth = firebase.auth();
+    </script>
+
+    <style>
+        body { background-color: #050505; color: #fff; font-family: 'Montserrat', sans-serif; padding: 20px; }
+        
+        .header { display: flex; justify-content: space-between; border-bottom: 2px solid #d4af37; padding-bottom: 15px; margin-bottom: 30px; }
+        .title { color: #d4af37; font-family: 'Share Tech Mono', monospace; font-size: 1.5rem; }
+        .back-btn { background: #333; color: #fff; border: none; padding: 8px 15px; cursor: pointer; }
+
+        .container {
+            max-width: 600px; margin: 0 auto; background: #111; padding: 30px; border-radius: 10px; border: 1px solid #333;
+        }
+
+        .input-group label { display: block; color: #aaa; margin-bottom: 8px; font-weight: bold; }
+        .input-group input {
+            width: 100%; padding: 15px; background: #000; border: 1px solid #444; color: #fff; outline: none; margin-bottom: 20px;
+        }
+
+        .preview-box {
+            width: 100%; height: 200px; background: #000; border: 1px dashed #444;
+            display: flex; justify-content: center; align-items: center; overflow: hidden; margin-bottom: 20px;
+        }
+        .preview-box img { width: 100%; height: 100%; object-fit: cover; display: none; }
+        .preview-text { color: #555; }
+
+        .save-btn {
+            width: 100%; padding: 15px; background: #d4af37; color: #000; font-weight: bold; border: none; cursor: pointer;
+        }
+        .save-btn:hover { background: #fff; }
+        
+        .remove-btn {
+            width: 100%; padding: 10px; background: #c0392b; color: #fff; font-weight: bold; border: none; cursor: pointer; margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="title">BANNER SETTINGS</div>
+        <button class="back-btn" onclick="window.location.href='Admin_home.html'">BACK</button>
+    </div>
+
+    <div class="container">
+        <div class="input-group">
+            <label>Image Direct Link (URL)</label>
+            <input type="text" id="imgUrl" placeholder="https://example.com/banner.jpg" oninput="updatePreview()">
+            <p style="font-size: 0.8rem; color: #666; margin-top: -15px; margin-bottom: 15px;">
+                Note: Upload image to a hosting site (like imgbb.com) and paste the direct link here.
+            </p>
+        </div>
+
+        <div class="preview-box">
+            <div class="preview-text" id="pText">No Image</div>
+            <img id="pImg" src="">
+        </div>
+
+        <button class="save-btn" onclick="saveBanner()">SAVE BANNER</button>
+        <button class="remove-btn" onclick="removeBanner()">REMOVE BANNER</button>
+    </div>
+
+    <script>
+        auth.onAuthStateChanged(user => {
+            if(user && user.email === "rafsanvai388@gmail.com") {
+                loadBanner();
+            } else {
+                window.location.href = "Admin_login.html";
+            }
+        });
+
+        function loadBanner() {
+            db.ref('adminSettings/banner').once('value', snap => {
+                const url = snap.val();
+                if(url) {
+                    document.getElementById('imgUrl').value = url;
+                    updatePreview();
+                }
+            });
+        }
+
+        function updatePreview() {
+            const url = document.getElementById('imgUrl').value;
+            const img = document.getElementById('pImg');
+            const txt = document.getElementById('pText');
+
+            if(url) {
+                img.src = url;
+                img.style.display = 'block';
+                txt.style.display = 'none';
+            } else {
+                img.style.display = 'none';
+                txt.style.display = 'block';
+            }
+        }
+
+        function saveBanner() {
+            const url = document.getElementById('imgUrl').value;
+            if(!url) return alert("Please enter a URL");
+
+            db.ref('adminSettings/banner').set(url).then(() => {
+                alert("Banner Updated Successfully!");
+            });
+        }
+
+        function removeBanner() {
+            if(confirm("Remove banner from user app?")) {
+                db.ref('adminSettings/banner').remove().then(() => {
+                    document.getElementById('imgUrl').value = "";
+                    updatePreview();
+                    alert("Banner Removed.");
+                });
+            }
+        }
+    </script>
+</body>
+</html>

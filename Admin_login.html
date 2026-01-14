@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TASK28 - Admin Access</title>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <!-- FIREBASE SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDR38gO9SBcE3qcVvFHlpyE5YdEqo0n2XU",
+            authDomain: "task38-f7daa.firebaseapp.com",
+            databaseURL: "https://task38-f7daa-default-rtdb.firebaseio.com",
+            projectId: "task38-f7daa",
+            storageBucket: "task38-f7daa.firebasestorage.app",
+            messagingSenderId: "655282407518",
+            appId: "1:655282407518:web:637dd6ac82b6c5e6018ccf"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+    </script>
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: #000;
+            background-image: 
+                linear-gradient(rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.9)),
+                url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23d4af37' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Share Tech Mono', monospace;
+            overflow: hidden;
+            color: #d4af37;
+        }
+
+        /* Scanline Effect */
+        body::after {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 2;
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+        }
+
+        .container {
+            position: relative;
+            z-index: 3;
+            width: 100%;
+            max-width: 380px;
+            padding: 40px;
+            border: 2px solid #d4af37;
+            background: rgba(10, 10, 10, 0.95);
+            box-shadow: 0 0 30px rgba(212, 175, 55, 0.15);
+            text-align: center;
+        }
+
+        /* Decorative Corners */
+        .corner {
+            position: absolute; width: 15px; height: 15px; border: 2px solid #d4af37; transition: 0.3s;
+        }
+        .tl { top: -2px; left: -2px; border-right: none; border-bottom: none; }
+        .tr { top: -2px; right: -2px; border-left: none; border-bottom: none; }
+        .bl { bottom: -2px; left: -2px; border-right: none; border-top: none; }
+        .br { bottom: -2px; right: -2px; border-left: none; border-top: none; }
+
+        .container:hover .corner { width: 25px; height: 25px; box-shadow: 0 0 10px #d4af37; }
+
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.8rem;
+            letter-spacing: 3px;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        .subtitle {
+            font-size: 0.8rem;
+            color: #666;
+            margin-bottom: 30px;
+            letter-spacing: 1px;
+        }
+
+        /* Input Fields */
+        .input-box {
+            position: relative;
+            margin-bottom: 25px;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            font-size: 0.7rem;
+            color: #d4af37;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        input {
+            width: 100%;
+            background: #050505;
+            border: 1px solid #333;
+            color: #fff;
+            padding: 12px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 1rem;
+            outline: none;
+            transition: 0.3s;
+        }
+
+        input:focus {
+            border-color: #d4af37;
+            box-shadow: 0 0 10px rgba(212, 175, 55, 0.2);
+            background: #000;
+        }
+
+        /* Submit Button */
+        button {
+            width: 100%;
+            padding: 15px;
+            background: #d4af37;
+            color: #000;
+            border: none;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            letter-spacing: 2px;
+            font-size: 1rem;
+            cursor: pointer;
+            text-transform: uppercase;
+            margin-top: 10px;
+            transition: 0.3s;
+            clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%);
+        }
+
+        button:hover {
+            background: #fff;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+        }
+
+        /* Error Text */
+        #error-msg {
+            color: #ff3333;
+            font-size: 0.8rem;
+            margin-top: 15px;
+            display: none;
+            text-transform: uppercase;
+        }
+
+        /* Lock Icon Animation */
+        .lock-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            color: #333;
+            transition: 0.5s;
+        }
+        
+        input:focus ~ .lock-icon, button:hover ~ .lock-icon {
+            color: #d4af37;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Corners -->
+        <div class="corner tl"></div>
+        <div class="corner tr"></div>
+        <div class="corner bl"></div>
+        <div class="corner br"></div>
+
+        <i class="fas fa-fingerprint lock-icon"></i>
+        <h1>ADMIN PANEL</h1>
+        <div class="subtitle">RESTRICTED ACCESS ONLY</div>
+
+        <div class="input-box">
+            <label>System ID (Email)</label>
+            <input type="email" id="a_email" placeholder="admin@system.com">
+        </div>
+
+        <div class="input-box">
+            <label>Security Key (Password)</label>
+            <input type="password" id="a_pass" placeholder="••••••••">
+        </div>
+
+        <button onclick="adminLogin()">Authenticate</button>
+        <div id="error-msg">ACCESS DENIED</div>
+    </div>
+
+    <script>
+        function adminLogin() {
+            const e = document.getElementById('a_email').value;
+            const p = document.getElementById('a_pass').value;
+            const btn = document.querySelector('button');
+            const err = document.getElementById('error-msg');
+
+            // Visual Loading
+            btn.innerText = "SCANNING...";
+            
+            // Hardcoded Check as per requirements
+            if (e === "rafsanvai388@gmail.com" && p === "RAFSAN25") {
+                
+                // Firebase Auth for session persistence
+                auth.signInWithEmailAndPassword(e, p)
+                .then(() => {
+                    btn.style.background = "#00ff00";
+                    btn.innerText = "ACCESS GRANTED";
+                    setTimeout(() => {
+                        window.location.href = "Admin_home.html";
+                    }, 1000);
+                })
+                .catch((error) => {
+                    btn.innerText = "AUTHENTICATE";
+                    err.style.display = 'block';
+                    err.innerText = "SERVER ERROR: " + error.message;
+                });
+
+            } else {
+                setTimeout(() => {
+                    btn.innerText = "AUTHENTICATE";
+                    err.style.display = 'block';
+                    err.innerText = "INVALID CREDENTIALS";
+                    // Shake animation effect
+                    const container = document.querySelector('.container');
+                    container.style.transform = "translateX(10px)";
+                    setTimeout(() => container.style.transform = "translateX(-10px)", 50);
+                    setTimeout(() => container.style.transform = "translateX(10px)", 100);
+                    setTimeout(() => container.style.transform = "translateX(0)", 150);
+                }, 800);
+            }
+        }
+    </script>
+
+</body>
+</html>

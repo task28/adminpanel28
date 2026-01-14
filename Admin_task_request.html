@@ -3,8 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - Task Logic</title>
+    <title>Admin - Task Manager</title>
+    <!-- Fonts & Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -16,102 +19,192 @@
     </script>
     <style>
         body { background: #050505; color: #ccc; font-family: 'Montserrat', sans-serif; padding: 20px; }
-        .card { background: #111; border: 1px solid #333; padding: 20px; border-radius: 8px; margin-bottom: 20px;}
-        .btn-approve { background: #27ae60; color: #fff; width: 100%; padding: 10px; border: none; cursor: pointer; font-weight: bold; }
+        .header { display: flex; justify-content: space-between; border-bottom: 2px solid #d4af37; padding-bottom: 15px; margin-bottom: 20px; }
+        .title { color: #d4af37; font-family: 'Share Tech Mono', monospace; font-size: 1.5rem; }
+        .back-btn { background: #333; color: #fff; border: none; padding: 8px 15px; cursor: pointer; }
+        .section-title { color: #fff; margin: 20px 0 10px; border-left: 4px solid #d4af37; padding-left: 10px; font-weight: bold; }
+        .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px; }
+        .card { background: #111; border: 1px solid #333; padding: 20px; border-radius: 8px; }
+        .input-group { margin-bottom: 10px; }
+        .input-group label { display: block; font-size: 0.7rem; color: #666; }
+        .input-group input { width: 100%; background: #000; border: 1px solid #444; color: #fff; padding: 8px; }
+        .data-display { background: #000; padding: 10px; border: 1px dashed #444; margin-bottom: 10px; cursor: pointer; word-break: break-all; }
+        .btn-action { width: 100%; padding: 10px; border: none; font-weight: bold; cursor: pointer; margin-top: 5px; }
+        .btn-send { background: #d4af37; color: #000; }
+        .btn-approve { background: #27ae60; color: #fff; }
+        .btn-reject { background: #c0392b; color: #fff; }
+        .profit-input { width: 100%; padding: 8px; margin-bottom: 5px; background: #222; border: 1px solid #27ae60; color: #fff; text-align: center; }
     </style>
 </head>
 <body>
-    <h2 style="color:#d4af37">ADMIN CONTROL</h2>
-    <div id="review_list">Loading Requests...</div>
+<div class="header">
+    <div class="title">TASK MANAGER</div>
+    <button class="back-btn" onclick="window.location.href='Admin_home.html'">BACK</button>
+</div>
 
-    <script>
-        auth.onAuthStateChanged(user => {
-            if(user && user.email === "rafsanvai388@gmail.com") {
-                loadReview();
-            } else {
-                document.body.innerHTML = "ACCESS DENIED";
-            }
+<div class="section-title">PENDING REQUESTS</div>
+<div class="grid-container" id="pending_list">Loading...</div>
+
+<div class="section-title">SUBMITTED FOR REVIEW</div>
+<div class="grid-container" id="review_list">Loading...</div>
+
+<script>
+    auth.onAuthStateChanged(user => {
+        if(!user || user.email !== "rafsanvai388@gmail.com") window.location.href = "Admin_login.html";
+        else { loadPending(); loadReview(); }
+    });
+
+    // 1. PENDING LOAD (Send Email/Pass Logic)
+    function loadPending() {
+        db.ref('tasks').orderByChild('status').equalTo('pending').on('value', snap => {
+            const list = document.getElementById('pending_list');
+            list.innerHTML = "";
+            if(!snap.exists()) { list.innerHTML = "<p>No pending requests.</p>"; return; }
+
+            snap.forEach(child => {
+                const uid = child.key;
+                const randPass = "Pass" + Math.floor(Math.random()*10000);
+                list.innerHTML += `
+                    <div class="card">
+                        <div style="color:#d4af37; margin-bottom:10px;">UID: ${uid.substring(0,6)}...</div>
+                        <div class="input-group"><label>First Name</label><input id="fn_${uid}" placeholder="John"></div>
+                        <div class="input-group"><label>Last Name</label><input id="ln_${uid}" placeholder="Doe"></div>
+                        <div class="input-group"><label>DOB</label><input id="dob_${uid}" placeholder="01/01/1990"></div>
+                        <div class="input-group"><label>Recovery</label><input id="rec_${uid}" placeholder="rec@gmail.com"></div>
+                        <div class="input-group"><label>Pass</label><input id="pass_${uid}" value="${randPass}"></div>
+                        <button class="btn-action btn-send" onclick="sendData('${uid}')">SEND DATA</button>
+                    </div>`;
+            });
         });
+    }
 
-        function loadReview() {
-            db.ref('tasks').orderByChild('status').equalTo('review').on('value', snap => {
-                const list = document.getElementById('review_list');
-                list.innerHTML = "";
-                if(!snap.exists()) { list.innerHTML = "<p>No tasks for review.</p>"; return; }
+    function sendData(uid) {
+        const adminData = {
+            fname: document.getElementById('fn_'+uid).value || "User",
+            lname: document.getElementById('ln_'+uid).value || "Name",
+            dob: document.getElementById('dob_'+uid).value || "01/01/2000",
+            recovery: document.getElementById('rec_'+uid).value || "none",
+            pass: document.getElementById('pass_'+uid).value || "123456"
+        };
+        db.ref('tasks/' + uid).update({ status: 'active', adminData: adminData, startTime: Date.now() });
+    }
 
-                snap.forEach(child => {
-                    const data = child.val();
-                    const uid = child.key;
-                    list.innerHTML += `
-                        <div class="card">
-                            <p style="color:#2980b9">User: ${uid}</p>
-                            <p>Email: ${data.userSubmission.email}</p>
-                            <input id="pay_${uid}" type="number" value="0.11" style="width:100%; margin-bottom:10px; padding:5px;">
-                            <button class="btn-approve" onclick="approveTask('${uid}')">APPROVE & PAY</button>
-                        </div>`;
-                });
+    // 2. REVIEW LOAD (Approve/Reject Logic)
+    function loadReview() {
+        db.ref('tasks').orderByChild('status').equalTo('review').on('value', snap => {
+            const list = document.getElementById('review_list');
+            list.innerHTML = "";
+            if(!snap.exists()) { list.innerHTML = "<p>No submissions.</p>"; return; }
+
+            snap.forEach(child => {
+                const data = child.val();
+                const uid = child.key;
+                const email = data.userSubmission ? data.userSubmission.email : "Error";
+                const pass = data.userSubmission ? data.userSubmission.pass : "Error";
+
+                list.innerHTML += `
+                    <div class="card" style="border-color: #2980b9;">
+                        <div style="color:#2980b9; margin-bottom:10px;">SUBMISSION: ${uid.substring(0,6)}...</div>
+                        <div class="data-display" onclick="copy('${email}')">Email: ${email}</div>
+                        <div class="data-display" onclick="copy('${pass}')">Pass: ${pass}</div>
+                        <div style="margin-top:10px;">
+                            <input id="pay_${uid}" type="number" class="profit-input" value="0.11">
+                            <button class="btn-action btn-approve" onclick="approveTask('${uid}')">APPROVE</button>
+                            <button class="btn-action btn-reject" onclick="rejectTask('${uid}')">REJECT</button>
+                        </div>
+                    </div>`;
+            });
+        });
+    }
+
+    function copy(t) { navigator.clipboard.writeText(t); alert("Copied!"); }
+
+    // --- CORE LOGIC: APPROVAL WITH UPLINE REWARD ---
+    function approveTask(uid) {
+        const payAmount = parseFloat(document.getElementById('pay_'+uid).value) || 0;
+
+        if(confirm(`Approve? User gets $${payAmount}`)) {
+            db.ref('users/' + uid).once('value', snapshot => {
+                if(snapshot.exists()) {
+                    const userData = snapshot.val();
+                    
+                    // 1. Update Worker Stats
+                    const newBal = (parseFloat(userData.balance) || 0) + payAmount;
+                    const newTotal = (parseFloat(userData.totalProfit) || 0) + payAmount;
+                    const tasksDone = (userData.totalTasksDone || 0) + 1; // কাজের সংখ্যা বাড়াও
+
+                    let updates = {
+                        balance: newBal,
+                        totalProfit: newTotal,
+                        totalTasksDone: tasksDone,
+                        todayProfit: (parseFloat(userData.todayProfit)||0) + payAmount
+                    };
+
+                    // 2. Update Worker's Own Target (নিজের প্ল্যান আপডেট)
+                    if(userData.activePlan) {
+                        const myTasks = (userData.activePlan.currentTask || 0) + 1;
+                        updates['activePlan/currentTask'] = myTasks;
+                    }
+
+                    // আপডেট করার পর আপলাইন বোনাস চেক হবে
+                    db.ref('users/' + uid).update(updates).then(() => {
+                        
+                        // 3. HANDLE UPLINE REWARDS (আপলাইনের লাভ ও রেফার কাউন্ট)
+                        if (userData.referredBy && userData.referredBy !== 'none') {
+                            handleUplineRewards(userData.referredBy, payAmount, tasksDone);
+                        }
+
+                        // 4. Finish Task Status
+                        db.ref('tasks/' + uid).update({ status: 'completed' });
+                        alert("Task Approved Successfully!");
+                    });
+                } else {
+                    if(confirm("User not found! Delete task?")) db.ref('tasks/' + uid).remove();
+                }
             });
         }
+    }
 
-        // --- MAIN LOGIC ---
-        function approveTask(workerUid) {
-            const payAmount = parseFloat(document.getElementById('pay_'+workerUid).value) || 0;
-
-            if(confirm("Approve Task?")) {
-                db.ref('users/' + workerUid).once('value', snapshot => {
-                    if(snapshot.exists()) {
-                        const workerData = snapshot.val();
-
-                        // ১. যে কাজ করেছে তার ব্যালেন্স অ্যাড হবে (কিন্তু তার টাস্ক কাউন্ট বাড়বে না টার্গেটে)
-                        const newBal = (parseFloat(workerData.balance) || 0) + payAmount;
-                        
-                        db.ref('users/' + workerUid).update({
-                            balance: newBal,
-                            totalTasksDone: (workerData.totalTasksDone || 0) + 1
-                        }).then(() => {
-                            
-                            // ২. আপলাইন (Upline) কে খোঁজা এবং কমিশন + টাস্ক টার্গেট আপডেট করা
-                            if (workerData.referredBy && workerData.referredBy !== 'none') {
-                                sendCommissionToUpline(workerData.referredBy, payAmount);
-                            }
-
-                            // ৩. টাস্ক কমপ্লিট করা
-                            db.ref('tasks/' + workerUid).update({ status: 'completed' });
-                            alert("Task Approved & Commission Sent!");
-                        });
-                    }
-                });
-            }
-        }
-
-        function sendCommissionToUpline(refCode, taskAmount) {
-            // কমিশন ২০% (আপনার ইচ্ছা মত চেঞ্জ করতে পারেন)
-            const commission = taskAmount * 0.20; 
-
-            db.ref('users').orderByChild('myRefCode').equalTo(refCode).once('value', snap => {
+    // --- UPLINE LOGIC (Commission + Target Count) ---
+    function handleUplineRewards(refCode, payAmount, workerTotalTasks) {
+        db.ref('users').orderByChild('myRefCode').equalTo(refCode).once('value', snap => {
+            if(snap.exists()) {
                 snap.forEach(u => {
-                    const uplineUid = u.key;
+                    const upUid = u.key;
                     const upData = u.val();
-
                     let updates = {};
 
-                    // A. ব্যালেন্স এবং টুডে কমিশন আপডেট (লিডারবোর্ডের জন্য)
-                    updates['balance'] = (parseFloat(upData.balance) || 0) + commission;
-                    updates['todayCommission'] = (parseFloat(upData.todayCommission) || 0) + commission; // For Leaderboard
-                    updates['totalProfit'] = (parseFloat(upData.totalProfit) || 0) + commission;
+                    // A. 20% COMMISSION (ব্যালেন্স যোগ)
+                    const comm = payAmount * 0.20;
+                    updates['balance'] = (parseFloat(upData.balance) || 0) + comm;
+                    updates['totalProfit'] = (parseFloat(upData.totalProfit) || 0) + comm;
 
-                    // B. কন্ডিশন: কমিশন পেলে টাস্ক কাউন্ট বাড়বে (Monthly/Weekly Plans)
+                    // B. TARGET UPDATE (আপলাইনের প্ল্যানে টাস্ক ও রেফার যোগ)
                     if (upData.activePlan) {
-                        const currentPlanTasks = (upData.activePlan.currentTask || 0) + 1; // +1 Task added
-                        updates['activePlan/currentTask'] = currentPlanTasks;
-                        console.log("Upline Task Target Increased!");
+                        
+                        // 1. Task Count Increment (ডাউনলাইনের কাজ আপলাইনের টাস্কেও যোগ হবে)
+                        const currentTaskCount = (upData.activePlan.currentTask || 0) + 1;
+                        updates['activePlan/currentTask'] = currentTaskCount;
+
+                        // 2. REFERRAL COUNT (শুধুমাত্র যদি ওয়ার্কার ২য় কাজ শেষ করে)
+                        // শর্ত: "workerTotalTasks === 2" হলেই ১টা ভ্যালিড রেফার কাউন্ট হবে
+                        if (workerTotalTasks === 2) {
+                            const currentRefCount = (upData.activePlan.currentRef || 0) + 1;
+                            updates['activePlan/currentRef'] = currentRefCount;
+                            console.log("Valid Referral Counted for Upline!");
+                        }
                     }
 
-                    // ডাটাবেসে আপডেট পাঠানো
-                    db.ref('users/' + uplineUid).update(updates);
+                    // Apply Updates to Upline
+                    db.ref('users/' + upUid).update(updates);
                 });
-            });
-        }
-    </script>
+            }
+        });
+    }
+
+    function rejectTask(uid) {
+        if(confirm("Reject this submission?")) db.ref('tasks/' + uid).update({ status: 'rejected' });
+    }
+</script>
 </body>
 </html>

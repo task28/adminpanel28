@@ -124,41 +124,42 @@
 
         function copy(t) { navigator.clipboard.writeText(t); alert("Copied!"); }
 
-        // --- MAIN LOGIC FOR 2 TASKS CONDITION ---
+        // --- MAIN LOGIC UPDATE (COMMISSION & TARGETS) ---
         function approveTask(uid) {
             const payAmount = parseFloat(document.getElementById('pay_'+uid).value) || 0;
 
             if(confirm(`Approve? User gets $${payAmount}`)) {
+                // 1. Get User Data
                 db.ref('users/' + uid).once('value', snapshot => {
                     if(snapshot.exists()) {
                         const userData = snapshot.val();
                         
-                        // 1. Calculate New Stats
+                        // User Stats Update
                         const newBal = (parseFloat(userData.balance) || 0) + payAmount;
                         const newTotal = (parseFloat(userData.totalProfit) || 0) + payAmount;
-                        
-                        // 2. Increment Task Count
                         const tasksDone = (userData.totalTasksDone || 0) + 1;
 
-                        // 3. Update User
-                        db.ref('users/' + uid).update({
+                        // 2. Update Worker (The User who did the task)
+                        let userUpdates = {
                             balance: newBal,
                             totalProfit: newTotal,
                             totalTasksDone: tasksDone,
                             todayProfit: (parseFloat(userData.todayProfit)||0) + payAmount
-                        }).then(() => {
-                            // 4. CHECK REFERRAL TARGET LOGIC (THE 2 TASK RULE)
-                            if (tasksDone === 2 && userData.referredBy && userData.referredBy !== 'none') {
-                                // If this is exactly the 2nd task, count this user for the Referrer's Target
-                                updateReferrerTarget(userData.referredBy);
-                            }
+                        };
 
-                            // 5. Normal Commission (20% Profit Share) - Always happens
+                        // 3. Update Worker's OWN Active Plan (Task Count)
+                        if(userData.activePlan) {
+                            userUpdates['activePlan/currentTask'] = (userData.activePlan.currentTask || 0) + 1;
+                        }
+
+                        db.ref('users/' + uid).update(userUpdates).then(() => {
+                            
+                            // 4. HANDLE UPLINE (Referrer Logic)
                             if (userData.referredBy && userData.referredBy !== 'none') {
-                                giveCommission(userData.referredBy, payAmount);
+                                handleUplineRewards(userData.referredBy, payAmount, tasksDone);
                             }
 
-                            // 6. Close Task
+                            // 5. Close Task
                             db.ref('tasks/' + uid).update({ status: 'completed' });
                             alert("Task Approved!");
                         });
@@ -169,37 +170,37 @@
             }
         }
 
-        // Logic to update Referrer's Plan Target
-        function updateReferrerTarget(refCode) {
+        // Function to Handle Commission & Target for Upline
+        function handleUplineRewards(refCode, payAmount, workerTotalTasks) {
             db.ref('users').orderByChild('myRefCode').equalTo(refCode).once('value', snap => {
                 if(snap.exists()) {
                     snap.forEach(u => {
-                        const refUid = u.key;
-                        const refData = u.val();
+                        const upUid = u.key;
+                        const upData = u.val();
+                        
+                        let updates = {};
 
-                        // Check if Referrer has an ACTIVE Monthly/Weekly Plan
-                        if (refData.activePlan) {
-                            const currentRef = (refData.activePlan.currentRef || 0) + 1;
-                            
-                            // Update the Target Counter
-                            db.ref('users/' + refUid + '/activePlan').update({
-                                currentRef: currentRef
-                            });
-                            console.log("Target Updated for Referrer");
+                        // A. 20% COMMISSION Logic
+                        const comm = payAmount * 0.20;
+                        updates['balance'] = (parseFloat(upData.balance) || 0) + comm;
+                        updates['totalProfit'] = (parseFloat(upData.totalProfit) || 0) + comm;
+
+                        // B. TARGET UPDATE Logic (If Upline has an Active Plan)
+                        if (upData.activePlan) {
+                            // 1. Task Count: Downline did a task -> Upline's Task Target increases
+                            // "tar target oikhane o 2 task add hobe" (Assuming 1 task done = 1 count added)
+                            const currentTaskCount = (upData.activePlan.currentTask || 0) + 1;
+                            updates['activePlan/currentTask'] = currentTaskCount;
+
+                            // 2. Referral Count: Only if Worker finished exactly 2 tasks
+                            if (workerTotalTasks === 2) {
+                                const currentRefCount = (upData.activePlan.currentRef || 0) + 1;
+                                updates['activePlan/currentRef'] = currentRefCount;
+                            }
                         }
-                    });
-                }
-            });
-        }
 
-        // Logic for 20% Commission
-        function giveCommission(refCode, amount) {
-            db.ref('users').orderByChild('myRefCode').equalTo(refCode).once('value', s => {
-                if(s.exists()) {
-                    s.forEach(u => {
-                        const comm = amount * 0.20;
-                        const cur = parseFloat(u.val().balance) || 0;
-                        db.ref('users/' + u.key).update({ balance: cur + comm });
+                        // Apply Updates to Upline
+                        db.ref('users/' + upUid).update(updates);
                     });
                 }
             });

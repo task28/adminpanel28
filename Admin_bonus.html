@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Bonus Code Manager</title>
+
+    <!-- Google Fonts & CSS -->
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <!-- FIREBASE -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDR38gO9SBcE3qcVvFHlpyE5YdEqo0n2XU",
+            authDomain: "task38-f7daa.firebaseapp.com",
+            databaseURL: "https://task38-f7daa-default-rtdb.firebaseio.com",
+            projectId: "task38-f7daa",
+            storageBucket: "task38-f7daa.firebasestorage.app",
+            messagingSenderId: "655282407518",
+            appId: "1:655282407518:web:637dd6ac82b6c5e6018ccf"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const auth = firebase.auth();
+    </script>
+
+    <style>
+        body { background-color: #050505; color: #fff; font-family: 'Montserrat', sans-serif; padding: 20px; }
+        
+        .header { display: flex; justify-content: space-between; border-bottom: 2px solid #d4af37; padding-bottom: 15px; margin-bottom: 30px; }
+        .title { color: #d4af37; font-family: 'Share Tech Mono', monospace; font-size: 1.5rem; }
+        .back-btn { background: #333; color: #fff; border: none; padding: 8px 15px; cursor: pointer; }
+
+        /* Create Card */
+        .create-card {
+            background: #111; border: 1px solid #333; padding: 25px; border-radius: 10px;
+            margin-bottom: 40px; border-left: 5px solid #d4af37;
+        }
+
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+        
+        .input-group label { display: block; color: #aaa; margin-bottom: 5px; font-size: 0.9rem; }
+        .input-group input, .input-group select {
+            width: 100%; padding: 12px; background: #000; border: 1px solid #444; color: #fff; outline: none;
+        }
+
+        .create-btn {
+            background: #d4af37; color: #000; font-weight: bold; border: none; padding: 12px 30px; 
+            cursor: pointer; margin-top: 20px; width: 100%; text-transform: uppercase;
+        }
+        .create-btn:hover { background: #fff; }
+
+        /* Code List */
+        .code-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
+        
+        .code-card {
+            background: #0f0f0f; border: 1px solid #333; padding: 15px; border-radius: 8px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        
+        .c-name { color: #d4af37; font-weight: bold; font-size: 1.2rem; font-family: 'Share Tech Mono'; }
+        .c-detail { font-size: 0.9rem; color: #ccc; }
+        .btn-del { background: #c0392b; color: #fff; border: none; padding: 5px 10px; cursor: pointer; border-radius: 3px; }
+
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="title">BONUS CODE MANAGER</div>
+        <button class="back-btn" onclick="window.location.href='Admin_home.html'">BACK</button>
+    </div>
+
+    <!-- Create Section -->
+    <div class="create-card">
+        <h3 style="margin-bottom: 15px;">Create New Code</h3>
+        <div class="form-grid">
+            <div class="input-group">
+                <label>Code Name (e.g. JOIN50)</label>
+                <input type="text" id="c_name" placeholder="Enter Code">
+            </div>
+            <div class="input-group">
+                <label>Reward Type</label>
+                <select id="c_type">
+                    <option value="balance">Dollar Balance ($)</option>
+                    <option value="credit">Plan Credits (Cr)</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label>Amount</label>
+                <input type="number" id="c_amount" placeholder="e.g. 5">
+            </div>
+        </div>
+        <button class="create-btn" onclick="createCode()">GENERATE CODE</button>
+    </div>
+
+    <h3 style="color:#fff; margin-bottom: 20px;">Active Codes</h3>
+    <div id="loading" style="color:#666;">Loading...</div>
+    <div class="code-list" id="list">
+        <!-- JS will load list here -->
+    </div>
+
+    <script>
+        auth.onAuthStateChanged(user => {
+            if(user && user.email === "rafsanvai388@gmail.com") {
+                loadCodes();
+            } else {
+                window.location.href = "Admin_login.html";
+            }
+        });
+
+        // 1. Create Code
+        function createCode() {
+            const name = document.getElementById('c_name').value.trim().toUpperCase();
+            const type = document.getElementById('c_type').value;
+            const amount = parseFloat(document.getElementById('c_amount').value);
+
+            if(!name || !amount) {
+                alert("Please fill all fields"); return;
+            }
+
+            db.ref('bonusCodes/' + name).set({
+                type: type,
+                amount: amount
+            }).then(() => {
+                alert("Code Created Successfully!");
+                document.getElementById('c_name').value = "";
+                document.getElementById('c_amount').value = "";
+            });
+        }
+
+        // 2. Load Codes
+        function loadCodes() {
+            db.ref('bonusCodes').on('value', snap => {
+                const list = document.getElementById('list');
+                document.getElementById('loading').style.display = 'none';
+                list.innerHTML = "";
+
+                if(!snap.exists()) {
+                    list.innerHTML = "<p>No active codes found.</p>"; return;
+                }
+
+                snap.forEach(child => {
+                    const code = child.key;
+                    const data = child.val();
+                    
+                    const label = data.type === 'balance' ? '$' : ' Credits';
+                    const displayAmount = data.type === 'balance' ? `$${data.amount}` : `${data.amount} Credits`;
+
+                    const html = `
+                        <div class="code-card">
+                            <div>
+                                <div class="c-name">${code}</div>
+                                <div class="c-detail">Reward: <span style="color:#fff">${displayAmount}</span></div>
+                            </div>
+                            <button class="btn-del" onclick="deleteCode('${code}')"><i class="fas fa-trash"></i></button>
+                        </div>
+                    `;
+                    list.innerHTML += html;
+                });
+            });
+        }
+
+        // 3. Delete Code
+        function deleteCode(codeName) {
+            if(confirm("Delete code: " + codeName + "?")) {
+                db.ref('bonusCodes/' + codeName).remove();
+            }
+        }
+    </script>
+</body>
+</html>

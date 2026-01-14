@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Ban/Unban</title>
+
+    <!-- Google Fonts & CSS -->
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <!-- FIREBASE -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDR38gO9SBcE3qcVvFHlpyE5YdEqo0n2XU",
+            authDomain: "task38-f7daa.firebaseapp.com",
+            databaseURL: "https://task38-f7daa-default-rtdb.firebaseio.com",
+            projectId: "task38-f7daa",
+            storageBucket: "task38-f7daa.firebasestorage.app",
+            messagingSenderId: "655282407518",
+            appId: "1:655282407518:web:637dd6ac82b6c5e6018ccf"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const auth = firebase.auth();
+    </script>
+
+    <style>
+        * { box-sizing: border-box; }
+        body { background-color: #050505; color: #fff; font-family: 'Montserrat', sans-serif; padding: 20px; }
+        
+        /* Header */
+        .header { display: flex; justify-content: space-between; border-bottom: 2px solid #d4af37; padding-bottom: 15px; margin-bottom: 20px; }
+        .title { color: #d4af37; font-family: 'Share Tech Mono', monospace; font-size: 1.5rem; }
+        .back-btn { background: #333; color: #fff; border: none; padding: 8px 15px; cursor: pointer; }
+
+        /* Search Bar */
+        .search-container {
+            background: #111; padding: 15px; border-radius: 8px; margin-bottom: 20px;
+            display: flex; gap: 10px; border: 1px solid #333;
+        }
+        .search-input {
+            flex: 1; background: #000; border: 1px solid #444; color: #fff; padding: 10px; outline: none;
+        }
+        .filter-btn {
+            background: #333; color: #aaa; border: none; padding: 0 15px; cursor: pointer; font-weight: bold;
+        }
+        .filter-btn.active { background: #d4af37; color: #000; }
+
+        /* User List Grid */
+        .user-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
+
+        .user-card {
+            background: #0f0f0f; border: 1px solid #333; padding: 15px; border-radius: 8px;
+            position: relative; transition: 0.2s;
+        }
+        
+        /* Banned Style */
+        .user-card.banned {
+            border: 2px solid #c0392b; background: rgba(192, 57, 43, 0.1);
+        }
+        .banned-badge {
+            position: absolute; top: 10px; right: 10px; background: #c0392b; color: white;
+            padding: 2px 8px; font-size: 0.7rem; border-radius: 3px; font-weight: bold; display: none;
+        }
+        .user-card.banned .banned-badge { display: block; }
+
+        .u-info { margin-bottom: 10px; font-size: 0.9rem; color: #ccc; }
+        .u-info strong { color: #888; display: inline-block; width: 60px; }
+        
+        .action-btn { width: 100%; padding: 10px; border: none; font-weight: bold; cursor: pointer; margin-top: 5px; }
+        .btn-ban { background: #c0392b; color: #fff; }
+        .btn-unban { background: #27ae60; color: #fff; }
+        
+        .btn-ban:hover { background: #e74c3c; }
+        .btn-unban:hover { background: #2ecc71; }
+
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="title">BAN / UNBAN SYSTEM</div>
+        <button class="back-btn" onclick="window.location.href='Admin_home.html'">BACK</button>
+    </div>
+
+    <div class="search-container">
+        <input type="text" id="searchInput" class="search-input" placeholder="Search by Name, Email or UID..." onkeyup="filterList()">
+        <button class="filter-btn active" onclick="setFilter('all', this)">ALL</button>
+        <button class="filter-btn" onclick="setFilter('banned', this)">BANNED</button>
+    </div>
+
+    <div id="loading" style="text-align:center; color:#666;">Loading users...</div>
+    <div class="user-grid" id="userList"></div>
+
+    <script>
+        let allUsers = [];
+        let currentFilter = 'all';
+
+        auth.onAuthStateChanged(user => {
+            if(user && user.email === "rafsanvai388@gmail.com") {
+                loadUsers();
+            } else {
+                window.location.href = "Admin_login.html";
+            }
+        });
+
+        function loadUsers() {
+            db.ref('users').on('value', snap => {
+                allUsers = [];
+                document.getElementById('loading').style.display = 'none';
+                
+                if(snap.exists()) {
+                    snap.forEach(child => {
+                        allUsers.push(child.val());
+                    });
+                    renderUsers(allUsers);
+                }
+            });
+        }
+
+        function renderUsers(users) {
+            const list = document.getElementById('userList');
+            list.innerHTML = "";
+
+            users.forEach(u => {
+                const isBanned = u.isBanned === true;
+                
+                // Filter Logic
+                if(currentFilter === 'banned' && !isBanned) return;
+
+                const cardClass = isBanned ? 'user-card banned' : 'user-card';
+                const btnHtml = isBanned 
+                    ? `<button class="action-btn btn-unban" onclick="toggleBan('${u.uid}', false)">UNBAN USER</button>`
+                    : `<button class="action-btn btn-ban" onclick="toggleBan('${u.uid}', true)">BAN USER</button>`;
+
+                const html = `
+                    <div class="${cardClass}">
+                        <div class="banned-badge">BANNED</div>
+                        <div class="u-info"><strong>Name:</strong> ${u.name}</div>
+                        <div class="u-info"><strong>Email:</strong> ${u.email}</div>
+                        <div class="u-info"><strong>UID:</strong> ${u.uid}</div>
+                        <div class="u-info"><strong>Balance:</strong> $${u.balance || 0}</div>
+                        
+                        ${btnHtml}
+                    </div>
+                `;
+                list.innerHTML += html;
+            });
+
+            if(list.innerHTML === "") {
+                list.innerHTML = "<p style='color:#555; padding:10px;'>No users match criteria.</p>";
+            }
+        }
+
+        function filterList() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            
+            const filtered = allUsers.filter(u => {
+                return (u.name && u.name.toLowerCase().includes(query)) ||
+                       (u.email && u.email.toLowerCase().includes(query)) ||
+                       (u.uid && u.uid.includes(query));
+            });
+            
+            renderUsers(filtered);
+        }
+
+        function setFilter(type, btn) {
+            currentFilter = type;
+            // Update active button visual
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            
+            // Re-render with new filter
+            filterList(); // This calls renderUsers internally
+        }
+
+        function toggleBan(uid, status) {
+            const action = status ? "BAN" : "UNBAN";
+            if(confirm(`Are you sure you want to ${action} this user?`)) {
+                db.ref('users/' + uid).update({
+                    isBanned: status
+                }).then(() => {
+                    alert(`User has been ${status ? 'BANNED' : 'UNBANNED'}.`);
+                });
+            }
+        }
+    </script>
+</body>
+</html>

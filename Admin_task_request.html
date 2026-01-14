@@ -59,7 +59,7 @@
             else { loadPending(); loadReview(); }
         });
 
-        // 1. PENDING
+        // 1. PENDING LOAD
         function loadPending() {
             db.ref('tasks').orderByChild('status').equalTo('pending').on('value', snap => {
                 const list = document.getElementById('pending_list');
@@ -94,7 +94,7 @@
             db.ref('tasks/' + uid).update({ status: 'active', adminData: adminData, startTime: Date.now() });
         }
 
-        // 2. REVIEW
+        // 2. REVIEW LOAD
         function loadReview() {
             db.ref('tasks').orderByChild('status').equalTo('review').on('value', snap => {
                 const list = document.getElementById('review_list');
@@ -124,42 +124,41 @@
 
         function copy(t) { navigator.clipboard.writeText(t); alert("Copied!"); }
 
-        // --- MAIN LOGIC UPDATE (COMMISSION & TARGETS) ---
+        // --- CORE LOGIC: APPROVAL ---
         function approveTask(uid) {
             const payAmount = parseFloat(document.getElementById('pay_'+uid).value) || 0;
 
             if(confirm(`Approve? User gets $${payAmount}`)) {
-                // 1. Get User Data
                 db.ref('users/' + uid).once('value', snapshot => {
                     if(snapshot.exists()) {
                         const userData = snapshot.val();
                         
-                        // User Stats Update
+                        // 1. Update Worker Stats
                         const newBal = (parseFloat(userData.balance) || 0) + payAmount;
                         const newTotal = (parseFloat(userData.totalProfit) || 0) + payAmount;
-                        const tasksDone = (userData.totalTasksDone || 0) + 1;
+                        const tasksDone = (userData.totalTasksDone || 0) + 1; // Increment Total Task
 
-                        // 2. Update Worker (The User who did the task)
-                        let userUpdates = {
+                        let updates = {
                             balance: newBal,
                             totalProfit: newTotal,
                             totalTasksDone: tasksDone,
                             todayProfit: (parseFloat(userData.todayProfit)||0) + payAmount
                         };
 
-                        // 3. Update Worker's OWN Active Plan (Task Count)
+                        // 2. Update Worker's Own Target Progress
                         if(userData.activePlan) {
-                            userUpdates['activePlan/currentTask'] = (userData.activePlan.currentTask || 0) + 1;
+                            const myTasks = (userData.activePlan.currentTask || 0) + 1;
+                            updates['activePlan/currentTask'] = myTasks;
                         }
 
-                        db.ref('users/' + uid).update(userUpdates).then(() => {
+                        db.ref('users/' + uid).update(updates).then(() => {
                             
-                            // 4. HANDLE UPLINE (Referrer Logic)
+                            // 3. HANDLE UPLINE REWARDS (The Referral Logic)
                             if (userData.referredBy && userData.referredBy !== 'none') {
                                 handleUplineRewards(userData.referredBy, payAmount, tasksDone);
                             }
 
-                            // 5. Close Task
+                            // 4. Finish Task
                             db.ref('tasks/' + uid).update({ status: 'completed' });
                             alert("Task Approved!");
                         });
@@ -170,36 +169,38 @@
             }
         }
 
-        // Function to Handle Commission & Target for Upline
+        // --- UPLINE LOGIC (Commission + Target Count) ---
         function handleUplineRewards(refCode, payAmount, workerTotalTasks) {
             db.ref('users').orderByChild('myRefCode').equalTo(refCode).once('value', snap => {
                 if(snap.exists()) {
                     snap.forEach(u => {
                         const upUid = u.key;
                         const upData = u.val();
-                        
                         let updates = {};
 
-                        // A. 20% COMMISSION Logic
+                        // A. 20% COMMISSION (Always get this)
                         const comm = payAmount * 0.20;
                         updates['balance'] = (parseFloat(upData.balance) || 0) + comm;
                         updates['totalProfit'] = (parseFloat(upData.totalProfit) || 0) + comm;
 
-                        // B. TARGET UPDATE Logic (If Upline has an Active Plan)
+                        // B. TARGET UPDATE (If Upline has an active plan)
                         if (upData.activePlan) {
-                            // 1. Task Count: Downline did a task -> Upline's Task Target increases
-                            // "tar target oikhane o 2 task add hobe" (Assuming 1 task done = 1 count added)
+                            
+                            // 1. Task Count Contribution (Optional based on requirements)
+                            // "tar target oikhane o 2 task add hobe" -> If you want downline tasks to count for upline tasks:
                             const currentTaskCount = (upData.activePlan.currentTask || 0) + 1;
                             updates['activePlan/currentTask'] = currentTaskCount;
 
-                            // 2. Referral Count: Only if Worker finished exactly 2 tasks
+                            // 2. REFERRAL COUNT (The Critical Logic)
+                            // "Referral count only if referred user completes 2 tasks"
                             if (workerTotalTasks === 2) {
                                 const currentRefCount = (upData.activePlan.currentRef || 0) + 1;
                                 updates['activePlan/currentRef'] = currentRefCount;
+                                console.log("Valid Referral Counted!");
                             }
                         }
 
-                        // Apply Updates to Upline
+                        // Apply Updates
                         db.ref('users/' + upUid).update(updates);
                     });
                 }

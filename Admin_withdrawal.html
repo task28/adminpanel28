@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Withdrawals</title>
+
+    <!-- Google Fonts & CSS -->
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <!-- FIREBASE -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDR38gO9SBcE3qcVvFHlpyE5YdEqo0n2XU",
+            authDomain: "task38-f7daa.firebaseapp.com",
+            databaseURL: "https://task38-f7daa-default-rtdb.firebaseio.com",
+            projectId: "task38-f7daa",
+            storageBucket: "task38-f7daa.firebasestorage.app",
+            messagingSenderId: "655282407518",
+            appId: "1:655282407518:web:637dd6ac82b6c5e6018ccf"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const auth = firebase.auth();
+    </script>
+
+    <style>
+        body { background-color: #050505; color: #fff; font-family: 'Montserrat', sans-serif; padding: 20px; }
+        
+        /* Header */
+        .header { display: flex; justify-content: space-between; border-bottom: 2px solid #d4af37; padding-bottom: 15px; margin-bottom: 20px; }
+        .title { color: #d4af37; font-family: 'Share Tech Mono', monospace; font-size: 1.5rem; }
+        .back-btn { background: #333; color: #fff; border: none; padding: 8px 15px; cursor: pointer; }
+
+        /* Settings Bar */
+        .settings-bar {
+            background: #111; padding: 15px; border-radius: 8px; border: 1px solid #333;
+            margin-bottom: 30px; display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-end;
+        }
+        .set-group label { display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 5px; }
+        .set-group input {
+            background: #000; border: 1px solid #444; color: #fff; padding: 8px; width: 250px;
+        }
+        .save-btn {
+            background: #d4af37; color: #000; border: none; padding: 9px 20px; font-weight: bold; cursor: pointer;
+        }
+
+        /* Requests Grid */
+        .grid-container {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px;
+        }
+
+        .card {
+            background: #0f0f0f; border: 1px solid #333; padding: 20px; border-radius: 8px;
+            position: relative; overflow: hidden;
+        }
+        .card::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: #d4af37;
+        }
+
+        .amount { font-size: 1.8rem; font-weight: bold; color: #d4af37; margin-bottom: 5px; }
+        .method-badge { 
+            background: #222; color: #aaa; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; 
+            text-transform: uppercase; border: 1px solid #444;
+        }
+
+        .detail-row { margin-top: 10px; font-size: 0.9rem; color: #ccc; word-break: break-all; }
+        .detail-row strong { color: #666; font-size: 0.8rem; display: block; }
+        
+        .copy-icon { color: #d4af37; cursor: pointer; margin-left: 5px; }
+
+        .btn-group { display: flex; gap: 10px; margin-top: 20px; }
+        .btn-pay {
+            flex: 1; padding: 10px; background: #27ae60; color: white; border: none; cursor: pointer; font-weight: bold;
+        }
+        .btn-reject {
+            flex: 1; padding: 10px; background: #c0392b; color: white; border: none; cursor: pointer; font-weight: bold;
+        }
+        .btn-pay:hover { background: #2ecc71; }
+        .btn-reject:hover { background: #e74c3c; }
+
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="title">WITHDRAWALS</div>
+        <button class="back-btn" onclick="window.location.href='Admin_home.html'">BACK</button>
+    </div>
+
+    <!-- SETTINGS SECTION -->
+    <div class="settings-bar">
+        <div class="set-group">
+            <label>Admin Wallet (For Credit Payments)</label>
+            <input id="adminWallet" placeholder="0x...">
+        </div>
+        <div class="set-group">
+            <label>Min Withdraw Limit ($)</label>
+            <input id="minWithdraw" type="number" placeholder="2">
+        </div>
+        <button class="save-btn" onclick="saveSettings()">SAVE SETTINGS</button>
+    </div>
+
+    <h3 style="color:#fff; margin-bottom:15px;">PENDING REQUESTS</h3>
+    <div id="loading" style="color:#666;">Loading...</div>
+    
+    <div class="grid-container" id="withdrawList">
+        <!-- Cards inserted via JS -->
+    </div>
+
+    <script>
+        auth.onAuthStateChanged(user => {
+            if(user && user.email === "rafsanvai388@gmail.com") {
+                loadSettings();
+                loadWithdrawals();
+            } else {
+                window.location.href = "Admin_login.html";
+            }
+        });
+
+        // 1. SETTINGS LOGIC
+        function loadSettings() {
+            db.ref('adminSettings').once('value', s => {
+                const d = s.val();
+                if(d) {
+                    document.getElementById('adminWallet').value = d.wallet || "";
+                    document.getElementById('minWithdraw').value = d.minWithdraw || 2;
+                }
+            });
+        }
+
+        function saveSettings() {
+            const w = document.getElementById('adminWallet').value;
+            const m = document.getElementById('minWithdraw').value;
+            db.ref('adminSettings').update({
+                wallet: w,
+                minWithdraw: parseFloat(m)
+            }).then(() => alert("Settings Saved!"));
+        }
+
+        // 2. WITHDRAWAL LIST LOGIC
+        function loadWithdrawals() {
+            db.ref('withdrawals').orderByChild('status').equalTo('pending').on('value', snap => {
+                const list = document.getElementById('withdrawList');
+                document.getElementById('loading').style.display = 'none';
+                list.innerHTML = "";
+
+                if(!snap.exists()) {
+                    list.innerHTML = "<p style='color:#555;'>No pending requests.</p>";
+                    return;
+                }
+
+                snap.forEach(child => {
+                    const key = child.key; // Unique ID of withdrawal
+                    const data = child.val();
+                    const date = new Date(data.date).toLocaleString();
+
+                    const html = `
+                        <div class="card">
+                            <div class="amount">$${parseFloat(data.amount).toFixed(2)}</div>
+                            <span class="method-badge">${data.method}</span>
+
+                            <div class="detail-row">
+                                <strong>DESTINATION / ID</strong>
+                                ${data.destination} <i class="fas fa-copy copy-icon" onclick="navigator.clipboard.writeText('${data.destination}')"></i>
+                            </div>
+
+                            <div class="detail-row">
+                                <strong>USER UID</strong>
+                                ${data.uid}
+                            </div>
+                            
+                            <div class="detail-row">
+                                <strong>DATE</strong>
+                                ${date}
+                            </div>
+
+                            <div class="btn-group">
+                                <button class="btn-pay" onclick="approveWithdraw('${key}')">PAY DONE</button>
+                                <button class="btn-reject" onclick="rejectWithdraw('${key}', '${data.uid}', ${data.amount})">REJECT</button>
+                            </div>
+                        </div>
+                    `;
+                    list.innerHTML += html;
+                });
+            });
+        }
+
+        function approveWithdraw(key) {
+            if(confirm("Mark this as PAID? (Ensure you sent the money manually)")) {
+                db.ref('withdrawals/' + key).update({
+                    status: 'paid'
+                });
+            }
+        }
+
+        function rejectWithdraw(key, uid, amount) {
+            if(confirm("Reject and REFUND $" + amount + " to user balance?")) {
+                // 1. Get current balance
+                db.ref('users/' + uid).once('value', s => {
+                    const curBal = parseFloat(s.val().balance || 0);
+                    const newBal = curBal + parseFloat(amount);
+                    
+                    // 2. Update Balance
+                    db.ref('users/' + uid).update({ balance: newBal }).then(() => {
+                        // 3. Mark withdrawal as rejected
+                        db.ref('withdrawals/' + key).update({ status: 'rejected' });
+                        alert("Refunded & Rejected.");
+                    });
+                });
+            }
+        }
+    </script>
+</body>
+</html>

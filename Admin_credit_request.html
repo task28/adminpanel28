@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Credit Requests</title>
+
+    <!-- Google Fonts & CSS -->
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <!-- FIREBASE -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDR38gO9SBcE3qcVvFHlpyE5YdEqo0n2XU",
+            authDomain: "task38-f7daa.firebaseapp.com",
+            databaseURL: "https://task38-f7daa-default-rtdb.firebaseio.com",
+            projectId: "task38-f7daa",
+            storageBucket: "task38-f7daa.firebasestorage.app",
+            messagingSenderId: "655282407518",
+            appId: "1:655282407518:web:637dd6ac82b6c5e6018ccf"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const auth = firebase.auth();
+    </script>
+
+    <style>
+        body { background-color: #050505; color: #fff; font-family: 'Montserrat', sans-serif; padding: 20px; }
+        
+        .header { display: flex; justify-content: space-between; border-bottom: 2px solid #d4af37; padding-bottom: 15px; margin-bottom: 20px; }
+        .title { color: #d4af37; font-family: 'Share Tech Mono', monospace; font-size: 1.5rem; }
+        .back-btn { background: #333; color: #fff; border: none; padding: 8px 15px; cursor: pointer; }
+
+        /* SETTINGS PANEL */
+        .settings-panel {
+            background: #111; padding: 20px; border-radius: 10px; border: 1px solid #d4af37;
+            margin-bottom: 30px; display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-end;
+        }
+        .set-group label { display: block; color: #aaa; margin-bottom: 5px; font-size: 0.8rem; font-weight: bold; }
+        .set-group input {
+            background: #000; border: 1px solid #444; color: #fff; padding: 10px; width: 150px; text-align: center;
+        }
+        .save-btn {
+            background: #d4af37; color: #000; font-weight: bold; padding: 11px 25px; border: none; cursor: pointer;
+        }
+
+        /* GRID */
+        .req-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+        
+        .card { 
+            background: #0f0f0f; border: 1px solid #333; padding: 20px; border-radius: 8px; 
+            border-left: 4px solid #2ecc71; position: relative;
+        }
+        
+        .row { margin-bottom: 8px; font-size: 0.9rem; color: #ccc; word-break: break-all; }
+        .row strong { color: #888; display: block; font-size: 0.75rem; }
+        
+        .hl-amount { font-size: 1.5rem; color: #2ecc71; font-weight: bold; margin-bottom: 10px; }
+        .bonus-tag { background: #d4af37; color: #000; font-size: 0.7rem; padding: 2px 5px; border-radius: 3px; font-weight: bold; margin-left: 10px; }
+
+        .btn-approve { width: 100%; padding: 12px; background: #d4af37; color: #000; border: none; cursor: pointer; font-weight: bold; margin-top: 10px; }
+        .btn-reject { width: 100%; padding: 8px; background: #c0392b; color: #fff; border: none; cursor: pointer; margin-top: 5px; font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="title">CREDIT REQUESTS</div>
+        <button class="back-btn" onclick="window.location.href='Admin_home.html'">BACK</button>
+    </div>
+
+    <!-- PRICE & DISCOUNT SETTINGS -->
+    <div class="settings-panel">
+        <div class="set-group">
+            <label>Credits Per $1 (Rate)</label>
+            <input type="number" id="rateVal" placeholder="Default: 5">
+        </div>
+        <div class="set-group">
+            <label>Bonus % (Discount)</label>
+            <input type="number" id="bonusVal" placeholder="Default: 0">
+        </div>
+        <button class="save-btn" onclick="saveSettings()">UPDATE PRICE</button>
+    </div>
+
+    <div id="loading" style="color: #666;">Loading requests...</div>
+    <div class="req-grid" id="requestList"></div>
+
+    <script>
+        let currentRate = 5; // Default
+        let currentBonus = 0; // Default %
+
+        auth.onAuthStateChanged(user => {
+            if(user && user.email === "rafsanvai388@gmail.com") {
+                loadSettingsAndRequests();
+            } else {
+                window.location.href = "Admin_login.html";
+            }
+        });
+
+        // 1. Load Settings First, Then Requests
+        function loadSettingsAndRequests() {
+            db.ref('adminSettings/creditRules').on('value', snap => {
+                const rules = snap.val();
+                if(rules) {
+                    currentRate = parseFloat(rules.rate) || 5;
+                    currentBonus = parseFloat(rules.bonus) || 0;
+                    
+                    document.getElementById('rateVal').value = currentRate;
+                    document.getElementById('bonusVal').value = currentBonus;
+                }
+                // Reload list with new rates
+                loadRequests();
+            });
+        }
+
+        // 2. Save Settings
+        function saveSettings() {
+            const r = parseFloat(document.getElementById('rateVal').value);
+            const b = parseFloat(document.getElementById('bonusVal').value);
+
+            db.ref('adminSettings/creditRules').set({
+                rate: r,
+                bonus: b
+            }).then(() => alert("Price & Discount Updated!"));
+        }
+
+        // 3. Load Requests
+        function loadRequests() {
+            db.ref('credit_requests').orderByChild('status').equalTo('pending').on('value', snap => {
+                const list = document.getElementById('requestList');
+                document.getElementById('loading').style.display = 'none';
+                list.innerHTML = "";
+
+                if(!snap.exists()) {
+                    list.innerHTML = "<p>No Pending Credit Requests.</p>";
+                    return;
+                }
+
+                snap.forEach(child => {
+                    const data = child.val();
+                    const key = child.key;
+                    
+                    // Calculation Logic
+                    const dollars = parseFloat(data.amount);
+                    let baseCredits = dollars * currentRate;
+                    let bonusCredits = (baseCredits * currentBonus) / 100;
+                    let totalCredits = baseCredits + bonusCredits;
+
+                    // Badge Logic
+                    let bonusHtml = currentBonus > 0 ? `<span class="bonus-tag">+${currentBonus}% BONUS</span>` : '';
+
+                    const html = `
+                        <div class="card">
+                            <div class="hl-amount">$${data.amount} <i class="fas fa-arrow-right" style="font-size:1rem; color:#666;"></i> ${totalCredits} Cr ${bonusHtml}</div>
+                            
+                            <div class="row"><strong>SENDER ADDRESS</strong> ${data.senderAddress}</div>
+                            <div class="row"><strong>USER UID</strong> ${data.uid}</div>
+                            <div class="row"><strong>DATE</strong> ${new Date(data.date).toLocaleString()}</div>
+                            
+                            <button class="btn-approve" onclick="approveCredit('${key}', '${data.uid}', ${totalCredits})">APPROVE (${totalCredits} CR)</button>
+                            <button class="btn-reject" onclick="rejectCredit('${key}')">REJECT</button>
+                        </div>
+                    `;
+                    list.innerHTML += html;
+                });
+            });
+        }
+
+        function approveCredit(key, uid, credits) {
+            if(confirm(`Confirm adding ${credits} Credits to User?`)) {
+                
+                // Get Current Credits
+                db.ref('users/' + uid).once('value', s => {
+                    if(!s.exists()) { alert("User not found!"); return; }
+                    
+                    const oldCreds = parseFloat(s.val().credits || 0);
+                    
+                    // Update
+                    db.ref('users/' + uid).update({
+                        credits: oldCreds + credits
+                    }).then(() => {
+                        db.ref('credit_requests/' + key).update({ status: 'approved' });
+                        alert("Credits Added!");
+                    });
+                });
+            }
+        }
+
+        function rejectCredit(key) {
+            if(confirm("Reject this request?")) {
+                db.ref('credit_requests/' + key).update({ status: 'rejected' });
+            }
+        }
+    </script>
+</body>
+</html>

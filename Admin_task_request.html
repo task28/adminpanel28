@@ -4,104 +4,40 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin - Task Manager</title>
-
-    <!-- Google Fonts & Icons -->
+    <!-- Fonts & Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-
-    <!-- FIREBASE SDK -->
+    <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-
     <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyDR38gO9SBcE3qcVvFHlpyE5YdEqo0n2XU",
-            authDomain: "task38-f7daa.firebaseapp.com",
-            databaseURL: "https://task38-f7daa-default-rtdb.firebaseio.com",
-            projectId: "task38-f7daa",
-            storageBucket: "task38-f7daa.firebasestorage.app",
-            messagingSenderId: "655282407518",
-            appId: "1:655282407518:web:637dd6ac82b6c5e6018ccf"
-        };
+        const firebaseConfig = { apiKey: "AIzaSyDR38gO9SBcE3qcVvFHlpyE5YdEqo0n2XU", authDomain: "task38-f7daa.firebaseapp.com", databaseURL: "https://task38-f7daa-default-rtdb.firebaseio.com", projectId: "task38-f7daa", storageBucket: "task38-f7daa.firebasestorage.app", messagingSenderId: "655282407518", appId: "1:655282407518:web:637dd6ac82b6c5e6018ccf" };
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.database();
     </script>
-
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        body {
-            background-color: #050505;
-            color: #ccc;
-            font-family: 'Montserrat', sans-serif;
-            padding: 20px;
-        }
-
-        /* Header */
-        .header {
-            display: flex; align-items: center; justify-content: space-between;
-            border-bottom: 2px solid #d4af37; padding-bottom: 15px; margin-bottom: 20px;
-        }
+        body { background: #050505; color: #ccc; font-family: 'Montserrat', sans-serif; padding: 20px; }
+        .header { display: flex; justify-content: space-between; border-bottom: 2px solid #d4af37; padding-bottom: 15px; margin-bottom: 20px; }
         .title { color: #d4af37; font-family: 'Share Tech Mono', monospace; font-size: 1.5rem; }
         .back-btn { background: #333; color: #fff; border: none; padding: 8px 15px; cursor: pointer; }
-
-        /* Sections */
-        .section-title {
-            color: #fff; font-size: 1.1rem; margin-bottom: 15px; border-left: 4px solid #d4af37; padding-left: 10px;
-            display: flex; justify-content: space-between; align-items: center;
-        }
-        .count-badge { background: #d4af37; color: #000; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; }
-
-        /* Grid Layout */
-        .grid-container {
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px; margin-bottom: 40px;
-        }
-
-        /* Cards */
-        .card {
-            background: #111; border: 1px solid #333; padding: 20px; border-radius: 8px;
-            position: relative; overflow: hidden;
-        }
-        .card-header {
-            display: flex; justify-content: space-between; margin-bottom: 15px;
-            font-family: 'Share Tech Mono', monospace; color: #d4af37; font-size: 0.9rem;
-        }
         
-        /* Form Inputs */
+        .section-title { color: #fff; margin: 20px 0 10px; border-left: 4px solid #d4af37; padding-left: 10px; font-weight: bold; }
+        .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px; }
+        .card { background: #111; border: 1px solid #333; padding: 20px; border-radius: 8px; }
+        
         .input-group { margin-bottom: 10px; }
-        .input-group label { display: block; font-size: 0.7rem; color: #666; margin-bottom: 3px; }
-        .input-group input {
-            width: 100%; background: #000; border: 1px solid #444; color: #fff; padding: 8px;
-            font-family: monospace; outline: none;
-        }
-        .input-group input:focus { border-color: #d4af37; }
-
-        /* Review Data Display */
-        .data-display {
-            background: #000; padding: 10px; border: 1px dashed #444; margin-bottom: 10px;
-            font-family: monospace; word-break: break-all; color: #fff; cursor: pointer;
-        }
-        .data-display:hover { background: #1a1a1a; border-color: #d4af37; }
-        .data-display strong { color: #888; }
-
-        /* Buttons */
-        .btn-action {
-            width: 100%; padding: 10px; border: none; font-weight: bold; cursor: pointer; margin-top: 5px;
-        }
-        .btn-send { background: #d4af37; color: #000; }
-        .btn-approve { background: #27ae60; color: #fff; margin-bottom: 5px; }
-        .btn-reject { background: #c0392b; color: #fff; }
+        .input-group label { display: block; font-size: 0.7rem; color: #666; }
+        .input-group input { width: 100%; background: #000; border: 1px solid #444; color: #fff; padding: 8px; }
         
-        .btn-send:hover { background: #fff; }
-        .btn-approve:hover { background: #2ecc71; }
-        .btn-reject:hover { background: #e74c3c; }
-
-        .profit-input {
-            width: 100%; padding: 8px; margin-bottom: 5px; background: #222; border: 1px solid #27ae60; color: #fff; text-align: center;
-        }
-
+        .data-display { background: #000; padding: 10px; border: 1px dashed #444; margin-bottom: 10px; cursor: pointer; word-break: break-all; }
+        
+        .btn-action { width: 100%; padding: 10px; border: none; font-weight: bold; cursor: pointer; margin-top: 5px; }
+        .btn-send { background: #d4af37; color: #000; }
+        .btn-approve { background: #27ae60; color: #fff; }
+        .btn-reject { background: #c0392b; color: #fff; }
+        .profit-input { width: 100%; padding: 8px; margin-bottom: 5px; background: #222; border: 1px solid #27ae60; color: #fff; text-align: center; }
     </style>
 </head>
 <body>
@@ -111,75 +47,38 @@
         <button class="back-btn" onclick="window.location.href='Admin_home.html'">BACK</button>
     </div>
 
-    <!-- PENDING REQUESTS -->
-    <div class="section-title">
-        <span>PENDING REQUESTS (Assign Data)</span>
-        <span class="count-badge" id="count_pending">0</span>
-    </div>
-    <div class="grid-container" id="pending_list">
-        <p style="padding:20px; color:#555;">Loading...</p>
-    </div>
+    <div class="section-title">PENDING REQUESTS</div>
+    <div class="grid-container" id="pending_list">Loading...</div>
 
-    <hr style="border-color:#333; margin: 30px 0;">
-
-    <!-- SUBMITTED REVIEWS -->
-    <div class="section-title">
-        <span>SUBMITTED FOR REVIEW (Approve/Reject)</span>
-        <span class="count-badge" id="count_review">0</span>
-    </div>
-    <div class="grid-container" id="review_list">
-        <p style="padding:20px; color:#555;">Loading...</p>
-    </div>
+    <div class="section-title">SUBMITTED FOR REVIEW</div>
+    <div class="grid-container" id="review_list">Loading...</div>
 
     <script>
-        // Check Admin Auth
         auth.onAuthStateChanged(user => {
-            if(!user || user.email !== "rafsanvai388@gmail.com") {
-                window.location.href = "Admin_login.html";
-            } else {
-                loadPending();
-                loadReview();
-            }
+            if(!user || user.email !== "rafsanvai388@gmail.com") window.location.href = "Admin_login.html";
+            else { loadPending(); loadReview(); }
         });
 
-        // ==========================
-        // 1. PENDING REQUESTS
-        // ==========================
+        // 1. PENDING
         function loadPending() {
             db.ref('tasks').orderByChild('status').equalTo('pending').on('value', snap => {
                 const list = document.getElementById('pending_list');
                 list.innerHTML = "";
-                
-                if(!snap.exists()) {
-                    document.getElementById('count_pending').innerText = "0";
-                    list.innerHTML = "<p style='padding:10px;color:#555;'>No pending requests.</p>";
-                    return;
-                }
-
-                document.getElementById('count_pending').innerText = snap.numChildren();
+                if(!snap.exists()) { list.innerHTML = "<p>No pending requests.</p>"; return; }
 
                 snap.forEach(child => {
-                    const data = child.val();
                     const uid = child.key;
                     const randPass = "Pass" + Math.floor(Math.random()*10000);
-
-                    const html = `
+                    list.innerHTML += `
                         <div class="card">
-                            <div class="card-header">
-                                <span>UID: ${uid.substring(0,6)}...</span>
-                                <span>Pending</span>
-                            </div>
-                            
+                            <div style="color:#d4af37; margin-bottom:10px;">UID: ${uid.substring(0,6)}...</div>
                             <div class="input-group"><label>First Name</label><input id="fn_${uid}" placeholder="John"></div>
                             <div class="input-group"><label>Last Name</label><input id="ln_${uid}" placeholder="Doe"></div>
                             <div class="input-group"><label>DOB</label><input id="dob_${uid}" placeholder="01/01/1990"></div>
                             <div class="input-group"><label>Recovery</label><input id="rec_${uid}" placeholder="rec@gmail.com"></div>
                             <div class="input-group"><label>Pass</label><input id="pass_${uid}" value="${randPass}"></div>
-
                             <button class="btn-action btn-send" onclick="sendData('${uid}')">SEND DATA</button>
-                        </div>
-                    `;
-                    list.innerHTML += html;
+                        </div>`;
                 });
             });
         }
@@ -192,148 +91,122 @@
                 recovery: document.getElementById('rec_'+uid).value || "none",
                 pass: document.getElementById('pass_'+uid).value || "123456"
             };
-
-            db.ref('tasks/' + uid).update({
-                status: 'active',
-                adminData: adminData,
-                startTime: Date.now()
-            });
+            db.ref('tasks/' + uid).update({ status: 'active', adminData: adminData, startTime: Date.now() });
         }
 
-        // ==========================
-        // 2. REVIEW SUBMISSIONS
-        // ==========================
+        // 2. REVIEW
         function loadReview() {
             db.ref('tasks').orderByChild('status').equalTo('review').on('value', snap => {
                 const list = document.getElementById('review_list');
                 list.innerHTML = "";
-                
-                if(!snap.exists()) {
-                    document.getElementById('count_review').innerText = "0";
-                    list.innerHTML = "<p style='padding:10px;color:#555;'>No submissions.</p>";
-                    return;
-                }
-
-                document.getElementById('count_review').innerText = snap.numChildren();
+                if(!snap.exists()) { list.innerHTML = "<p>No submissions.</p>"; return; }
 
                 snap.forEach(child => {
                     const data = child.val();
-                    const uid = child.key; 
-                    
-                    // Error Handling for Missing Data
-                    let userEmail = "ERROR: No Data";
-                    let userPass = "ERROR: No Data";
-                    
-                    if(data.userSubmission) {
-                        userEmail = data.userSubmission.email || "Empty";
-                        userPass = data.userSubmission.pass || "Empty";
-                    }
+                    const uid = child.key;
+                    const email = data.userSubmission ? data.userSubmission.email : "Error";
+                    const pass = data.userSubmission ? data.userSubmission.pass : "Error";
 
-                    const html = `
+                    list.innerHTML += `
                         <div class="card" style="border-color: #2980b9;">
-                            <div class="card-header">
-                                <span style="color:#2980b9">SUBMISSION</span>
-                                <span>UID: ${uid.substring(0,6)}...</span>
-                            </div>
-
-                            <div class="data-display" onclick="copyText('${userEmail}')">
-                                <strong>Email:</strong> ${userEmail}
-                            </div>
-                            <div class="data-display" onclick="copyText('${userPass}')">
-                                <strong>Pass:</strong> ${userPass}
-                            </div>
-
-                            <div style="margin-top:15px;">
-                                <label style="color:#27ae60; font-size:0.8rem;">Pay Amount ($)</label>
+                            <div style="color:#2980b9; margin-bottom:10px;">SUBMISSION: ${uid.substring(0,6)}...</div>
+                            <div class="data-display" onclick="copy('${email}')">Email: ${email}</div>
+                            <div class="data-display" onclick="copy('${pass}')">Pass: ${pass}</div>
+                            <div style="margin-top:10px;">
                                 <input id="pay_${uid}" type="number" class="profit-input" value="0.11">
-                                
                                 <button class="btn-action btn-approve" onclick="approveTask('${uid}')">APPROVE</button>
                                 <button class="btn-action btn-reject" onclick="rejectTask('${uid}')">REJECT</button>
                             </div>
-                        </div>
-                    `;
-                    list.innerHTML += html;
+                        </div>`;
                 });
             });
         }
 
-        function copyText(txt) {
-            navigator.clipboard.writeText(txt);
-            alert("Copied!");
-        }
+        function copy(t) { navigator.clipboard.writeText(t); alert("Copied!"); }
 
-        // --- FIXED APPROVE FUNCTION ---
+        // --- MAIN LOGIC FOR 2 TASKS CONDITION ---
         function approveTask(uid) {
-            const inputVal = document.getElementById('pay_'+uid).value;
-            const payAmount = parseFloat(inputVal) || 0;
+            const payAmount = parseFloat(document.getElementById('pay_'+uid).value) || 0;
 
-            if(confirm(`Confirm APPROVE? User gets $${payAmount}`)) {
-                
-                // 1. Check if User exists
-                db.ref('users/' + uid).once('value')
-                .then(snapshot => {
+            if(confirm(`Approve? User gets $${payAmount}`)) {
+                db.ref('users/' + uid).once('value', snapshot => {
                     if(snapshot.exists()) {
-                        // User FOUND - Add Money
                         const userData = snapshot.val();
+                        
+                        // 1. Calculate New Stats
                         const newBal = (parseFloat(userData.balance) || 0) + payAmount;
                         const newTotal = (parseFloat(userData.totalProfit) || 0) + payAmount;
                         
-                        return db.ref('users/' + uid).update({
+                        // 2. Increment Task Count
+                        const tasksDone = (userData.totalTasksDone || 0) + 1;
+
+                        // 3. Update User
+                        db.ref('users/' + uid).update({
                             balance: newBal,
                             totalProfit: newTotal,
-                            todayProfit: (parseFloat(userData.todayProfit) || 0) + payAmount
+                            totalTasksDone: tasksDone,
+                            todayProfit: (parseFloat(userData.todayProfit)||0) + payAmount
                         }).then(() => {
-                            // Refer Commission
-                            if(userData.referredBy && userData.referredBy !== 'none') {
+                            // 4. CHECK REFERRAL TARGET LOGIC (THE 2 TASK RULE)
+                            if (tasksDone === 2 && userData.referredBy && userData.referredBy !== 'none') {
+                                // If this is exactly the 2nd task, count this user for the Referrer's Target
+                                updateReferrerTarget(userData.referredBy);
+                            }
+
+                            // 5. Normal Commission (20% Profit Share) - Always happens
+                            if (userData.referredBy && userData.referredBy !== 'none') {
                                 giveCommission(userData.referredBy, payAmount);
                             }
-                            return true; // Success
+
+                            // 6. Close Task
+                            db.ref('tasks/' + uid).update({ status: 'completed' });
+                            alert("Task Approved!");
                         });
                     } else {
-                        // User NOT FOUND - Ask to force delete
-                        if(confirm("User database a nai! Force delete task?")) {
-                            return true;
-                        } else {
-                            return false;
-                        }
+                        if(confirm("User not found! Delete task?")) db.ref('tasks/' + uid).remove();
                     }
-                })
-                .then(shouldComplete => {
-                    // 2. Complete Task
-                    if(shouldComplete) {
-                        db.ref('tasks/' + uid).update({ status: 'completed' })
-                        .then(() => alert("Task Approved Successfully!"))
-                        .catch(e => alert("Error: " + e.message));
-                    }
-                })
-                .catch(err => {
-                    console.error(err);
-                    alert("System Error: " + err.message);
                 });
             }
         }
 
+        // Logic to update Referrer's Plan Target
+        function updateReferrerTarget(refCode) {
+            db.ref('users').orderByChild('myRefCode').equalTo(refCode).once('value', snap => {
+                if(snap.exists()) {
+                    snap.forEach(u => {
+                        const refUid = u.key;
+                        const refData = u.val();
+
+                        // Check if Referrer has an ACTIVE Monthly/Weekly Plan
+                        if (refData.activePlan) {
+                            const currentRef = (refData.activePlan.currentRef || 0) + 1;
+                            
+                            // Update the Target Counter
+                            db.ref('users/' + refUid + '/activePlan').update({
+                                currentRef: currentRef
+                            });
+                            console.log("Target Updated for Referrer");
+                        }
+                    });
+                }
+            });
+        }
+
+        // Logic for 20% Commission
         function giveCommission(refCode, amount) {
             db.ref('users').orderByChild('myRefCode').equalTo(refCode).once('value', s => {
                 if(s.exists()) {
                     s.forEach(u => {
-                        const comm = amount * 0.20; // 20%
-                        const current = parseFloat(u.val().balance) || 0;
-                        const total = parseFloat(u.val().totalProfit) || 0;
-                        
-                        db.ref('users/' + u.key).update({
-                            balance: current + comm,
-                            totalProfit: total + comm
-                        });
+                        const comm = amount * 0.20;
+                        const cur = parseFloat(u.val().balance) || 0;
+                        db.ref('users/' + u.key).update({ balance: cur + comm });
                     });
                 }
             });
         }
 
         function rejectTask(uid) {
-            if(confirm("Reject this task?")) {
-                db.ref('tasks/' + uid).update({ status: 'rejected' });
-            }
+            if(confirm("Reject?")) db.ref('tasks/' + uid).update({ status: 'rejected' });
         }
     </script>
 </body>

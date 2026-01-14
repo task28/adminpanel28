@@ -81,8 +81,9 @@
         /* Review Data Display */
         .data-display {
             background: #000; padding: 10px; border: 1px dashed #444; margin-bottom: 10px;
-            font-family: monospace; word-break: break-all; color: #fff;
+            font-family: monospace; word-break: break-all; color: #fff; cursor: pointer;
         }
+        .data-display:hover { background: #1a1a1a; border-color: #d4af37; }
         .data-display strong { color: #888; }
 
         /* Buttons */
@@ -116,7 +117,7 @@
         <span class="count-badge" id="count_pending">0</span>
     </div>
     <div class="grid-container" id="pending_list">
-        <p style="padding:20px; color:#555;">No pending requests...</p>
+        <p style="padding:20px; color:#555;">Loading...</p>
     </div>
 
     <hr style="border-color:#333; margin: 30px 0;">
@@ -127,10 +128,11 @@
         <span class="count-badge" id="count_review">0</span>
     </div>
     <div class="grid-container" id="review_list">
-        <p style="padding:20px; color:#555;">Checking database...</p>
+        <p style="padding:20px; color:#555;">Loading...</p>
     </div>
 
     <script>
+        // Check Admin Auth
         auth.onAuthStateChanged(user => {
             if(!user || user.email !== "rafsanvai388@gmail.com") {
                 window.location.href = "Admin_login.html";
@@ -158,7 +160,7 @@
 
                 snap.forEach(child => {
                     const data = child.val();
-                    const uid = child.key; // Safe UID fetch
+                    const uid = child.key;
                     const randPass = "Pass" + Math.floor(Math.random()*10000);
 
                     const html = `
@@ -199,7 +201,7 @@
         }
 
         // ==========================
-        // 2. REVIEW SUBMISSIONS (FIXED)
+        // 2. REVIEW SUBMISSIONS
         // ==========================
         function loadReview() {
             db.ref('tasks').orderByChild('status').equalTo('review').on('value', snap => {
@@ -208,7 +210,7 @@
                 
                 if(!snap.exists()) {
                     document.getElementById('count_review').innerText = "0";
-                    list.innerHTML = "<p style='padding:10px;color:#555;'>No submissions to review.</p>";
+                    list.innerHTML = "<p style='padding:10px;color:#555;'>No submissions.</p>";
                     return;
                 }
 
@@ -216,19 +218,15 @@
 
                 snap.forEach(child => {
                     const data = child.val();
-                    const uid = child.key; // Use key as UID
+                    const uid = child.key; 
                     
-                    // --- BUG FIX: Handle Missing Data Gracefully ---
-                    let userEmail = "No Email Found";
-                    let userPass = "No Pass Found";
+                    // Error Handling for Missing Data
+                    let userEmail = "ERROR: No Data";
+                    let userPass = "ERROR: No Data";
                     
                     if(data.userSubmission) {
                         userEmail = data.userSubmission.email || "Empty";
                         userPass = data.userSubmission.pass || "Empty";
-                    } else {
-                        // If data is corrupt, still show card so admin can reject
-                        userEmail = "DATA ERROR"; 
-                        userPass = "DATA ERROR";
                     }
 
                     const html = `
@@ -261,36 +259,56 @@
 
         function copyText(txt) {
             navigator.clipboard.writeText(txt);
-            alert("Copied: " + txt);
+            alert("Copied!");
         }
 
+        // --- FIXED APPROVE FUNCTION ---
         function approveTask(uid) {
-            const payAmount = parseFloat(document.getElementById('pay_'+uid).value) || 0;
+            const inputVal = document.getElementById('pay_'+uid).value;
+            const payAmount = parseFloat(inputVal) || 0;
 
-            if(confirm(`Approve task? User gets $${payAmount}`)) {
-                // 1. Get User Data
-                db.ref('users/' + uid).once('value', snapshot => {
-                    const userData = snapshot.val();
-                    if(!userData) { alert("User not found!"); return; }
-
-                    const newBal = (parseFloat(userData.balance) || 0) + payAmount;
-                    const newTotal = (parseFloat(userData.totalProfit) || 0) + payAmount;
-                    const newToday = (parseFloat(userData.todayProfit) || 0) + payAmount;
-                    
-                    // 2. Pay User
-                    db.ref('users/' + uid).update({
-                        balance: newBal,
-                        totalProfit: newTotal,
-                        todayProfit: newToday
-                    }).then(() => {
-                        // 3. Mark Task Complete
-                        db.ref('tasks/' + uid).update({ status: 'completed' });
-
-                        // 4. Give Commission (20%)
-                        if(userData.referredBy && userData.referredBy !== 'none') {
-                            giveCommission(userData.referredBy, payAmount);
+            if(confirm(`Confirm APPROVE? User gets $${payAmount}`)) {
+                
+                // 1. Check if User exists
+                db.ref('users/' + uid).once('value')
+                .then(snapshot => {
+                    if(snapshot.exists()) {
+                        // User FOUND - Add Money
+                        const userData = snapshot.val();
+                        const newBal = (parseFloat(userData.balance) || 0) + payAmount;
+                        const newTotal = (parseFloat(userData.totalProfit) || 0) + payAmount;
+                        
+                        return db.ref('users/' + uid).update({
+                            balance: newBal,
+                            totalProfit: newTotal,
+                            todayProfit: (parseFloat(userData.todayProfit) || 0) + payAmount
+                        }).then(() => {
+                            // Refer Commission
+                            if(userData.referredBy && userData.referredBy !== 'none') {
+                                giveCommission(userData.referredBy, payAmount);
+                            }
+                            return true; // Success
+                        });
+                    } else {
+                        // User NOT FOUND - Ask to force delete
+                        if(confirm("User database a nai! Force delete task?")) {
+                            return true;
+                        } else {
+                            return false;
                         }
-                    });
+                    }
+                })
+                .then(shouldComplete => {
+                    // 2. Complete Task
+                    if(shouldComplete) {
+                        db.ref('tasks/' + uid).update({ status: 'completed' })
+                        .then(() => alert("Task Approved Successfully!"))
+                        .catch(e => alert("Error: " + e.message));
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert("System Error: " + err.message);
                 });
             }
         }
@@ -299,13 +317,13 @@
             db.ref('users').orderByChild('myRefCode').equalTo(refCode).once('value', s => {
                 if(s.exists()) {
                     s.forEach(u => {
-                        const rId = u.key;
-                        const rData = u.val();
                         const comm = amount * 0.20; // 20%
+                        const current = parseFloat(u.val().balance) || 0;
+                        const total = parseFloat(u.val().totalProfit) || 0;
                         
-                        db.ref('users/' + rId).update({
-                            balance: (parseFloat(rData.balance)||0) + comm,
-                            totalProfit: (parseFloat(rData.totalProfit)||0) + comm
+                        db.ref('users/' + u.key).update({
+                            balance: current + comm,
+                            totalProfit: total + comm
                         });
                     });
                 }

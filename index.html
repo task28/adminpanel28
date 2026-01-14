@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin System - Booting...</title>
+
+    <!-- Google Fonts (Tech Style) -->
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <!-- FIREBASE SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDR38gO9SBcE3qcVvFHlpyE5YdEqo0n2XU",
+            authDomain: "task38-f7daa.firebaseapp.com",
+            databaseURL: "https://task38-f7daa-default-rtdb.firebaseio.com",
+            projectId: "task38-f7daa",
+            storageBucket: "task38-f7daa.firebasestorage.app",
+            messagingSenderId: "655282407518",
+            appId: "1:655282407518:web:637dd6ac82b6c5e6018ccf"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+    </script>
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: #000;
+            color: #d4af37; /* Gold Text */
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Share Tech Mono', monospace;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* CRT Scanline Effect */
+        body::before {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 2;
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+        }
+
+        .terminal-window {
+            width: 90%;
+            max-width: 500px;
+            border: 2px solid #333;
+            background: rgba(10, 10, 10, 0.9);
+            padding: 20px;
+            box-shadow: 0 0 30px rgba(212, 175, 55, 0.1);
+            position: relative;
+            z-index: 3;
+        }
+
+        .header {
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .title {
+            font-family: 'Orbitron', sans-serif;
+            letter-spacing: 2px;
+            color: #d4af37;
+            font-weight: 700;
+        }
+
+        .status-light {
+            width: 10px; height: 10px;
+            background: red;
+            border-radius: 50%;
+            animation: blink 0.5s infinite alternate;
+        }
+
+        .log-area {
+            height: 150px;
+            font-size: 0.9rem;
+            color: #aaa;
+            line-height: 1.6;
+            overflow: hidden;
+        }
+
+        .log-line {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .highlight { color: #d4af37; }
+        .error { color: #ff3333; }
+        .success { color: #00ff00; }
+
+        /* Progress Bar */
+        .progress-container {
+            width: 100%;
+            height: 4px;
+            background: #222;
+            margin-top: 20px;
+            position: relative;
+        }
+
+        .progress-bar {
+            width: 0%;
+            height: 100%;
+            background: #d4af37;
+            box-shadow: 0 0 10px #d4af37;
+            transition: width 0.1s linear;
+        }
+
+        @keyframes blink { from { opacity: 0.4; } to { opacity: 1; box-shadow: 0 0 10px red; } }
+    </style>
+</head>
+<body>
+
+    <div class="terminal-window">
+        <div class="header">
+            <div class="title">TASK28 ADMIN SYS</div>
+            <div class="status-light" id="led"></div>
+        </div>
+
+        <div class="log-area" id="logBox">
+            <!-- Logs will appear here -->
+        </div>
+
+        <div class="progress-container">
+            <div class="progress-bar" id="pBar"></div>
+        </div>
+        <div style="text-align: right; font-size: 0.8rem; margin-top: 5px; color: #d4af37;" id="percent">0%</div>
+    </div>
+
+    <script>
+        const logs = [
+            "Initializing secure protocol...",
+            "Connecting to Firebase Database...",
+            "Verifying Admin Credentials...",
+            "Checking Task Module...",
+            "Checking Withdrawal Module...",
+            "Scanning for unauthorized access...",
+            "Encrypting session data...",
+            "<span class='success'>System Check Complete.</span>",
+            "Redirecting to Command Center..."
+        ];
+
+        let logIndex = 0;
+        let progress = 0;
+        const logBox = document.getElementById('logBox');
+        const pBar = document.getElementById('pBar');
+        const percent = document.getElementById('percent');
+        const led = document.getElementById('led');
+
+        function addLog() {
+            if (logIndex < logs.length) {
+                const p = document.createElement('div');
+                p.className = 'log-line';
+                p.innerHTML = `> ${logs[logIndex]}`;
+                logBox.appendChild(p);
+                logBox.scrollTop = logBox.scrollHeight;
+                logIndex++;
+            }
+        }
+
+        // Animation Loop
+        const interval = setInterval(() => {
+            progress += 2; // Speed of loading
+            if (progress > 100) progress = 100;
+
+            pBar.style.width = progress + "%";
+            percent.innerText = progress + "%";
+
+            // Add logs at specific intervals
+            if (progress % 12 === 0) addLog();
+
+            if (progress >= 100) {
+                clearInterval(interval);
+                led.style.background = "#00ff00"; // Green light
+                led.style.boxShadow = "0 0 10px #00ff00";
+                
+                // Final Check & Redirect
+                setTimeout(() => {
+                    checkAdminAndRedirect();
+                }, 800);
+            }
+        }, 60); // Speed (Lower is faster)
+
+        function checkAdminAndRedirect() {
+            auth.onAuthStateChanged((user) => {
+                if (user) {
+                    if(user.email === "rafsanvai388@gmail.com") {
+                        // Admin Verified
+                        window.location.href = "Admin_home.html";
+                    } else {
+                        // Not Admin (Kick out)
+                        alert("UNAUTHORIZED ACCESS DETECTED");
+                        auth.signOut();
+                        window.location.href = "index.html"; // Back to user site
+                    }
+                } else {
+                    // Not Logged In
+                    window.location.href = "Admin_login.html";
+                }
+            });
+        }
+    </script>
+
+</body>
+</html>

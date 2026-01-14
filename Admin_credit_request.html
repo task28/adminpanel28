@@ -2,28 +2,16 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - Credit Requests</title>
-
-    <!-- Google Fonts & CSS -->
+    <title>Admin - Credit Manager</title>
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-
-    <!-- FIREBASE -->
+    
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyDR38gO9SBcE3qcVvFHlpyE5YdEqo0n2XU",
-            authDomain: "task38-f7daa.firebaseapp.com",
-            databaseURL: "https://task38-f7daa-default-rtdb.firebaseio.com",
-            projectId: "task38-f7daa",
-            storageBucket: "task38-f7daa.firebasestorage.app",
-            messagingSenderId: "655282407518",
-            appId: "1:655282407518:web:637dd6ac82b6c5e6018ccf"
-        };
+        const firebaseConfig = { apiKey: "AIzaSyDR38gO9SBcE3qcVvFHlpyE5YdEqo0n2XU", authDomain: "task38-f7daa.firebaseapp.com", databaseURL: "https://task38-f7daa-default-rtdb.firebaseio.com", projectId: "task38-f7daa", storageBucket: "task38-f7daa.firebasestorage.app", messagingSenderId: "655282407518", appId: "1:655282407518:web:637dd6ac82b6c5e6018ccf" };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
         const auth = firebase.auth();
@@ -31,38 +19,35 @@
 
     <style>
         body { background-color: #050505; color: #fff; font-family: 'Montserrat', sans-serif; padding: 20px; }
-        
         .header { display: flex; justify-content: space-between; border-bottom: 2px solid #d4af37; padding-bottom: 15px; margin-bottom: 20px; }
         .title { color: #d4af37; font-family: 'Share Tech Mono', monospace; font-size: 1.5rem; }
         .back-btn { background: #333; color: #fff; border: none; padding: 8px 15px; cursor: pointer; }
 
-        /* SETTINGS PANEL */
-        .settings-panel {
+        /* PACKAGE CREATOR */
+        .creator-box {
             background: #111; padding: 20px; border-radius: 10px; border: 1px solid #d4af37;
-            margin-bottom: 30px; display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-end;
+            margin-bottom: 30px; border-left: 5px solid #d4af37;
         }
-        .set-group label { display: block; color: #aaa; margin-bottom: 5px; font-size: 0.8rem; font-weight: bold; }
-        .set-group input {
-            background: #000; border: 1px solid #444; color: #fff; padding: 10px; width: 150px; text-align: center;
-        }
-        .save-btn {
-            background: #d4af37; color: #000; font-weight: bold; padding: 11px 25px; border: none; cursor: pointer;
-        }
+        .form-row { display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end; }
+        .inp-group { flex: 1; min-width: 150px; }
+        .inp-group label { display: block; color: #aaa; font-size: 0.8rem; margin-bottom: 5px; }
+        .inp-group input { width: 100%; padding: 10px; background: #000; border: 1px solid #444; color: #fff; text-align: center; }
+        
+        .add-btn { background: #d4af37; color: #000; font-weight: bold; padding: 11px 25px; border: none; cursor: pointer; height: 40px; }
 
-        /* GRID */
+        /* PACKAGE LIST */
+        .pkg-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-bottom: 40px; }
+        .pkg-card { background: #1a1a1a; padding: 10px; border: 1px solid #333; border-radius: 5px; position: relative; }
+        .pkg-del { position: absolute; top: 5px; right: 5px; color: red; cursor: pointer; }
+
+        /* REQUESTS GRID */
         .req-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
-        
-        .card { 
-            background: #0f0f0f; border: 1px solid #333; padding: 20px; border-radius: 8px; 
-            border-left: 4px solid #2ecc71; position: relative;
-        }
-        
+        .card { background: #0f0f0f; border: 1px solid #333; padding: 20px; border-radius: 8px; border-left: 4px solid #2ecc71; }
         .row { margin-bottom: 8px; font-size: 0.9rem; color: #ccc; word-break: break-all; }
         .row strong { color: #888; display: block; font-size: 0.75rem; }
         
-        .hl-amount { font-size: 1.5rem; color: #2ecc71; font-weight: bold; margin-bottom: 10px; }
-        .bonus-tag { background: #d4af37; color: #000; font-size: 0.7rem; padding: 2px 5px; border-radius: 3px; font-weight: bold; margin-left: 10px; }
-
+        .hl-amount { font-size: 1.5rem; color: #2ecc71; font-weight: bold; margin-bottom: 5px; }
+        
         .btn-approve { width: 100%; padding: 12px; background: #d4af37; color: #000; border: none; cursor: pointer; font-weight: bold; margin-top: 10px; }
         .btn-reject { width: 100%; padding: 8px; background: #c0392b; color: #fff; border: none; cursor: pointer; margin-top: 5px; font-size: 0.8rem; }
     </style>
@@ -70,74 +55,114 @@
 <body>
 
     <div class="header">
-        <div class="title">CREDIT REQUESTS</div>
+        <div class="title">CREDIT PACKAGES & REQUESTS</div>
         <button class="back-btn" onclick="window.location.href='Admin_home.html'">BACK</button>
     </div>
 
-    <!-- PRICE & DISCOUNT SETTINGS -->
-    <div class="settings-panel">
-        <div class="set-group">
-            <label>Credits Per $1 (Rate)</label>
-            <input type="number" id="rateVal" placeholder="Default: 5">
+    <!-- CREATE PACKAGE -->
+    <div class="creator-box">
+        <h3 style="margin-bottom:10px; color:#d4af37;">Create New Package</h3>
+        <div class="form-row">
+            <div class="inp-group">
+                <label>Credits Qty</label>
+                <input type="number" id="p_credits" placeholder="e.g. 5">
+            </div>
+            <div class="inp-group">
+                <label>Base Price ($)</label>
+                <input type="number" id="p_price" placeholder="e.g. 1.00">
+            </div>
+            <div class="inp-group">
+                <label>Discount (%)</label>
+                <input type="number" id="p_discount" placeholder="e.g. 40">
+            </div>
+            <button class="add-btn" onclick="addPackage()">ADD PACKAGE</button>
         </div>
-        <div class="set-group">
-            <label>Bonus % (Discount)</label>
-            <input type="number" id="bonusVal" placeholder="Default: 0">
-        </div>
-        <button class="save-btn" onclick="saveSettings()">UPDATE PRICE</button>
+        <p style="color:#666; font-size:0.8rem; margin-top:10px;">System will calculate Final Price automatically.</p>
     </div>
 
-    <div id="loading" style="color: #666;">Loading requests...</div>
-    <div class="req-grid" id="requestList"></div>
+    <h4 style="color:#aaa; margin-bottom:10px;">Active Packages</h4>
+    <div class="pkg-list" id="packageList"></div>
+
+    <hr style="border-color:#333; margin: 30px 0;">
+
+    <h3 style="color:#fff; margin-bottom:15px;">USER BUY REQUESTS</h3>
+    <div class="req-grid" id="requestList">
+        <p style="color:#666;">Loading requests...</p>
+    </div>
 
     <script>
-        let currentRate = 5; // Default
-        let currentBonus = 0; // Default %
-
         auth.onAuthStateChanged(user => {
             if(user && user.email === "rafsanvai388@gmail.com") {
-                loadSettingsAndRequests();
+                loadPackages();
+                loadRequests();
             } else {
                 window.location.href = "Admin_login.html";
             }
         });
 
-        // 1. Load Settings First, Then Requests
-        function loadSettingsAndRequests() {
-            db.ref('adminSettings/creditRules').on('value', snap => {
-                const rules = snap.val();
-                if(rules) {
-                    currentRate = parseFloat(rules.rate) || 5;
-                    currentBonus = parseFloat(rules.bonus) || 0;
-                    
-                    document.getElementById('rateVal').value = currentRate;
-                    document.getElementById('bonusVal').value = currentBonus;
-                }
-                // Reload list with new rates
-                loadRequests();
+        // --- 1. PACKAGE MANAGEMENT ---
+        function addPackage() {
+            const cr = parseFloat(document.getElementById('p_credits').value);
+            const pr = parseFloat(document.getElementById('p_price').value);
+            const dis = parseFloat(document.getElementById('p_discount').value) || 0;
+
+            if(!cr || !pr) return alert("Enter Credits and Price");
+
+            // Calculate Final Price
+            const finalPrice = pr - (pr * (dis / 100));
+
+            const newPkg = {
+                credits: cr,
+                basePrice: pr,
+                discount: dis,
+                finalPrice: finalPrice.toFixed(2)
+            };
+
+            db.ref('adminSettings/packages').push(newPkg).then(() => {
+                alert("Package Added!");
+                document.getElementById('p_credits').value = "";
+                document.getElementById('p_price').value = "";
+                document.getElementById('p_discount').value = "";
             });
         }
 
-        // 2. Save Settings
-        function saveSettings() {
-            const r = parseFloat(document.getElementById('rateVal').value);
-            const b = parseFloat(document.getElementById('bonusVal').value);
-
-            db.ref('adminSettings/creditRules').set({
-                rate: r,
-                bonus: b
-            }).then(() => alert("Price & Discount Updated!"));
+        function loadPackages() {
+            db.ref('adminSettings/packages').on('value', snap => {
+                const list = document.getElementById('packageList');
+                list.innerHTML = "";
+                
+                snap.forEach(child => {
+                    const data = child.val();
+                    const key = child.key;
+                    
+                    const html = `
+                        <div class="pkg-card">
+                            <i class="fas fa-times pkg-del" onclick="delPackage('${key}')"></i>
+                            <div style="color:#d4af37; font-weight:bold;">${data.credits} Credits</div>
+                            <div style="font-size:0.8rem; text-decoration:line-through; color:#666;">$${data.basePrice}</div>
+                            <div style="color:#2ecc71; font-weight:bold;">$${data.finalPrice}</div>
+                            <div style="font-size:0.7rem; color:#aaa;">${data.discount}% OFF</div>
+                        </div>
+                    `;
+                    list.innerHTML += html;
+                });
+            });
         }
 
-        // 3. Load Requests
+        function delPackage(key) {
+            if(confirm("Delete this package?")) {
+                db.ref('adminSettings/packages/' + key).remove();
+            }
+        }
+
+        // --- 2. REQUEST MANAGEMENT ---
         function loadRequests() {
             db.ref('credit_requests').orderByChild('status').equalTo('pending').on('value', snap => {
                 const list = document.getElementById('requestList');
-                document.getElementById('loading').style.display = 'none';
                 list.innerHTML = "";
 
                 if(!snap.exists()) {
-                    list.innerHTML = "<p>No Pending Credit Requests.</p>";
+                    list.innerHTML = "<p>No Pending Requests.</p>";
                     return;
                 }
 
@@ -145,24 +170,16 @@
                     const data = child.val();
                     const key = child.key;
                     
-                    // Calculation Logic
-                    const dollars = parseFloat(data.amount);
-                    let baseCredits = dollars * currentRate;
-                    let bonusCredits = (baseCredits * currentBonus) / 100;
-                    let totalCredits = baseCredits + bonusCredits;
-
-                    // Badge Logic
-                    let bonusHtml = currentBonus > 0 ? `<span class="bonus-tag">+${currentBonus}% BONUS</span>` : '';
-
                     const html = `
                         <div class="card">
-                            <div class="hl-amount">$${data.amount} <i class="fas fa-arrow-right" style="font-size:1rem; color:#666;"></i> ${totalCredits} Cr ${bonusHtml}</div>
+                            <div class="hl-amount">+${data.credits} CR</div>
+                            <div style="color:#aaa; font-size:0.9rem; margin-bottom:10px;">User Paid: <span style="color:#fff">$${data.pricePaid}</span></div>
                             
                             <div class="row"><strong>SENDER ADDRESS</strong> ${data.senderAddress}</div>
                             <div class="row"><strong>USER UID</strong> ${data.uid}</div>
                             <div class="row"><strong>DATE</strong> ${new Date(data.date).toLocaleString()}</div>
                             
-                            <button class="btn-approve" onclick="approveCredit('${key}', '${data.uid}', ${totalCredits})">APPROVE (${totalCredits} CR)</button>
+                            <button class="btn-approve" onclick="approveCredit('${key}', '${data.uid}', ${data.credits})">APPROVE</button>
                             <button class="btn-reject" onclick="rejectCredit('${key}')">REJECT</button>
                         </div>
                     `;
@@ -172,20 +189,13 @@
         }
 
         function approveCredit(key, uid, credits) {
-            if(confirm(`Confirm adding ${credits} Credits to User?`)) {
-                
-                // Get Current Credits
+            if(confirm(`Add ${credits} Credits to User?`)) {
                 db.ref('users/' + uid).once('value', s => {
-                    if(!s.exists()) { alert("User not found!"); return; }
-                    
-                    const oldCreds = parseFloat(s.val().credits || 0);
-                    
-                    // Update
-                    db.ref('users/' + uid).update({
-                        credits: oldCreds + credits
-                    }).then(() => {
+                    const current = parseFloat(s.val().credits || 0);
+                    db.ref('users/' + uid).update({ credits: current + parseFloat(credits) })
+                    .then(() => {
                         db.ref('credit_requests/' + key).update({ status: 'approved' });
-                        alert("Credits Added!");
+                        alert("Approved!");
                     });
                 });
             }

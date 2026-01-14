@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - User Database</title>
+
+    <!-- Google Fonts & CSS -->
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <!-- FIREBASE -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDR38gO9SBcE3qcVvFHlpyE5YdEqo0n2XU",
+            authDomain: "task38-f7daa.firebaseapp.com",
+            databaseURL: "https://task38-f7daa-default-rtdb.firebaseio.com",
+            projectId: "task38-f7daa",
+            storageBucket: "task38-f7daa.firebasestorage.app",
+            messagingSenderId: "655282407518",
+            appId: "1:655282407518:web:637dd6ac82b6c5e6018ccf"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const auth = firebase.auth();
+    </script>
+
+    <style>
+        * { box-sizing: border-box; }
+        body { background-color: #050505; color: #fff; font-family: 'Montserrat', sans-serif; padding: 20px; }
+        
+        /* Header */
+        .header { display: flex; justify-content: space-between; border-bottom: 2px solid #d4af37; padding-bottom: 15px; margin-bottom: 20px; }
+        .title { color: #d4af37; font-family: 'Share Tech Mono', monospace; font-size: 1.5rem; }
+        .back-btn { background: #333; color: #fff; border: none; padding: 8px 15px; cursor: pointer; }
+
+        /* Stats & Search */
+        .top-bar {
+            background: #111; padding: 15px; border-radius: 8px; border: 1px solid #333;
+            margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 20px; align-items: center; justify-content: space-between;
+        }
+        .total-badge {
+            font-size: 1.2rem; font-family: 'Share Tech Mono'; color: #d4af37;
+        }
+
+        .search-box {
+            display: flex; background: #000; border: 1px solid #444; border-radius: 5px; overflow: hidden;
+        }
+        .search-box input {
+            background: transparent; border: none; padding: 10px; color: #fff; width: 250px; outline: none;
+        }
+        .search-box button {
+            background: #d4af37; color: #000; border: none; padding: 0 15px; cursor: pointer;
+        }
+
+        /* User Grid */
+        .user-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
+
+        .user-card {
+            background: #0f0f0f; border: 1px solid #333; padding: 15px; border-radius: 8px;
+            position: relative; transition: 0.2s;
+        }
+        .user-card:hover { border-color: #d4af37; }
+
+        .u-header {
+            display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.8rem; color: #888; border-bottom: 1px solid #222; padding-bottom: 5px;
+        }
+        .u-name { font-size: 1.1rem; font-weight: bold; color: #fff; }
+        .u-email { font-size: 0.9rem; color: #aaa; margin-bottom: 10px; word-break: break-all; }
+        
+        .u-stats {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 15px;
+            background: #1a1a1a; padding: 10px; border-radius: 5px;
+        }
+        .stat-item { font-size: 0.8rem; color: #ccc; }
+        .stat-item span { color: #d4af37; font-weight: bold; }
+
+        .action-row {
+            display: flex; gap: 10px; align-items: center;
+        }
+        .edit-input {
+            width: 80px; padding: 5px; background: #000; border: 1px solid #444; color: #fff; text-align: center;
+        }
+        .btn-save {
+            background: #27ae60; color: white; border: none; padding: 6px 10px; cursor: pointer; font-size: 0.8rem; border-radius: 3px;
+        }
+        .btn-delete {
+            background: #c0392b; color: white; border: none; padding: 6px 10px; cursor: pointer; font-size: 0.8rem; border-radius: 3px; margin-left: auto;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="title">USER DATABASE</div>
+        <button class="back-btn" onclick="window.location.href='Admin_home.html'">BACK</button>
+    </div>
+
+    <div class="top-bar">
+        <div class="total-badge">
+            TOTAL USERS: <span id="totalCount">0</span>
+        </div>
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="Search Name, Email or UID..." onkeyup="filterUsers()">
+            <button><i class="fas fa-search"></i></button>
+        </div>
+    </div>
+
+    <div id="loading" style="text-align:center; color:#666;">Loading Database...</div>
+    <div class="user-grid" id="userList"></div>
+
+    <script>
+        let allUsers = [];
+
+        auth.onAuthStateChanged(user => {
+            if(user && user.email === "rafsanvai388@gmail.com") {
+                fetchAllUsers();
+            } else {
+                window.location.href = "Admin_login.html";
+            }
+        });
+
+        function fetchAllUsers() {
+            db.ref('users').on('value', snap => {
+                allUsers = [];
+                document.getElementById('loading').style.display = 'none';
+                
+                if(snap.exists()) {
+                    snap.forEach(child => {
+                        allUsers.push(child.val());
+                    });
+                    
+                    // Update Count
+                    document.getElementById('totalCount').innerText = allUsers.length;
+                    // Render
+                    renderUsers(allUsers);
+                } else {
+                    document.getElementById('userList').innerHTML = "<p>No users found.</p>";
+                }
+            });
+        }
+
+        function renderUsers(usersArray) {
+            const list = document.getElementById('userList');
+            list.innerHTML = "";
+
+            // Reverse to show newest first
+            usersArray.slice().reverse().forEach(u => {
+                const plan = u.plan ? u.plan.toUpperCase() : "FREE";
+                const refBy = u.referredBy === "none" ? "Admin" : u.referredBy;
+
+                const html = `
+                    <div class="user-card">
+                        <div class="u-header">
+                            <span>UID: ${u.uid.substring(0,6)}...</span>
+                            <span>Join: ${u.regDate}</span>
+                        </div>
+                        <div class="u-name">${u.name}</div>
+                        <div class="u-email">${u.email}</div>
+
+                        <div class="u-stats">
+                            <div class="stat-item">Team: <span>${u.teamCount || 0}</span></div>
+                            <div class="stat-item">Ref By: <span>${refBy}</span></div>
+                            <div class="stat-item">Plan: <span style="color:${plan==='FREE'?'#aaa':'#d4af37'}">${plan}</span></div>
+                            <div class="stat-item">Profit: <span>$${parseFloat(u.totalProfit || 0).toFixed(2)}</span></div>
+                        </div>
+
+                        <div class="action-row">
+                            <span style="font-size:0.8rem; color:#aaa;">Balance: $</span>
+                            <input type="number" id="bal_${u.uid}" class="edit-input" value="${u.balance}">
+                            <button class="btn-save" onclick="updateBalance('${u.uid}')">SAVE</button>
+                            
+                            <button class="btn-delete" onclick="deleteUser('${u.uid}')"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                `;
+                list.innerHTML += html;
+            });
+        }
+
+        function filterUsers() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            
+            const filtered = allUsers.filter(u => {
+                return (u.name && u.name.toLowerCase().includes(query)) ||
+                       (u.email && u.email.toLowerCase().includes(query)) ||
+                       (u.uid && u.uid.includes(query));
+            });
+            
+            renderUsers(filtered);
+        }
+
+        function updateBalance(uid) {
+            const newBal = parseFloat(document.getElementById('bal_'+uid).value);
+            if(confirm("Are you sure to update balance to $" + newBal + "?")) {
+                db.ref('users/' + uid).update({
+                    balance: newBal
+                }).then(() => alert("Balance Updated!"));
+            }
+        }
+
+        function deleteUser(uid) {
+            if(confirm("WARNING: This will delete the user permanently! Continue?")) {
+                if(confirm("Are you absolutely sure? This cannot be undone.")) {
+                    // Delete User Data
+                    db.ref('users/' + uid).remove();
+                    // Optional: Remove tasks/withdrawals associated with UID
+                    db.ref('tasks/' + uid).remove();
+                    db.ref('withdrawals').orderByChild('uid').equalTo(uid).once('value', s => {
+                        s.forEach(c => c.ref.remove());
+                    });
+                    
+                    alert("User Deleted.");
+                }
+            }
+        }
+    </script>
+</body>
+</html>

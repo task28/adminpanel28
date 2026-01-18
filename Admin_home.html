@@ -16,13 +16,13 @@
 
     <script>
         const firebaseConfig = {
-            apiKey: "AIzaSyDR38gO9SBcE3qcVvFHlpyE5YdEqo0n2XU",
-            authDomain: "task38-f7daa.firebaseapp.com",
-            databaseURL: "https://task38-f7daa-default-rtdb.firebaseio.com",
-            projectId: "task38-f7daa",
-            storageBucket: "task38-f7daa.firebasestorage.app",
-            messagingSenderId: "655282407518",
-            appId: "1:655282407518:web:637dd6ac82b6c5e6018ccf"
+            apiKey: "AIzaSyDuxSz3j5xMYDw5U9kLA0cjkpOE82D06MI",
+            authDomain: "part-1-f6d87.firebaseapp.com",
+            databaseURL: "https://part-1-f6d87-default-rtdb.firebaseio.com",
+            projectId: "part-1-f6d87",
+            storageBucket: "part-1-f6d87.firebasestorage.app",
+            messagingSenderId: "682699403122",
+            appId: "1:682699403122:web:038ffca84d489a6c0db7eb"
         };
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
@@ -148,30 +148,21 @@
             </div>
         </a>
 
-        <!-- Monthly Requests -->
-        <a href="Admin_monthly_request.html" class="menu-item">
-            <div class="notify-dot" id="dot_monthly"></div>
-            <div class="menu-icon"><i class="fas fa-calendar-alt"></i></div>
+        <!-- Create Target (NEW BUTTON) -->
+        <a href="Admin_create_target.html" class="menu-item">
+            <div class="menu-icon"><i class="fas fa-bullseye"></i></div>
             <div class="menu-text">
-                <h3>Monthly Plans</h3>
-                <p>Approve credit requests</p>
+                <h3>Create Targets</h3>
+                <p>Set Weekly & Monthly Plans</p>
             </div>
         </a>
-<!-- Banner Settings (Add this block inside .menu-grid) -->
-<a href="Admin_banner.html" class="menu-item">
-    <div class="menu-icon"><i class="fas fa-image"></i></div>
-    <div class="menu-text">
-        <h3>Banner Setup</h3>
-        <p>Change Home Slide</p>
-    </div>
-</a>
-        <!-- Weekly Requests -->
-        <a href="Admin_weekly_request.html" class="menu-item">
-            <div class="notify-dot" id="dot_weekly"></div>
-            <div class="menu-icon"><i class="fas fa-calendar-week"></i></div>
+
+        <!-- Banner Settings -->
+        <a href="Admin_banner.html" class="menu-item">
+            <div class="menu-icon"><i class="fas fa-image"></i></div>
             <div class="menu-text">
-                <h3>Weekly Plans</h3>
-                <p>Approve credit requests</p>
+                <h3>Banner Setup</h3>
+                <p>Change Home Slide</p>
             </div>
         </a>
 
@@ -193,7 +184,7 @@
             </div>
         </a>
 
-        <!-- Bonus Settings (Optional) -->
+        <!-- Bonus Settings -->
         <a href="Admin_bonus.html" class="menu-item">
             <div class="menu-icon"><i class="fas fa-gift"></i></div>
             <div class="menu-text">
@@ -202,25 +193,28 @@
             </div>
         </a>
 
+        <!-- Credit Requests -->
+        <a href="Admin_credit_request.html" class="menu-item">
+            <div class="menu-icon"><i class="fas fa-coins"></i></div>
+            <div class="menu-text">
+                <h3>Credit Requests</h3>
+                <p>Approve credit purchases</p>
+            </div>
+        </a>
+
     </div>
-<!-- Add this inside .menu-grid div in Admin_home.html -->
-<a href="Admin_credit_request.html" class="menu-item">
-    <div class="menu-icon"><i class="fas fa-coins"></i></div>
-    <div class="menu-text">
-        <h3>Credit Requests</h3>
-        <p>Approve credit purchases</p>
-    </div>
-</a>
+
     <script>
         // Security Check
         auth.onAuthStateChanged(user => {
             if (user) {
-                if(user.email !== "rafsanvai388@gmail.com") {
+                // Ensure this is the correct admin email
+                if(user.email !== "rafsan280@gmail.com") {
                     window.location.href = "Home.html"; // Kick normal users
                 }
                 loadStats();
             } else {
-                window.location.href = "Admin_login.html";
+                window.location.href = "index.html";
             }
         });
 
@@ -247,18 +241,6 @@
                     document.getElementById('stat_tasks').innerText = total;
                     document.getElementById('dot_task').style.display = total > 0 ? 'block' : 'none';
                 });
-            });
-
-            // Count Monthly Requests
-            db.ref('monthly_requests').orderByChild('status').equalTo('pending').on('value', snap => {
-                const count = snap.numChildren();
-                document.getElementById('dot_monthly').style.display = count > 0 ? 'block' : 'none';
-            });
-             
-            // Count Weekly Requests
-            db.ref('weekly_requests').orderByChild('status').equalTo('pending').on('value', snap => {
-                const count = snap.numChildren();
-                document.getElementById('dot_weekly').style.display = count > 0 ? 'block' : 'none';
             });
         }
     </script>

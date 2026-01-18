@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TASK28 - Admin Dashboard</title>
+    <title>TASK28 - ADMIN CORE</title>
 
     <!-- Google Fonts & Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
@@ -37,6 +37,7 @@
             color: #d4af37;
             font-family: 'Share Tech Mono', monospace;
             padding: 20px;
+            /* Hacker Grid Background */
             background-image: linear-gradient(rgba(0,0,0,0.95), rgba(0,0,0,0.95)), 
             url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 20h20v20H20V20zM0 20h20v20H0V20zM20 0h20v20H20V0zM0 0h20v20H0V0z' fill='%23d4af37' fill-opacity='0.03' fill-rule='evenodd'/%3E%3C/g%3E%3C/svg%3E");
         }
@@ -47,11 +48,14 @@
             border-bottom: 2px solid #d4af37; padding-bottom: 15px; margin-bottom: 30px;
         }
         .logo { font-family: 'Orbitron', sans-serif; font-size: 1.5rem; font-weight: 900; letter-spacing: 2px; }
+        
         .logout-btn {
-            background: #a31515; color: #fff; border: none; padding: 8px 15px;
+            background: #a31515; color: #fff; border: none; padding: 10px 20px;
             cursor: pointer; font-family: 'Orbitron', sans-serif; letter-spacing: 1px;
             clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%);
+            transition: 0.3s;
         }
+        .logout-btn:hover { background: #ff3333; box-shadow: 0 0 15px #ff0000; }
 
         /* Live Stats Row */
         .stats-row {
@@ -60,7 +64,10 @@
         .stat-card {
             background: #0a0a0a; border: 1px solid #333; padding: 15px;
             text-align: center; border-left: 3px solid #d4af37;
+            transition: 0.3s;
         }
+        .stat-card:hover { transform: translateY(-3px); box-shadow: 0 0 15px rgba(212, 175, 55, 0.1); }
+
         .stat-num { font-size: 2rem; font-weight: bold; color: #fff; margin-bottom: 5px; }
         .stat-label { font-size: 0.8rem; color: #888; text-transform: uppercase; }
 
@@ -98,29 +105,31 @@
             width: 10px; height: 10px; background: red; border-radius: 50%;
             position: absolute; top: 15px; right: 15px;
             box-shadow: 0 0 10px red; display: none;
+            animation: pulse 1s infinite;
         }
+        @keyframes pulse { 0% { opacity: 0.5; } 100% { opacity: 1; box-shadow: 0 0 15px red; } }
 
     </style>
 </head>
 <body>
 
     <div class="header">
-        <div class="logo">ADMIN COMMAND</div>
-        <button class="logout-btn" onclick="auth.signOut()">LOGOUT</button>
+        <div class="logo"><i class="fas fa-shield-alt"></i> ADMIN CORE</div>
+        <button class="logout-btn" onclick="handleLogout()">LOGOUT</button>
     </div>
 
     <!-- Live Stats -->
     <div class="stats-row">
         <div class="stat-card">
-            <div class="stat-num" id="stat_users">0</div>
+            <div class="stat-num" id="stat_users">--</div>
             <div class="stat-label">Total Users</div>
         </div>
         <div class="stat-card">
-            <div class="stat-num" id="stat_withdraw">0</div>
+            <div class="stat-num" id="stat_withdraw">--</div>
             <div class="stat-label">Pending Withdraw</div>
         </div>
         <div class="stat-card">
-            <div class="stat-num" id="stat_tasks">0</div>
+            <div class="stat-num" id="stat_tasks">--</div>
             <div class="stat-label">Pending Tasks</div>
         </div>
     </div>
@@ -148,7 +157,7 @@
             </div>
         </a>
 
-        <!-- Create Target (NEW BUTTON) -->
+        <!-- Create Target -->
         <a href="Admin_create_target.html" class="menu-item">
             <div class="menu-icon"><i class="fas fa-bullseye"></i></div>
             <div class="menu-text">
@@ -205,42 +214,47 @@
     </div>
 
     <script>
-        // Security Check
+        // --- AUTH & SECURITY ---
         auth.onAuthStateChanged(user => {
             if (user) {
-                // Ensure this is the correct admin email
-                if(user.email !== "rafsanvai388@gmail.com") {
-                    window.location.href = "Admin_home.html"; // Kick normal users
+                // *** IMPORTANT: Correct Admin Email Check ***
+                if(user.email !== "rafsan280@gmail.com") {
+                    // Redirect non-admins to User Dashboard
+                    window.location.href = "user_home.html"; 
+                } else {
+                    // Valid Admin -> Load Data
+                    loadStats();
                 }
-                loadStats();
             } else {
                 window.location.href = "index.html";
             }
         });
 
+        function handleLogout() {
+            auth.signOut().then(() => {
+                window.location.href = "index.html";
+            });
+        }
+
+        // --- DASHBOARD DATA ---
         function loadStats() {
             // Count Users
             db.ref('users').on('value', snap => {
-                document.getElementById('stat_users').innerText = snap.numChildren();
+                document.getElementById('stat_users').innerText = snap.numChildren() || 0;
             });
 
             // Count Pending Withdrawals
             db.ref('withdrawals').orderByChild('status').equalTo('pending').on('value', snap => {
                 const count = snap.numChildren();
-                document.getElementById('stat_withdraw').innerText = count;
+                document.getElementById('stat_withdraw').innerText = count || 0;
                 document.getElementById('dot_withdraw').style.display = count > 0 ? 'block' : 'none';
             });
 
             // Count Pending Tasks
             db.ref('tasks').orderByChild('status').equalTo('pending').on('value', snap => {
-                const pending = snap.numChildren();
-                // Also check reviews
-                db.ref('tasks').orderByChild('status').equalTo('review').on('value', rSnap => {
-                    const review = rSnap.numChildren();
-                    const total = pending + review;
-                    document.getElementById('stat_tasks').innerText = total;
-                    document.getElementById('dot_task').style.display = total > 0 ? 'block' : 'none';
-                });
+                const count = snap.numChildren();
+                document.getElementById('stat_tasks').innerText = count || 0;
+                document.getElementById('dot_task').style.display = count > 0 ? 'block' : 'none';
             });
         }
     </script>

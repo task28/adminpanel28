@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Create Target</title>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDuxSz3j5xMYDw5U9kLA0cjkpOE82D06MI",
+            authDomain: "part-1-f6d87.firebaseapp.com",
+            databaseURL: "https://part-1-f6d87-default-rtdb.firebaseio.com",
+            projectId: "part-1-f6d87",
+            storageBucket: "part-1-f6d87.firebasestorage.app",
+            messagingSenderId: "682699403122",
+            appId: "1:682699403122:web:038ffca84d489a6c0db7eb"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const auth = firebase.auth();
+    </script>
+
+    <style>
+        body { background-color: #050505; color: #fff; font-family: 'Montserrat', sans-serif; padding: 20px; }
+        .header { display: flex; justify-content: space-between; border-bottom: 2px solid #d4af37; padding-bottom: 15px; margin-bottom: 20px; }
+        .title { color: #d4af37; font-family: 'Share Tech Mono', font-size: 1.5rem; }
+        .back-btn { background: #333; color: #fff; border: none; padding: 8px 15px; cursor: pointer; }
+
+        .form-box { background: #111; padding: 20px; border: 1px solid #333; border-radius: 10px; margin-bottom: 30px; border-left: 5px solid #d4af37; }
+        
+        .grid-inp { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px; }
+        
+        label { display: block; color: #888; font-size: 0.8rem; margin-bottom: 5px; }
+        input, select { width: 100%; padding: 10px; background: #000; border: 1px solid #444; color: #fff; outline: none; }
+        
+        .create-btn { width: 100%; padding: 12px; background: #d4af37; color: #000; font-weight: bold; border: none; cursor: pointer; text-transform: uppercase; }
+        .create-btn:hover { background: #fff; }
+
+        /* List */
+        .plan-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
+        .plan-card { background: #1a1a1a; padding: 15px; border: 1px solid #333; position: relative; }
+        .del-btn { position: absolute; top: 10px; right: 10px; color: red; cursor: pointer; }
+        .p-title { color: #d4af37; font-weight: bold; font-size: 1.1rem; }
+        .p-detail { font-size: 0.85rem; color: #ccc; margin-top: 5px; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="title">CREATE TARGET PLANS</div>
+        <button class="back-btn" onclick="window.location.href='Admin_home.html'">BACK</button>
+    </div>
+
+    <div class="form-box">
+        <div class="grid-inp">
+            <div>
+                <label>Plan Type</label>
+                <select id="p_type">
+                    <option value="weekly">Weekly</option>
+                    <option value="monthly">Monthly</option>
+                </select>
+            </div>
+            <div>
+                <label>Level Name (e.g. Level 1)</label>
+                <input type="text" id="p_name" placeholder="Enter Name">
+            </div>
+            <div>
+                <label>Credit Cost (To Apply)</label>
+                <input type="number" id="p_cost" placeholder="e.g. 2">
+            </div>
+            <div>
+                <label>Reward Amount ($)</label>
+                <input type="number" id="p_reward" placeholder="e.g. 50">
+            </div>
+            <div>
+                <label>Target Referrals</label>
+                <input type="number" id="p_ref" placeholder="e.g. 10">
+            </div>
+            <div>
+                <label>Downline Tasks Target</label>
+                <input type="number" id="p_task" placeholder="e.g. 20">
+            </div>
+            <div>
+                <label>Duration (Days)</label>
+                <input type="number" id="p_days" placeholder="e.g. 7 or 30">
+            </div>
+        </div>
+        <button class="create-btn" onclick="createPlan()">PUBLISH TARGET PLAN</button>
+    </div>
+
+    <h3 style="color:#fff;">Active Plans</h3>
+    <div class="plan-list" id="planList">Loading...</div>
+
+    <script>
+        auth.onAuthStateChanged(user => {
+            if(user && user.email === "rafsanvai388@gmail.com") {
+                loadPlans();
+            } else {
+                window.location.href = "Admin_login.html";
+            }
+        });
+
+        function createPlan() {
+            const type = document.getElementById('p_type').value;
+            const data = {
+                name: document.getElementById('p_name').value,
+                cost: parseFloat(document.getElementById('p_cost').value),
+                reward: parseFloat(document.getElementById('p_reward').value),
+                targetRef: parseInt(document.getElementById('p_ref').value),
+                targetTask: parseInt(document.getElementById('p_task').value),
+                duration: parseInt(document.getElementById('p_days').value)
+            };
+
+            if(!data.name || !data.cost) return alert("Fill all fields");
+
+            db.ref('targets/' + type).push(data).then(() => {
+                alert("Target Created!");
+                location.reload();
+            });
+        }
+
+        function loadPlans() {
+            const list = document.getElementById('planList');
+            list.innerHTML = "";
+            
+            // Load Weekly & Monthly
+            ['weekly', 'monthly'].forEach(type => {
+                db.ref('targets/' + type).on('value', snap => {
+                    snap.forEach(child => {
+                        const p = child.val();
+                        list.innerHTML += `
+                            <div class="plan-card">
+                                <div class="p-title">[${type.toUpperCase()}] ${p.name}</div>
+                                <i class="fas fa-trash del-btn" onclick="deletePlan('${type}', '${child.key}')"></i>
+                                <div class="p-detail">Cost: ${p.cost} Credits | Reward: $${p.reward}</div>
+                                <div class="p-detail">Target: ${p.targetRef} Refs & ${p.targetTask} Downline Tasks</div>
+                                <div class="p-detail">Duration: ${p.duration} Days</div>
+                            </div>
+                        `;
+                    });
+                });
+            });
+        }
+
+        function deletePlan(type, key) {
+            if(confirm("Delete this plan?")) {
+                db.ref('targets/' + type + '/' + key).remove();
+                location.reload(); // Refresh to clear view
+            }
+        }
+    </script>
+</body>
+</html>

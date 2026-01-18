@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SYSTEM_ROOT_ACCESS</title>
+    <title>SYSTEM_ACCESS_PORTAL</title>
 
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
@@ -145,7 +145,7 @@
     <!-- BOOT SCREEN -->
     <div class="terminal-window" id="bootScreen">
         <div class="header">
-            <div class="title" style="font-family:'Orbitron'; font-weight:bold;">TASK28 ADMIN SYS</div>
+            <div class="title" style="font-family:'Orbitron'; font-weight:bold;">TASK28 SECURITY SYS</div>
             <div class="status-light" id="led"></div>
         </div>
         <div class="log-area" id="logBox"></div>
@@ -160,20 +160,20 @@
         <div class="corner tl"></div><div class="corner tr"></div>
         <div class="corner bl"></div><div class="corner br"></div>
 
-        <i class="fas fa-fingerprint lock-icon"></i>
-        <h1>ADMIN PANEL</h1>
-        <div style="font-size:0.8rem; color:#666; margin-bottom:30px;">SECURE ACCESS GATEWAY</div>
+        <i class="fas fa-user-shield lock-icon"></i>
+        <h1>SYSTEM LOGIN</h1>
+        <div style="font-size:0.8rem; color:#666; margin-bottom:30px;">IDENTIFY YOURSELF</div>
 
         <div class="input-box">
-            <label>Admin ID</label>
-            <input type="email" id="a_email" placeholder="admin@system.com">
+            <label>User ID / Email</label>
+            <input type="email" id="u_email" placeholder="user@system.com">
         </div>
         <div class="input-box">
             <label>Passcode</label>
-            <input type="password" id="a_pass" placeholder="••••••••">
+            <input type="password" id="u_pass" placeholder="••••••••">
         </div>
 
-        <button onclick="performLogin()">UNLOCK SYSTEM</button>
+        <button onclick="performLogin()">INITIATE SESSION</button>
         <div id="error-msg">ACCESS DENIED</div>
     </div>
 
@@ -182,8 +182,7 @@
         const logs = [
             "Initializing secure protocol...",
             "Checking Server Integrity...",
-            "Verifying Admin Hash...",
-            "Scanning for Intruders...",
+            "Connecting to Database...",
             "Encrypting Session Keys...",
             "<span style='color:#00ff00'>System Check Complete.</span>",
             "Launching Authentication Module..."
@@ -224,12 +223,14 @@
                 // CHECK IF ALREADY LOGGED IN
                 auth.onAuthStateChanged((user) => {
                     setTimeout(() => {
-                        // **UPDATED EMAIL CHECK**
-                        if (user && user.email === "rafsan280@gmail.com") {
-                            // If logged in -> Go to Dashboard
-                            window.location.href = "Admin_home.html";
+                        if (user) {
+                            // ** LOGGED IN REDIRECT LOGIC **
+                            if (user.email === "rafsan280@gmail.com") {
+                                window.location.href = "admin_home.html";
+                            } else {
+                                window.location.href = "user_home.html";
+                            }
                         } else {
-                            // If NOT logged in -> Show Login Form
                             showLoginForm();
                         }
                     }, 800);
@@ -242,7 +243,6 @@
             setTimeout(() => {
                 bootScreen.style.display = 'none';
                 loginScreen.style.display = 'block';
-                // Trigger Fade In
                 setTimeout(() => {
                     loginScreen.style.opacity = '1';
                     loginScreen.style.transform = 'scale(1)';
@@ -252,42 +252,39 @@
 
         // --- LOGIN LOGIC ---
         function performLogin() {
-            const e = document.getElementById('a_email').value;
-            const p = document.getElementById('a_pass').value;
+            const e = document.getElementById('u_email').value;
+            const p = document.getElementById('u_pass').value;
             const btn = document.querySelector('button');
             const err = document.getElementById('error-msg');
 
             btn.innerText = "VERIFYING...";
             
-            // **UPDATED HARDCODED CHECK**
-            if (e === "rafsan280@gmail.com") {
+            // Firebase Auth Login
+            auth.signInWithEmailAndPassword(e, p)
+            .then((cred) => {
+                btn.style.background = "#00ff00";
+                btn.style.color = "#000";
+                btn.innerText = "ACCESS GRANTED";
                 
-                auth.signInWithEmailAndPassword(e, p)
-                .then(() => {
-                    btn.style.background = "#00ff00";
-                    btn.style.color = "#000";
-                    btn.innerText = "ACCESS GRANTED";
-                    setTimeout(() => {
-                        window.location.href = "Admin_home.html";
-                    }, 1000);
-                })
-                .catch((error) => {
-                    btn.innerText = "UNLOCK SYSTEM";
-                    err.style.display = 'block';
-                    err.innerText = "ERROR: " + error.message;
-                });
-
-            } else {
+                // ** ROUTING LOGIC **
                 setTimeout(() => {
-                    btn.innerText = "UNLOCK SYSTEM";
-                    err.style.display = 'block';
-                    err.innerText = "UNAUTHORIZED EMAIL";
-                    // Shake effect
-                    loginScreen.style.transform = "translateX(10px)";
-                    setTimeout(() => loginScreen.style.transform = "translateX(-10px)", 50);
-                    setTimeout(() => loginScreen.style.transform = "translateX(0)", 100);
-                }, 800);
-            }
+                    if (cred.user.email === "rafsan280@gmail.com") {
+                        window.location.href = "admin_home.html";
+                    } else {
+                        window.location.href = "user_home.html";
+                    }
+                }, 1000);
+            })
+            .catch((error) => {
+                btn.innerText = "INITIATE SESSION";
+                err.style.display = 'block';
+                err.innerText = "ERROR: " + error.message;
+                
+                // Shake effect
+                loginScreen.style.transform = "translateX(10px)";
+                setTimeout(() => loginScreen.style.transform = "translateX(-10px)", 50);
+                setTimeout(() => loginScreen.style.transform = "translateX(0)", 100);
+            });
         }
     </script>
 

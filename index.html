@@ -3,26 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin System - Booting...</title>
+    <title>SYSTEM_ROOT_ACCESS</title>
 
-    <!-- Google Fonts (Tech Style) -->
-    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@700&display=swap" rel="stylesheet">
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
     <!-- FIREBASE SDK -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-
     <script>
         const firebaseConfig = {
-            apiKey: "AIzaSyDR38gO9SBcE3qcVvFHlpyE5YdEqo0n2XU",
-            authDomain: "task38-f7daa.firebaseapp.com",
-            databaseURL: "https://task38-f7daa-default-rtdb.firebaseio.com",
-            projectId: "task38-f7daa",
-            storageBucket: "task38-f7daa.firebasestorage.app",
-            messagingSenderId: "655282407518",
-            appId: "1:655282407518:web:637dd6ac82b6c5e6018ccf"
+            apiKey: "AIzaSyDuxSz3j5xMYDw5U9kLA0cjkpOE82D06MI",
+            authDomain: "part-1-f6d87.firebaseapp.com",
+            databaseURL: "https://part-1-f6d87-default-rtdb.firebaseio.com",
+            projectId: "part-1-f6d87",
+            storageBucket: "part-1-f6d87.firebasestorage.app",
+            messagingSenderId: "682699403122",
+            appId: "1:682699403122:web:038ffca84d489a6c0db7eb"
         };
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
@@ -33,7 +31,7 @@
 
         body {
             background-color: #000;
-            color: #d4af37; /* Gold Text */
+            color: #d4af37;
             height: 100vh;
             display: flex;
             justify-content: center;
@@ -43,7 +41,7 @@
             position: relative;
         }
 
-        /* CRT Scanline Effect */
+        /* Scanline Effect */
         body::before {
             content: " ";
             display: block;
@@ -55,106 +53,140 @@
             pointer-events: none;
         }
 
+        /* --- SCREEN 1: BOOT ANIMATION --- */
         .terminal-window {
-            width: 90%;
-            max-width: 500px;
+            width: 90%; max-width: 500px;
             border: 2px solid #333;
-            background: rgba(10, 10, 10, 0.9);
+            background: rgba(10, 10, 10, 0.95);
             padding: 20px;
-            box-shadow: 0 0 30px rgba(212, 175, 55, 0.1);
-            position: relative;
-            z-index: 3;
+            box-shadow: 0 0 30px rgba(212, 175, 55, 0.15);
+            position: relative; z-index: 3;
+            transition: opacity 0.5s ease;
         }
 
         .header {
             border-bottom: 1px solid #333;
-            padding-bottom: 10px;
-            margin-bottom: 15px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .title {
-            font-family: 'Orbitron', sans-serif;
-            letter-spacing: 2px;
-            color: #d4af37;
-            font-weight: 700;
+            padding-bottom: 10px; margin-bottom: 15px;
+            display: flex; justify-content: space-between; align-items: center;
         }
 
         .status-light {
-            width: 10px; height: 10px;
-            background: red;
-            border-radius: 50%;
-            animation: blink 0.5s infinite alternate;
+            width: 10px; height: 10px; background: red;
+            border-radius: 50%; animation: blink 0.5s infinite alternate;
         }
 
         .log-area {
-            height: 150px;
-            font-size: 0.9rem;
-            color: #aaa;
-            line-height: 1.6;
-            overflow: hidden;
+            height: 150px; font-size: 0.9rem; color: #aaa;
+            line-height: 1.6; overflow: hidden;
         }
 
-        .log-line {
-            display: block;
-            margin-bottom: 5px;
-        }
-
-        .highlight { color: #d4af37; }
-        .error { color: #ff3333; }
-        .success { color: #00ff00; }
-
-        /* Progress Bar */
         .progress-container {
-            width: 100%;
-            height: 4px;
-            background: #222;
+            width: 100%; height: 4px; background: #222;
             margin-top: 20px;
-            position: relative;
         }
 
         .progress-bar {
-            width: 0%;
-            height: 100%;
-            background: #d4af37;
-            box-shadow: 0 0 10px #d4af37;
-            transition: width 0.1s linear;
+            width: 0%; height: 100%; background: #d4af37;
+            box-shadow: 0 0 10px #d4af37; transition: width 0.1s linear;
         }
 
         @keyframes blink { from { opacity: 0.4; } to { opacity: 1; box-shadow: 0 0 10px red; } }
+
+        /* --- SCREEN 2: LOGIN FORM (Hidden initially) --- */
+        .login-container {
+            display: none; /* Hidden */
+            position: relative; z-index: 3;
+            width: 100%; max-width: 380px;
+            padding: 40px;
+            border: 2px solid #d4af37;
+            background: rgba(10, 10, 10, 0.95);
+            box-shadow: 0 0 50px rgba(212, 175, 55, 0.2);
+            text-align: center;
+            opacity: 0; transform: scale(0.9);
+            transition: all 0.5s ease;
+        }
+
+        .corner {
+            position: absolute; width: 15px; height: 15px; border: 2px solid #d4af37; transition: 0.3s;
+        }
+        .tl { top: -2px; left: -2px; border-right: none; border-bottom: none; }
+        .tr { top: -2px; right: -2px; border-left: none; border-bottom: none; }
+        .bl { bottom: -2px; left: -2px; border-right: none; border-top: none; }
+        .br { bottom: -2px; right: -2px; border-left: none; border-top: none; }
+
+        h1 { font-family: 'Orbitron', sans-serif; font-size: 1.8rem; letter-spacing: 3px; margin-bottom: 5px; color: #d4af37; }
+        .input-box { margin-bottom: 20px; text-align: left; }
+        label { display: block; font-size: 0.7rem; color: #d4af37; margin-bottom: 5px; text-transform: uppercase; }
+        
+        input {
+            width: 100%; background: #050505; border: 1px solid #333;
+            color: #fff; padding: 12px; font-family: 'Share Tech Mono', monospace;
+            font-size: 1rem; outline: none; transition: 0.3s;
+        }
+        input:focus { border-color: #d4af37; box-shadow: 0 0 10px rgba(212, 175, 55, 0.2); }
+
+        button {
+            width: 100%; padding: 15px; background: #d4af37; color: #000;
+            border: none; font-family: 'Orbitron', sans-serif; font-weight: 900;
+            letter-spacing: 2px; font-size: 1rem; cursor: pointer;
+            text-transform: uppercase; margin-top: 10px; transition: 0.3s;
+            clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%);
+        }
+        button:hover { background: #fff; box-shadow: 0 0 20px rgba(255, 255, 255, 0.5); }
+
+        #error-msg { color: #ff3333; font-size: 0.8rem; margin-top: 15px; display: none; text-transform: uppercase; }
+        .lock-icon { font-size: 3rem; margin-bottom: 15px; color: #333; transition: 0.5s; }
+        input:focus ~ .lock-icon, button:hover ~ .lock-icon { color: #d4af37; }
+
     </style>
 </head>
 <body>
 
-    <div class="terminal-window">
+    <!-- BOOT SCREEN -->
+    <div class="terminal-window" id="bootScreen">
         <div class="header">
-            <div class="title">TASK28 ADMIN SYS</div>
+            <div class="title" style="font-family:'Orbitron'; font-weight:bold;">TASK28 ADMIN SYS</div>
             <div class="status-light" id="led"></div>
         </div>
-
-        <div class="log-area" id="logBox">
-            <!-- Logs will appear here -->
-        </div>
-
+        <div class="log-area" id="logBox"></div>
         <div class="progress-container">
             <div class="progress-bar" id="pBar"></div>
         </div>
         <div style="text-align: right; font-size: 0.8rem; margin-top: 5px; color: #d4af37;" id="percent">0%</div>
     </div>
 
+    <!-- LOGIN SCREEN -->
+    <div class="login-container" id="loginScreen">
+        <div class="corner tl"></div><div class="corner tr"></div>
+        <div class="corner bl"></div><div class="corner br"></div>
+
+        <i class="fas fa-fingerprint lock-icon"></i>
+        <h1>ADMIN PANEL</h1>
+        <div style="font-size:0.8rem; color:#666; margin-bottom:30px;">SECURE ACCESS GATEWAY</div>
+
+        <div class="input-box">
+            <label>Admin ID</label>
+            <input type="email" id="a_email" placeholder="admin@system.com">
+        </div>
+        <div class="input-box">
+            <label>Passcode</label>
+            <input type="password" id="a_pass" placeholder="••••••••">
+        </div>
+
+        <button onclick="performLogin()">UNLOCK SYSTEM</button>
+        <div id="error-msg">ACCESS DENIED</div>
+    </div>
+
     <script>
+        // --- BOOT ANIMATION LOGIC ---
         const logs = [
             "Initializing secure protocol...",
-            "Connecting to Firebase Database...",
-            "Verifying Admin Credentials...",
-            "Checking Task Module...",
-            "Checking Withdrawal Module...",
-            "Scanning for unauthorized access...",
-            "Encrypting session data...",
-            "<span class='success'>System Check Complete.</span>",
-            "Redirecting to Command Center..."
+            "Checking Server Integrity...",
+            "Verifying Admin Hash...",
+            "Scanning for Intruders...",
+            "Encrypting Session Keys...",
+            "<span style='color:#00ff00'>System Check Complete.</span>",
+            "Launching Authentication Module..."
         ];
 
         let logIndex = 0;
@@ -162,12 +194,13 @@
         const logBox = document.getElementById('logBox');
         const pBar = document.getElementById('pBar');
         const percent = document.getElementById('percent');
-        const led = document.getElementById('led');
+        const bootScreen = document.getElementById('bootScreen');
+        const loginScreen = document.getElementById('loginScreen');
 
         function addLog() {
             if (logIndex < logs.length) {
                 const p = document.createElement('div');
-                p.className = 'log-line';
+                p.style.marginBottom = "5px";
                 p.innerHTML = `> ${logs[logIndex]}`;
                 logBox.appendChild(p);
                 logBox.scrollTop = logBox.scrollHeight;
@@ -175,46 +208,86 @@
             }
         }
 
-        // Animation Loop
         const interval = setInterval(() => {
-            progress += 2; // Speed of loading
+            progress += 3; // Speed
             if (progress > 100) progress = 100;
 
             pBar.style.width = progress + "%";
             percent.innerText = progress + "%";
 
-            // Add logs at specific intervals
-            if (progress % 12 === 0) addLog();
+            if (progress % 15 === 0) addLog();
 
             if (progress >= 100) {
                 clearInterval(interval);
-                led.style.background = "#00ff00"; // Green light
-                led.style.boxShadow = "0 0 10px #00ff00";
+                document.getElementById('led').style.background = "#00ff00";
                 
-                // Final Check & Redirect
+                // CHECK IF ALREADY LOGGED IN
+                auth.onAuthStateChanged((user) => {
+                    setTimeout(() => {
+                        // **UPDATED EMAIL CHECK**
+                        if (user && user.email === "rafsan280@gmail.com") {
+                            // If logged in -> Go to Dashboard
+                            window.location.href = "Admin_home.html";
+                        } else {
+                            // If NOT logged in -> Show Login Form
+                            showLoginForm();
+                        }
+                    }, 800);
+                });
+            }
+        }, 50);
+
+        function showLoginForm() {
+            bootScreen.style.opacity = '0';
+            setTimeout(() => {
+                bootScreen.style.display = 'none';
+                loginScreen.style.display = 'block';
+                // Trigger Fade In
                 setTimeout(() => {
-                    checkAdminAndRedirect();
+                    loginScreen.style.opacity = '1';
+                    loginScreen.style.transform = 'scale(1)';
+                }, 50);
+            }, 500);
+        }
+
+        // --- LOGIN LOGIC ---
+        function performLogin() {
+            const e = document.getElementById('a_email').value;
+            const p = document.getElementById('a_pass').value;
+            const btn = document.querySelector('button');
+            const err = document.getElementById('error-msg');
+
+            btn.innerText = "VERIFYING...";
+            
+            // **UPDATED HARDCODED CHECK**
+            if (e === "rafsan280@gmail.com") {
+                
+                auth.signInWithEmailAndPassword(e, p)
+                .then(() => {
+                    btn.style.background = "#00ff00";
+                    btn.style.color = "#000";
+                    btn.innerText = "ACCESS GRANTED";
+                    setTimeout(() => {
+                        window.location.href = "Admin_home.html";
+                    }, 1000);
+                })
+                .catch((error) => {
+                    btn.innerText = "UNLOCK SYSTEM";
+                    err.style.display = 'block';
+                    err.innerText = "ERROR: " + error.message;
+                });
+
+            } else {
+                setTimeout(() => {
+                    btn.innerText = "UNLOCK SYSTEM";
+                    err.style.display = 'block';
+                    err.innerText = "UNAUTHORIZED EMAIL";
+                    // Shake effect
+                    loginScreen.style.transform = "translateX(10px)";
+                    setTimeout(() => loginScreen.style.transform = "translateX(-10px)", 50);
+                    setTimeout(() => loginScreen.style.transform = "translateX(0)", 100);
                 }, 800);
             }
-        }, 60); // Speed (Lower is faster)
-
-        function checkAdminAndRedirect() {
-            auth.onAuthStateChanged((user) => {
-                if (user) {
-                    if(user.email === "rafsanvai388@gmail.com") {
-                        // Admin Verified
-                        window.location.href = "Admin_home.html";
-                    } else {
-                        // Not Admin (Kick out)
-                        alert("UNAUTHORIZED ACCESS DETECTED");
-                        auth.signOut();
-                        window.location.href = "index.html"; // Back to user site
-                    }
-                } else {
-                    // Not Logged In
-                    window.location.href = "Admin_login.html";
-                }
-            });
         }
     </script>
 

@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin - Banner Settings</title>
 
-    <!-- Fonts & Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
@@ -16,13 +15,13 @@
 
     <script>
         const firebaseConfig = {
-            apiKey: "AIzaSyDR38gO9SBcE3qcVvFHlpyE5YdEqo0n2XU",
-            authDomain: "task38-f7daa.firebaseapp.com",
-            databaseURL: "https://task38-f7daa-default-rtdb.firebaseio.com",
-            projectId: "task38-f7daa",
-            storageBucket: "task38-f7daa.firebasestorage.app",
-            messagingSenderId: "655282407518",
-            appId: "1:655282407518:web:637dd6ac82b6c5e6018ccf"
+            apiKey: "AIzaSyDuxSz3j5xMYDw5U9kLA0cjkpOE82D06MI",
+            authDomain: "part-1-f6d87.firebaseapp.com",
+            databaseURL: "https://part-1-f6d87-default-rtdb.firebaseio.com",
+            projectId: "part-1-f6d87",
+            storageBucket: "part-1-f6d87.firebasestorage.app",
+            messagingSenderId: "682699403122",
+            appId: "1:682699403122:web:038ffca84d489a6c0db7eb"
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
@@ -31,112 +30,92 @@
 
     <style>
         body { background-color: #050505; color: #fff; font-family: 'Montserrat', sans-serif; padding: 20px; }
-        
         .header { display: flex; justify-content: space-between; border-bottom: 2px solid #d4af37; padding-bottom: 15px; margin-bottom: 30px; }
         .title { color: #d4af37; font-family: 'Share Tech Mono', monospace; font-size: 1.5rem; }
         .back-btn { background: #333; color: #fff; border: none; padding: 8px 15px; cursor: pointer; }
 
-        .container {
-            max-width: 600px; margin: 0 auto; background: #111; padding: 30px; border-radius: 10px; border: 1px solid #333;
-        }
-
-        .input-group label { display: block; color: #aaa; margin-bottom: 8px; font-weight: bold; }
-        .input-group input {
-            width: 100%; padding: 15px; background: #000; border: 1px solid #444; color: #fff; outline: none; margin-bottom: 20px;
-        }
-
-        .preview-box {
-            width: 100%; height: 200px; background: #000; border: 1px dashed #444;
-            display: flex; justify-content: center; align-items: center; overflow: hidden; margin-bottom: 20px;
-        }
-        .preview-box img { width: 100%; height: 100%; object-fit: cover; display: none; }
-        .preview-text { color: #555; }
-
-        .save-btn {
-            width: 100%; padding: 15px; background: #d4af37; color: #000; font-weight: bold; border: none; cursor: pointer;
-        }
-        .save-btn:hover { background: #fff; }
+        .container { max-width: 600px; margin: 0 auto; background: #111; padding: 30px; border-radius: 10px; border: 1px solid #333; }
+        .input-group input { width: 100%; padding: 15px; background: #000; border: 1px solid #444; color: #fff; outline: none; margin-bottom: 10px; }
         
-        .remove-btn {
-            width: 100%; padding: 10px; background: #c0392b; color: #fff; font-weight: bold; border: none; cursor: pointer; margin-top: 10px;
-        }
+        .add-btn { width: 100%; padding: 15px; background: #d4af37; color: #000; font-weight: bold; border: none; cursor: pointer; }
+        .add-btn:hover { background: #fff; }
+
+        /* LIST STYLE */
+        .banner-list { margin-top: 30px; }
+        .banner-item { background: #1a1a1a; padding: 10px; border: 1px solid #333; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; }
+        .banner-item img { width: 80px; height: 45px; object-fit: cover; border: 1px solid #444; }
+        .del-btn { background: #c0392b; color: #fff; border: none; padding: 5px 10px; cursor: pointer; font-size: 0.8rem; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <div class="title">BANNER SETTINGS</div>
+        <div class="title">BANNER MANAGER</div>
         <button class="back-btn" onclick="window.location.href='Admin_home.html'">BACK</button>
     </div>
 
     <div class="container">
+        <h3 style="color:#d4af37; margin-bottom:10px;">Add New Banner</h3>
         <div class="input-group">
-            <label>Image Direct Link (URL)</label>
-            <input type="text" id="imgUrl" placeholder="https://example.com/banner.jpg" oninput="updatePreview()">
-            <p style="font-size: 0.8rem; color: #666; margin-top: -15px; margin-bottom: 15px;">
-                Note: Upload image to a hosting site (like imgbb.com) and paste the direct link here.
-            </p>
+            <input type="text" id="imgUrl" placeholder="Paste Image Direct Link here...">
         </div>
+        <button class="add-btn" onclick="addBanner()">ADD TO SLIDER</button>
 
-        <div class="preview-box">
-            <div class="preview-text" id="pText">No Image</div>
-            <img id="pImg" src="">
+        <h4 style="margin-top:30px; border-bottom:1px solid #333; padding-bottom:10px;">Active Banners</h4>
+        <div class="banner-list" id="bannerList">
+            <p style="color:#666;">Loading banners...</p>
         </div>
-
-        <button class="save-btn" onclick="saveBanner()">SAVE BANNER</button>
-        <button class="remove-btn" onclick="removeBanner()">REMOVE BANNER</button>
     </div>
 
     <script>
+        // Check Auth
         auth.onAuthStateChanged(user => {
             if(user && user.email === "rafsanvai388@gmail.com") {
-                loadBanner();
+                loadBanners();
             } else {
-                window.location.href = "Admin_login.html";
+                const sessionAuth = sessionStorage.getItem("admin_access");
+                if (sessionAuth !== "granted") window.location.href = "index.html";
+                else loadBanners();
             }
         });
 
-        function loadBanner() {
-            db.ref('adminSettings/banner').once('value', snap => {
-                const url = snap.val();
-                if(url) {
-                    document.getElementById('imgUrl').value = url;
-                    updatePreview();
+        function addBanner() {
+            const url = document.getElementById('imgUrl').value;
+            if(!url) return alert("Please enter a URL");
+
+            db.ref('adminSettings/banners').push(url).then(() => {
+                alert("Banner Added!");
+                document.getElementById('imgUrl').value = "";
+            });
+        }
+
+        function loadBanners() {
+            db.ref('adminSettings/banners').on('value', snap => {
+                const list = document.getElementById('bannerList');
+                list.innerHTML = "";
+
+                if(snap.exists()) {
+                    snap.forEach(child => {
+                        const url = child.val();
+                        const key = child.key;
+
+                        list.innerHTML += `
+                            <div class="banner-item">
+                                <img src="${url}" alt="Banner">
+                                <span style="font-size:0.8rem; color:#aaa; max-width: 250px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">${url}</span>
+                                <button class="del-btn" onclick="deleteBanner('${key}')">DELETE</button>
+                            </div>
+                        `;
+                    });
+                } else {
+                    list.innerHTML = "<p style='color:#555'>No banners active.</p>";
                 }
             });
         }
 
-        function updatePreview() {
-            const url = document.getElementById('imgUrl').value;
-            const img = document.getElementById('pImg');
-            const txt = document.getElementById('pText');
-
-            if(url) {
-                img.src = url;
-                img.style.display = 'block';
-                txt.style.display = 'none';
-            } else {
-                img.style.display = 'none';
-                txt.style.display = 'block';
-            }
-        }
-
-        function saveBanner() {
-            const url = document.getElementById('imgUrl').value;
-            if(!url) return alert("Please enter a URL");
-
-            db.ref('adminSettings/banner').set(url).then(() => {
-                alert("Banner Updated Successfully!");
-            });
-        }
-
-        function removeBanner() {
-            if(confirm("Remove banner from user app?")) {
-                db.ref('adminSettings/banner').remove().then(() => {
-                    document.getElementById('imgUrl').value = "";
-                    updatePreview();
-                    alert("Banner Removed.");
-                });
+        function deleteBanner(key) {
+            if(confirm("Delete this banner?")) {
+                db.ref('adminSettings/banners/' + key).remove();
             }
         }
     </script>

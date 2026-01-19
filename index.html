@@ -165,8 +165,9 @@
         <div style="font-size:0.8rem; color:#666; margin-bottom:30px;">IDENTIFY YOURSELF</div>
 
         <div class="input-box">
-            <label>User ID / Email</label>
-            <input type="email" id="u_email" placeholder="user@system.com">
+            <label>Username / Email</label>
+            <!-- Changed type to 'text' to support spaces in username -->
+            <input type="text" id="u_email" placeholder="ENTER ID">
         </div>
         <div class="input-box">
             <label>Passcode</label>
@@ -222,18 +223,15 @@
                 
                 // CHECK IF ALREADY LOGGED IN
                 auth.onAuthStateChanged((user) => {
-                    setTimeout(() => {
-                        if (user) {
-                            // ** LOGGED IN REDIRECT LOGIC **
-                            if (user.email === "rafsan280@gmail.com") {
-                                window.location.href = "Admin_home.html";
-                            } else {
-                                window.location.href = "Admin_home.html";
-                            }
-                        } else {
-                            showLoginForm();
-                        }
-                    }, 800);
+                    // Check for custom admin session
+                    if (sessionStorage.getItem("admin_access") === "granted") {
+                        setTimeout(() => window.location.href = "Admin_home.html", 800);
+                    } 
+                    else if (user) {
+                        setTimeout(() => window.location.href = "Admin_home.html", 800);
+                    } else {
+                        showLoginForm();
+                    }
                 });
             }
         }, 50);
@@ -259,26 +257,35 @@
 
             btn.innerText = "VERIFYING...";
             
-            // Firebase Auth Login
+            // --- 1. SPECIAL ADMIN LOGIN CHECK ---
+            if (e.trim() === "SHOPPING28 ADMIN28" && p.trim() === "THE.RAFSAN20") {
+                btn.style.background = "#00ff00";
+                btn.style.color = "#000";
+                btn.innerText = "ADMIN ACCESS GRANTED";
+                
+                // Set Session Flag
+                sessionStorage.setItem("admin_access", "granted");
+
+                setTimeout(() => {
+                    window.location.href = "Admin_home.html";
+                }, 1000);
+                return;
+            }
+
+            // --- 2. REGULAR FIREBASE LOGIN ---
             auth.signInWithEmailAndPassword(e, p)
             .then((cred) => {
                 btn.style.background = "#00ff00";
                 btn.style.color = "#000";
                 btn.innerText = "ACCESS GRANTED";
-                
-                // ** ROUTING LOGIC **
                 setTimeout(() => {
-                    if (cred.user.email === "rafsan280@gmail.com") {
-                        window.location.href = "Admin_home.html";
-                    } else {
-                        window.location.href = "Admin_home.html";
-                    }
+                    window.location.href = "Admin_home.html";
                 }, 1000);
             })
             .catch((error) => {
                 btn.innerText = "INITIATE SESSION";
                 err.style.display = 'block';
-                err.innerText = "ERROR: " + error.message;
+                err.innerText = "ERROR: INVALID CREDENTIALS";
                 
                 // Shake effect
                 loginScreen.style.transform = "translateX(10px)";

@@ -7,16 +7,28 @@
     <!-- Fonts & Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <!-- Firebase -->
+    
+    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    
     <script>
-        const firebaseConfig = { apiKey: "AIzaSyDR38gO9SBcE3qcVvFHlpyE5YdEqo0n2XU", authDomain: "task38-f7daa.firebaseapp.com", databaseURL: "https://task38-f7daa-default-rtdb.firebaseio.com", projectId: "task38-f7daa", storageBucket: "task38-f7daa.firebasestorage.app", messagingSenderId: "655282407518", appId: "1:655282407518:web:637dd6ac82b6c5e6018ccf" };
+        // UPDATED CONFIG (Part-1)
+        const firebaseConfig = {
+            apiKey: "AIzaSyDuxSz3j5xMYDw5U9kLA0cjkpOE82D06MI",
+            authDomain: "part-1-f6d87.firebaseapp.com",
+            databaseURL: "https://part-1-f6d87-default-rtdb.firebaseio.com",
+            projectId: "part-1-f6d87",
+            storageBucket: "part-1-f6d87.firebasestorage.app",
+            messagingSenderId: "682699403122",
+            appId: "1:682699403122:web:038ffca84d489a6c0db7eb"
+        };
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.database();
     </script>
+
     <style>
         body { background: #050505; color: #ccc; font-family: 'Montserrat', sans-serif; padding: 20px; }
         .header { display: flex; justify-content: space-between; border-bottom: 2px solid #d4af37; padding-bottom: 15px; margin-bottom: 20px; }
@@ -49,10 +61,27 @@
 <div class="grid-container" id="review_list">Loading...</div>
 
 <script>
-    auth.onAuthStateChanged(user => {
-        if(!user || user.email !== "rafsanvai388@gmail.com") window.location.href = "Admin_login.html";
-        else { loadPending(); loadReview(); }
-    });
+    // --- AUTH CHECK (Support for Secret Login) ---
+    const sessionAuth = sessionStorage.getItem("admin_access");
+
+    if (sessionAuth === "granted") {
+        // Logged in via Secret Code
+        initPage();
+    } else {
+        // Check Firebase Auth
+        auth.onAuthStateChanged(user => {
+            if(user && user.email === "rafsanvai388@gmail.com") {
+                initPage();
+            } else {
+                window.location.href = "index.html";
+            }
+        });
+    }
+
+    function initPage() {
+        loadPending();
+        loadReview();
+    }
 
     // 1. PENDING LOAD (Send Email/Pass Logic)
     function loadPending() {

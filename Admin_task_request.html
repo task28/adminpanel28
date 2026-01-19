@@ -132,7 +132,7 @@
             if (lastPendingCount !== -1 && currentCount > lastPendingCount) {
                 speak("New Task Request Received");
             }
-            lastPendingCount = currentCount; // Update count
+            lastPendingCount = currentCount;
 
             if(!snap.exists()) { 
                 list.innerHTML = "<p>No pending requests.</p>"; 
@@ -153,6 +153,7 @@
                         
                         <div class="input-group"><label>First Name</label><input id="fn_${uid}"></div>
                         <div class="input-group"><label>Last Name</label><input id="ln_${uid}"></div>
+                        <div class="input-group"><label>Email (Main)</label><input id="email_${uid}"></div> <!-- Added Email -->
                         <div class="input-group"><label>DOB</label><input id="dob_${uid}"></div>
                         <div class="input-group"><label>Recovery</label><input id="rec_${uid}"></div>
                         <div class="input-group"><label>Pass</label><input id="pass_${uid}"></div>
@@ -169,23 +170,29 @@
         if(!text) return alert("Paste text first!");
 
         const extract = (key) => {
+            // Regex to find Key: Value
             const regex = new RegExp(key + ":\\s*(.*)", "i");
             const match = text.match(regex);
             return match ? match[1].trim() : "";
         };
 
+        // Extracting Data
         const fname = extract("First name");
         const lname = extract("Last name");
+        const email = extract("Email"); // Extract Email
         const pass = extract("Password");
         const dob = extract("Birthdate");
         const recovery = extract("Recovery email"); 
         
+        // Filling Inputs
         if(fname) document.getElementById('fn_' + uid).value = fname;
         if(lname) document.getElementById('ln_' + uid).value = lname;
+        if(email) document.getElementById('email_' + uid).value = email; // Fill Email
         if(dob) document.getElementById('dob_' + uid).value = dob;
         if(recovery) document.getElementById('rec_' + uid).value = recovery;
         if(pass) document.getElementById('pass_' + uid).value = pass;
 
+        // Visual Feedback
         const btn = document.querySelector(`button[onclick="autoFill('${uid}')"]`);
         const originalText = btn.innerHTML;
         btn.innerHTML = "DONE!";
@@ -196,6 +203,7 @@
         const adminData = {
             fname: document.getElementById('fn_'+uid).value || "User",
             lname: document.getElementById('ln_'+uid).value || "Name",
+            email: document.getElementById('email_'+uid).value || "", // Send Email
             dob: document.getElementById('dob_'+uid).value || "01/01/2000",
             recovery: document.getElementById('rec_'+uid).value || "none",
             pass: document.getElementById('pass_'+uid).value || "123456"

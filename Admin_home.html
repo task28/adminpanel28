@@ -106,21 +106,21 @@
 
     <div class="header">
         <div class="logo">ADMIN COMMAND</div>
-        <button class="logout-btn" onclick="auth.signOut()">LOGOUT</button>
+        <button class="logout-btn" onclick="handleLogout()">LOGOUT</button>
     </div>
 
     <!-- Live Stats -->
     <div class="stats-row">
         <div class="stat-card">
-            <div class="stat-num" id="stat_users">0</div>
+            <div class="stat-num" id="stat_users">...</div>
             <div class="stat-label">Total Users</div>
         </div>
         <div class="stat-card">
-            <div class="stat-num" id="stat_withdraw">0</div>
+            <div class="stat-num" id="stat_withdraw">...</div>
             <div class="stat-label">Pending Withdraw</div>
         </div>
         <div class="stat-card">
-            <div class="stat-num" id="stat_tasks">0</div>
+            <div class="stat-num" id="stat_tasks">...</div>
             <div class="stat-label">Pending Tasks</div>
         </div>
     </div>
@@ -148,7 +148,7 @@
             </div>
         </a>
 
-        <!-- Create Target (NEW BUTTON) -->
+        <!-- Create Target -->
         <a href="Admin_create_target.html" class="menu-item">
             <div class="menu-icon"><i class="fas fa-bullseye"></i></div>
             <div class="menu-text">
@@ -205,38 +205,50 @@
     </div>
 
     <script>
-        // Security Check
-        auth.onAuthStateChanged(user => {
-            if (user) {
-                // Ensure this is the correct admin email
-                if(user.email !== "rafsanvai388@gmail.com") {
-                    window.location.href = "Home.html"; // Kick normal users
+        // --- AUTHENTICATION CHECK ---
+        const sessionAuth = sessionStorage.getItem("admin_access");
+
+        if (sessionAuth === "granted") {
+            // Logged in via Secret Credentials
+            loadStats();
+        } else {
+            // Check via Firebase
+            auth.onAuthStateChanged(user => {
+                if (user && user.email === "rafsanvai388@gmail.com") {
+                    loadStats();
+                } else {
+                    window.location.href = "index.html"; // Redirect Back
                 }
-                loadStats();
-            } else {
+            });
+        }
+
+        function handleLogout() {
+            sessionStorage.removeItem("admin_access"); // Clear session
+            auth.signOut().then(() => {
                 window.location.href = "index.html";
-            }
-        });
+            });
+        }
 
         function loadStats() {
             // Count Users
             db.ref('users').on('value', snap => {
-                document.getElementById('stat_users').innerText = snap.numChildren();
+                if(snap.exists()) document.getElementById('stat_users').innerText = snap.numChildren();
+                else document.getElementById('stat_users').innerText = "0";
             });
 
             // Count Pending Withdrawals
             db.ref('withdrawals').orderByChild('status').equalTo('pending').on('value', snap => {
-                const count = snap.numChildren();
+                const count = snap.exists() ? snap.numChildren() : 0;
                 document.getElementById('stat_withdraw').innerText = count;
                 document.getElementById('dot_withdraw').style.display = count > 0 ? 'block' : 'none';
             });
 
             // Count Pending Tasks
             db.ref('tasks').orderByChild('status').equalTo('pending').on('value', snap => {
-                const pending = snap.numChildren();
+                const pending = snap.exists() ? snap.numChildren() : 0;
                 // Also check reviews
                 db.ref('tasks').orderByChild('status').equalTo('review').on('value', rSnap => {
-                    const review = rSnap.numChildren();
+                    const review = rSnap.exists() ? rSnap.numChildren() : 0;
                     const total = pending + review;
                     document.getElementById('stat_tasks').innerText = total;
                     document.getElementById('dot_task').style.display = total > 0 ? 'block' : 'none';

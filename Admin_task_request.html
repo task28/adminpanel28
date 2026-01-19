@@ -14,7 +14,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     
     <script>
-        // UPDATED CONFIG (Part-1)
+        // CONFIG (Part-1)
         const firebaseConfig = {
             apiKey: "AIzaSyDuxSz3j5xMYDw5U9kLA0cjkpOE82D06MI",
             authDomain: "part-1-f6d87.firebaseapp.com",
@@ -37,9 +37,22 @@
         .section-title { color: #fff; margin: 20px 0 10px; border-left: 4px solid #d4af37; padding-left: 10px; font-weight: bold; }
         .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px; }
         .card { background: #111; border: 1px solid #333; padding: 20px; border-radius: 8px; }
+        
         .input-group { margin-bottom: 10px; }
         .input-group label { display: block; font-size: 0.7rem; color: #666; }
         .input-group input { width: 100%; background: #000; border: 1px solid #444; color: #fff; padding: 8px; }
+        
+        /* Paste Area Style */
+        .paste-area {
+            width: 100%; height: 60px; background: #080808; border: 1px dashed #2ecc71; 
+            color: #2ecc71; font-size: 0.7rem; padding: 5px; margin-bottom: 5px; resize: none;
+        }
+        .btn-autofill {
+            width: 100%; background: #222; color: #2ecc71; border: 1px solid #2ecc71; 
+            padding: 5px; cursor: pointer; font-size: 0.8rem; margin-bottom: 15px;
+        }
+        .btn-autofill:hover { background: #2ecc71; color: #000; }
+
         .data-display { background: #000; padding: 10px; border: 1px dashed #444; margin-bottom: 10px; cursor: pointer; word-break: break-all; }
         .btn-action { width: 100%; padding: 10px; border: none; font-weight: bold; cursor: pointer; margin-top: 5px; }
         .btn-send { background: #d4af37; color: #000; }
@@ -61,14 +74,12 @@
 <div class="grid-container" id="review_list">Loading...</div>
 
 <script>
-    // --- AUTH CHECK (Support for Secret Login) ---
+    // --- AUTH CHECK ---
     const sessionAuth = sessionStorage.getItem("admin_access");
 
     if (sessionAuth === "granted") {
-        // Logged in via Secret Code
         initPage();
     } else {
-        // Check Firebase Auth
         auth.onAuthStateChanged(user => {
             if(user && user.email === "rafsanvai388@gmail.com") {
                 initPage();
@@ -83,7 +94,7 @@
         loadReview();
     }
 
-    // 1. PENDING LOAD (Send Email/Pass Logic)
+    // 1. PENDING LOAD (With Smart Paste)
     function loadPending() {
         db.ref('tasks').orderByChild('status').equalTo('pending').on('value', snap => {
             const list = document.getElementById('pending_list');
@@ -92,19 +103,58 @@
 
             snap.forEach(child => {
                 const uid = child.key;
-                const randPass = "Pass" + Math.floor(Math.random()*10000);
+                
                 list.innerHTML += `
                     <div class="card">
                         <div style="color:#d4af37; margin-bottom:10px;">UID: ${uid.substring(0,6)}...</div>
-                        <div class="input-group"><label>First Name</label><input id="fn_${uid}" placeholder="John"></div>
-                        <div class="input-group"><label>Last Name</label><input id="ln_${uid}" placeholder="Doe"></div>
-                        <div class="input-group"><label>DOB</label><input id="dob_${uid}" placeholder="01/01/1990"></div>
-                        <div class="input-group"><label>Recovery</label><input id="rec_${uid}" placeholder="rec@gmail.com"></div>
-                        <div class="input-group"><label>Pass</label><input id="pass_${uid}" value="${randPass}"></div>
+                        
+                        <!-- SMART PASTE SECTION -->
+                        <textarea id="paste_${uid}" class="paste-area" placeholder="Paste full text here (First name, Last name, Password etc.)..."></textarea>
+                        <button class="btn-autofill" onclick="autoFill('${uid}')"><i class="fas fa-magic"></i> AUTO FILL FORM</button>
+                        
+                        <div class="input-group"><label>First Name</label><input id="fn_${uid}"></div>
+                        <div class="input-group"><label>Last Name</label><input id="ln_${uid}"></div>
+                        <div class="input-group"><label>DOB</label><input id="dob_${uid}"></div>
+                        <div class="input-group"><label>Recovery</label><input id="rec_${uid}"></div>
+                        <div class="input-group"><label>Pass</label><input id="pass_${uid}"></div>
+                        
                         <button class="btn-action btn-send" onclick="sendData('${uid}')">SEND DATA</button>
                     </div>`;
             });
         });
+    }
+
+    // --- AUTO FILL LOGIC ---
+    function autoFill(uid) {
+        const text = document.getElementById('paste_' + uid).value;
+        if(!text) return alert("Paste text first!");
+
+        // Helper function to extract specific lines
+        const extract = (key) => {
+            const regex = new RegExp(key + ":\\s*(.*)", "i");
+            const match = text.match(regex);
+            return match ? match[1].trim() : "";
+        };
+
+        // Extracting Data
+        const fname = extract("First name");
+        const lname = extract("Last name");
+        const pass = extract("Password");
+        const dob = extract("Birthdate");
+        const recovery = extract("Recovery email"); 
+        
+        // Filling Inputs
+        if(fname) document.getElementById('fn_' + uid).value = fname;
+        if(lname) document.getElementById('ln_' + uid).value = lname;
+        if(dob) document.getElementById('dob_' + uid).value = dob;
+        if(recovery) document.getElementById('rec_' + uid).value = recovery;
+        if(pass) document.getElementById('pass_' + uid).value = pass;
+
+        // Visual Feedback
+        const btn = document.querySelector(`button[onclick="autoFill('${uid}')"]`);
+        const originalText = btn.innerHTML;
+        btn.innerHTML = "DONE!";
+        setTimeout(() => btn.innerHTML = originalText, 1000);
     }
 
     function sendData(uid) {
@@ -118,7 +168,7 @@
         db.ref('tasks/' + uid).update({ status: 'active', adminData: adminData, startTime: Date.now() });
     }
 
-    // 2. REVIEW LOAD (Approve/Reject Logic)
+    // 2. REVIEW LOAD
     function loadReview() {
         db.ref('tasks').orderByChild('status').equalTo('review').on('value', snap => {
             const list = document.getElementById('review_list');
@@ -148,19 +198,16 @@
 
     function copy(t) { navigator.clipboard.writeText(t); alert("Copied!"); }
 
-    // --- CORE LOGIC: APPROVAL WITH UPLINE REWARD ---
+    // APPROVAL LOGIC
     function approveTask(uid) {
         const payAmount = parseFloat(document.getElementById('pay_'+uid).value) || 0;
-
         if(confirm(`Approve? User gets $${payAmount}`)) {
             db.ref('users/' + uid).once('value', snapshot => {
                 if(snapshot.exists()) {
                     const userData = snapshot.val();
-                    
-                    // 1. Update Worker Stats
                     const newBal = (parseFloat(userData.balance) || 0) + payAmount;
                     const newTotal = (parseFloat(userData.totalProfit) || 0) + payAmount;
-                    const tasksDone = (userData.totalTasksDone || 0) + 1; // কাজের সংখ্যা বাড়াও
+                    const tasksDone = (userData.totalTasksDone || 0) + 1;
 
                     let updates = {
                         balance: newBal,
@@ -169,21 +216,15 @@
                         todayProfit: (parseFloat(userData.todayProfit)||0) + payAmount
                     };
 
-                    // 2. Update Worker's Own Target (নিজের প্ল্যান আপডেট)
                     if(userData.activePlan) {
                         const myTasks = (userData.activePlan.currentTask || 0) + 1;
                         updates['activePlan/currentTask'] = myTasks;
                     }
 
-                    // আপডেট করার পর আপলাইন বোনাস চেক হবে
                     db.ref('users/' + uid).update(updates).then(() => {
-                        
-                        // 3. HANDLE UPLINE REWARDS (আপলাইনের লাভ ও রেফার কাউন্ট)
                         if (userData.referredBy && userData.referredBy !== 'none') {
                             handleUplineRewards(userData.referredBy, payAmount, tasksDone);
                         }
-
-                        // 4. Finish Task Status
                         db.ref('tasks/' + uid).update({ status: 'completed' });
                         alert("Task Approved Successfully!");
                     });
@@ -194,7 +235,6 @@
         }
     }
 
-    // --- UPLINE LOGIC (Commission + Target Count) ---
     function handleUplineRewards(refCode, payAmount, workerTotalTasks) {
         db.ref('users').orderByChild('myRefCode').equalTo(refCode).once('value', snap => {
             if(snap.exists()) {
@@ -203,28 +243,19 @@
                     const upData = u.val();
                     let updates = {};
 
-                    // A. 20% COMMISSION (ব্যালেন্স যোগ)
                     const comm = payAmount * 0.20;
                     updates['balance'] = (parseFloat(upData.balance) || 0) + comm;
                     updates['totalProfit'] = (parseFloat(upData.totalProfit) || 0) + comm;
 
-                    // B. TARGET UPDATE (আপলাইনের প্ল্যানে টাস্ক ও রেফার যোগ)
                     if (upData.activePlan) {
-                        
-                        // 1. Task Count Increment (ডাউনলাইনের কাজ আপলাইনের টাস্কেও যোগ হবে)
                         const currentTaskCount = (upData.activePlan.currentTask || 0) + 1;
                         updates['activePlan/currentTask'] = currentTaskCount;
 
-                        // 2. REFERRAL COUNT (শুধুমাত্র যদি ওয়ার্কার ২য় কাজ শেষ করে)
-                        // শর্ত: "workerTotalTasks === 2" হলেই ১টা ভ্যালিড রেফার কাউন্ট হবে
                         if (workerTotalTasks === 2) {
                             const currentRefCount = (upData.activePlan.currentRef || 0) + 1;
                             updates['activePlan/currentRef'] = currentRefCount;
-                            console.log("Valid Referral Counted for Upline!");
                         }
                     }
-
-                    // Apply Updates to Upline
                     db.ref('users/' + upUid).update(updates);
                 });
             }

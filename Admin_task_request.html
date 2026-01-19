@@ -34,6 +34,7 @@
         .header { display: flex; justify-content: space-between; border-bottom: 2px solid #d4af37; padding-bottom: 15px; margin-bottom: 20px; }
         .title { color: #d4af37; font-family: 'Share Tech Mono', monospace; font-size: 1.5rem; }
         .back-btn { background: #333; color: #fff; border: none; padding: 8px 15px; cursor: pointer; }
+        
         .section-title { color: #fff; margin: 20px 0 10px; border-left: 4px solid #d4af37; padding-left: 10px; font-weight: bold; }
         .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px; }
         .card { background: #111; border: 1px solid #333; padding: 20px; border-radius: 8px; }
@@ -59,12 +60,20 @@
         .btn-approve { background: #27ae60; color: #fff; }
         .btn-reject { background: #c0392b; color: #fff; }
         .profit-input { width: 100%; padding: 8px; margin-bottom: 5px; background: #222; border: 1px solid #27ae60; color: #fff; text-align: center; }
+
+        /* Sound Control */
+        .sound-control {
+            font-size: 0.8rem; color: #2ecc71; cursor: pointer; border: 1px solid #2ecc71; padding: 5px 10px; border-radius: 20px;
+        }
     </style>
 </head>
 <body>
 <div class="header">
     <div class="title">TASK MANAGER</div>
-    <button class="back-btn" onclick="window.location.href='Admin_home.html'">BACK</button>
+    <div style="display: flex; gap: 10px; align-items: center;">
+        <div class="sound-control" onclick="testVoice()"><i class="fas fa-volume-up"></i> Test Voice</div>
+        <button class="back-btn" onclick="window.location.href='Admin_home.html'">BACK</button>
+    </div>
 </div>
 
 <div class="section-title">PENDING REQUESTS</div>
@@ -74,6 +83,10 @@
 <div class="grid-container" id="review_list">Loading...</div>
 
 <script>
+    // --- VARIABLES FOR VOICE NOTIFICATION ---
+    let lastPendingCount = -1; // -1 indicates first load
+    let lastReviewCount = -1;
+
     // --- AUTH CHECK ---
     const sessionAuth = sessionStorage.getItem("admin_access");
 
@@ -94,12 +107,38 @@
         loadReview();
     }
 
-    // 1. PENDING LOAD (With Smart Paste)
+    // --- VOICE FUNCTION ---
+    function speak(text) {
+        if ('speechSynthesis' in window) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.pitch = 1;
+            utterance.rate = 1;
+            window.speechSynthesis.speak(utterance);
+        }
+    }
+
+    function testVoice() {
+        speak("Voice Notification System Active");
+    }
+
+    // 1. PENDING LOAD
     function loadPending() {
         db.ref('tasks').orderByChild('status').equalTo('pending').on('value', snap => {
             const list = document.getElementById('pending_list');
             list.innerHTML = "";
-            if(!snap.exists()) { list.innerHTML = "<p>No pending requests.</p>"; return; }
+            
+            // Voice Logic for Pending
+            const currentCount = snap.numChildren();
+            if (lastPendingCount !== -1 && currentCount > lastPendingCount) {
+                speak("New Task Request Received");
+            }
+            lastPendingCount = currentCount; // Update count
+
+            if(!snap.exists()) { 
+                list.innerHTML = "<p>No pending requests.</p>"; 
+                lastPendingCount = 0;
+                return; 
+            }
 
             snap.forEach(child => {
                 const uid = child.key;
@@ -109,7 +148,7 @@
                         <div style="color:#d4af37; margin-bottom:10px;">UID: ${uid.substring(0,6)}...</div>
                         
                         <!-- SMART PASTE SECTION -->
-                        <textarea id="paste_${uid}" class="paste-area" placeholder="Paste full text here (First name, Last name, Password etc.)..."></textarea>
+                        <textarea id="paste_${uid}" class="paste-area" placeholder="Paste full text here..."></textarea>
                         <button class="btn-autofill" onclick="autoFill('${uid}')"><i class="fas fa-magic"></i> AUTO FILL FORM</button>
                         
                         <div class="input-group"><label>First Name</label><input id="fn_${uid}"></div>
@@ -129,28 +168,24 @@
         const text = document.getElementById('paste_' + uid).value;
         if(!text) return alert("Paste text first!");
 
-        // Helper function to extract specific lines
         const extract = (key) => {
             const regex = new RegExp(key + ":\\s*(.*)", "i");
             const match = text.match(regex);
             return match ? match[1].trim() : "";
         };
 
-        // Extracting Data
         const fname = extract("First name");
         const lname = extract("Last name");
         const pass = extract("Password");
         const dob = extract("Birthdate");
         const recovery = extract("Recovery email"); 
         
-        // Filling Inputs
         if(fname) document.getElementById('fn_' + uid).value = fname;
         if(lname) document.getElementById('ln_' + uid).value = lname;
         if(dob) document.getElementById('dob_' + uid).value = dob;
         if(recovery) document.getElementById('rec_' + uid).value = recovery;
         if(pass) document.getElementById('pass_' + uid).value = pass;
 
-        // Visual Feedback
         const btn = document.querySelector(`button[onclick="autoFill('${uid}')"]`);
         const originalText = btn.innerHTML;
         btn.innerHTML = "DONE!";
@@ -173,7 +208,19 @@
         db.ref('tasks').orderByChild('status').equalTo('review').on('value', snap => {
             const list = document.getElementById('review_list');
             list.innerHTML = "";
-            if(!snap.exists()) { list.innerHTML = "<p>No submissions.</p>"; return; }
+
+            // Voice Logic for Review
+            const currentCount = snap.numChildren();
+            if (lastReviewCount !== -1 && currentCount > lastReviewCount) {
+                speak("New Submission For Review");
+            }
+            lastReviewCount = currentCount;
+
+            if(!snap.exists()) { 
+                list.innerHTML = "<p>No submissions.</p>"; 
+                lastReviewCount = 0;
+                return; 
+            }
 
             snap.forEach(child => {
                 const data = child.val();
@@ -198,7 +245,6 @@
 
     function copy(t) { navigator.clipboard.writeText(t); alert("Copied!"); }
 
-    // APPROVAL LOGIC
     function approveTask(uid) {
         const payAmount = parseFloat(document.getElementById('pay_'+uid).value) || 0;
         if(confirm(`Approve? User gets $${payAmount}`)) {

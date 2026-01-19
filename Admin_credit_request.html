@@ -36,7 +36,7 @@
         /* WALLET SETUP BOX */
         .wallet-box {
             background: #111; padding: 20px; border-radius: 10px; border: 1px solid #d4af37;
-            margin-bottom: 30px; border-left: 5px solid #2ecc71; /* Green accent for money */
+            margin-bottom: 30px; border-left: 5px solid #2ecc71;
         }
         .wallet-inp-group { display: flex; gap: 10px; margin-top: 10px; }
         .wallet-inp-group input { 
@@ -68,8 +68,6 @@
         .row { margin-bottom: 8px; font-size: 0.9rem; color: #ccc; word-break: break-all; }
         .row strong { color: #888; display: block; font-size: 0.75rem; text-transform: uppercase; }
         
-        .hl-amount { font-size: 1.5rem; color: #d4af37; font-weight: bold; margin-bottom: 5px; }
-        
         .btn-approve { width: 100%; padding: 12px; background: #2ecc71; color: #000; border: none; cursor: pointer; font-weight: bold; margin-top: 10px; }
         .btn-reject { width: 100%; padding: 8px; background: #c0392b; color: #fff; border: none; cursor: pointer; margin-top: 5px; font-size: 0.8rem; }
         
@@ -86,11 +84,11 @@
     <!-- 1. WALLET ADDRESS SETUP -->
     <div class="wallet-box">
         <h3 style="color:#2ecc71; margin:0;">RECEIVING WALLET (USDT BEP20)</h3>
-        <p style="color:#888; font-size:0.8rem; margin: 5px 0;">Set the address where users will send money.</p>
+        <p style="color:#888; font-size:0.8rem; margin: 5px 0;">This address will be shown to users.</p>
         
         <div class="wallet-inp-group">
             <input type="text" id="admin_wallet" placeholder="Paste your USDT Address here...">
-            <button class="wallet-btn" onclick="updateWallet()">SAVE ADDRESS</button>
+            <button class="wallet-btn" onclick="updateWallet()">SAVE</button>
         </div>
     </div>
 
@@ -160,7 +158,7 @@
             if(!addr) return alert("Please enter a valid wallet address!");
 
             db.ref('adminSettings').update({ walletAddress: addr })
-            .then(() => alert("Wallet Address Updated Successfully! Users will now see this address."));
+            .then(() => alert("Wallet Address Updated!"));
         }
 
         // --- 2. PACKAGE MANAGEMENT ---
@@ -218,7 +216,7 @@
             }
         }
 
-        // --- 3. REQUEST VERIFICATION & APPROVAL ---
+        // --- 3. REQUEST VERIFICATION ---
         function loadRequests() {
             db.ref('credit_requests').orderByChild('status').equalTo('pending').on('value', snap => {
                 const list = document.getElementById('requestList');
@@ -235,23 +233,24 @@
                     
                     const html = `
                         <div class="card">
-                            <div class="hl-amount">+${data.credits} Credits</div>
+                            <div style="font-size: 1.5rem; color: #d4af37; font-weight: bold;">+${data.credits} CR</div>
                             <div style="color:#fff; font-size:1rem; margin-bottom:15px;">
                                 User Paid: <span style="color:#2ecc71; font-weight:bold;">$${data.pricePaid}</span>
                             </div>
                             
                             <div class="row" style="background:#111; padding:5px; border:1px solid #333;">
-                                <strong>SENDER ADDRESS (Check This)</strong> 
+                                <strong>SENDER ADDRESS</strong> 
                                 ${data.senderAddress || '<span style="color:red">Not Provided</span>'}
-                                <i class="fas fa-copy copy-icon" onclick="copyToClip('${data.senderAddress}')" title="Copy"></i>
+                                <i class="fas fa-copy copy-icon" onclick="navigator.clipboard.writeText('${data.senderAddress}')"></i>
                             </div>
                             
-                            <div class="row"><strong>TRANSACTION HASH / ID</strong> ${data.txnId || 'N/A'}</div>
-                            <div class="row"><strong>USER EMAIL</strong> ${data.email || 'N/A'}</div>
+                            <div class="row"><strong>TXN ID</strong> ${data.txnId || 'N/A'}</div>
+                            <div class="row"><strong>TYPE</strong> ${data.type ? data.type.toUpperCase() : 'N/A'}</div>
+                            <div class="row"><strong>EMAIL</strong> ${data.email || 'N/A'}</div>
                             <div class="row"><strong>DATE</strong> ${data.date ? new Date(data.date).toLocaleString() : 'N/A'}</div>
                             
                             <button class="btn-approve" onclick="approveCredit('${key}', '${data.uid}', ${data.credits})">PAYMENT RECEIVED - APPROVE</button>
-                            <button class="btn-reject" onclick="rejectCredit('${key}')">PAYMENT NOT FOUND - REJECT</button>
+                            <button class="btn-reject" onclick="rejectCredit('${key}')">REJECT</button>
                         </div>
                     `;
                     list.innerHTML += html;
@@ -259,29 +258,22 @@
             });
         }
 
-        function copyToClip(text) {
-            if(!text) return;
-            navigator.clipboard.writeText(text).then(() => {
-                alert("Address Copied! Now check your wallet.");
-            });
-        }
-
         function approveCredit(key, uid, credits) {
-            if(confirm(`Confirm that you received payment from this address?\n\nAdding ${credits} Credits to User...`)) {
+            if(confirm(`Confirm payment received?\n\nAdding ${credits} Credits to User...`)) {
                 db.ref('users/' + uid).once('value', s => {
                     const current = s.exists() && s.val().credits ? parseFloat(s.val().credits) : 0;
                     
                     db.ref('users/' + uid).update({ credits: current + parseFloat(credits) })
                     .then(() => {
                         db.ref('credit_requests/' + key).update({ status: 'approved' });
-                        alert("Approved! Credits added to user balance.");
+                        alert("Approved! Credits added.");
                     });
                 });
             }
         }
 
         function rejectCredit(key) {
-            if(confirm("Are you sure payment was NOT received? This will reject the request.")) {
+            if(confirm("Reject this request?")) {
                 db.ref('credit_requests/' + key).update({ status: 'rejected' });
             }
         }

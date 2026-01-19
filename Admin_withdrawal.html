@@ -9,20 +9,21 @@
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
-    <!-- FIREBASE -->
+    <!-- FIREBASE SDK -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <script>
+        // UPDATED CONFIG (Part-1)
         const firebaseConfig = {
-            apiKey: "AIzaSyDR38gO9SBcE3qcVvFHlpyE5YdEqo0n2XU",
-            authDomain: "task38-f7daa.firebaseapp.com",
-            databaseURL: "https://task38-f7daa-default-rtdb.firebaseio.com",
-            projectId: "task38-f7daa",
-            storageBucket: "task38-f7daa.firebasestorage.app",
-            messagingSenderId: "655282407518",
-            appId: "1:655282407518:web:637dd6ac82b6c5e6018ccf"
+            apiKey: "AIzaSyDuxSz3j5xMYDw5U9kLA0cjkpOE82D06MI",
+            authDomain: "part-1-f6d87.firebaseapp.com",
+            databaseURL: "https://part-1-f6d87-default-rtdb.firebaseio.com",
+            projectId: "part-1-f6d87",
+            storageBucket: "part-1-f6d87.firebasestorage.app",
+            messagingSenderId: "682699403122",
+            appId: "1:682699403122:web:038ffca84d489a6c0db7eb"
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
@@ -95,15 +96,12 @@
 
     <!-- SETTINGS SECTION -->
     <div class="settings-bar">
-        <div class="set-group">
-            <label>Admin Wallet (For Credit Payments)</label>
-            <input id="adminWallet" placeholder="0x...">
-        </div>
+        <!-- Admin can set min withdraw here -->
         <div class="set-group">
             <label>Min Withdraw Limit ($)</label>
-            <input id="minWithdraw" type="number" placeholder="2">
+            <input id="minWithdraw" type="number" placeholder="e.g. 5">
         </div>
-        <button class="save-btn" onclick="saveSettings()">SAVE SETTINGS</button>
+        <button class="save-btn" onclick="saveSettings()">UPDATE SETTINGS</button>
     </div>
 
     <h3 style="color:#fff; margin-bottom:15px;">PENDING REQUESTS</h3>
@@ -114,31 +112,41 @@
     </div>
 
     <script>
-        auth.onAuthStateChanged(user => {
-            if(user && user.email === "rafsanvai388@gmail.com") {
-                loadSettings();
-                loadWithdrawals();
-            } else {
-                window.location.href = "Admin_login.html";
-            }
-        });
+        // --- UPDATED AUTH CHECK ---
+        const sessionAuth = sessionStorage.getItem("admin_access");
+
+        if (sessionAuth === "granted") {
+            // Logged in via Secret Code
+            initPage();
+        } else {
+            // Check Firebase Auth (Backup)
+            auth.onAuthStateChanged(user => {
+                if(user && user.email === "rafsanvai388@gmail.com") {
+                    initPage();
+                } else {
+                    window.location.href = "index.html";
+                }
+            });
+        }
+
+        function initPage() {
+            loadSettings();
+            loadWithdrawals();
+        }
 
         // 1. SETTINGS LOGIC
         function loadSettings() {
             db.ref('adminSettings').once('value', s => {
                 const d = s.val();
                 if(d) {
-                    document.getElementById('adminWallet').value = d.wallet || "";
-                    document.getElementById('minWithdraw').value = d.minWithdraw || 2;
+                    if(d.minWithdraw) document.getElementById('minWithdraw').value = d.minWithdraw;
                 }
             });
         }
 
         function saveSettings() {
-            const w = document.getElementById('adminWallet').value;
             const m = document.getElementById('minWithdraw').value;
             db.ref('adminSettings').update({
-                wallet: w,
                 minWithdraw: parseFloat(m)
             }).then(() => alert("Settings Saved!"));
         }
@@ -158,7 +166,7 @@
                 snap.forEach(child => {
                     const key = child.key; // Unique ID of withdrawal
                     const data = child.val();
-                    const date = new Date(data.date).toLocaleString();
+                    const date = data.date ? new Date(data.date).toLocaleString() : 'N/A';
 
                     const html = `
                         <div class="card">
@@ -167,7 +175,7 @@
 
                             <div class="detail-row">
                                 <strong>DESTINATION / ID</strong>
-                                ${data.destination} <i class="fas fa-copy copy-icon" onclick="navigator.clipboard.writeText('${data.destination}')"></i>
+                                ${data.destination} <i class="fas fa-copy copy-icon" onclick="navigator.clipboard.writeText('${data.destination}')" title="Copy"></i>
                             </div>
 
                             <div class="detail-row">
@@ -182,7 +190,7 @@
 
                             <div class="btn-group">
                                 <button class="btn-pay" onclick="approveWithdraw('${key}')">PAY DONE</button>
-                                <button class="btn-reject" onclick="rejectWithdraw('${key}', '${data.uid}', ${data.amount})">REJECT</button>
+                                <button class="btn-reject" onclick="rejectWithdraw('${key}', '${data.uid}', ${data.amount})">REJECT & REFUND</button>
                             </div>
                         </div>
                     `;
@@ -192,18 +200,18 @@
         }
 
         function approveWithdraw(key) {
-            if(confirm("Mark this as PAID? (Ensure you sent the money manually)")) {
+            if(confirm("Confirm that you have sent the money manually?")) {
                 db.ref('withdrawals/' + key).update({
                     status: 'paid'
-                });
+                }).then(() => alert("Marked as PAID."));
             }
         }
 
         function rejectWithdraw(key, uid, amount) {
-            if(confirm("Reject and REFUND $" + amount + " to user balance?")) {
+            if(confirm("Reject this request and REFUND $" + amount + " to user balance?")) {
                 // 1. Get current balance
                 db.ref('users/' + uid).once('value', s => {
-                    const curBal = parseFloat(s.val().balance || 0);
+                    const curBal = s.exists() && s.val().balance ? parseFloat(s.val().balance) : 0;
                     const newBal = curBal + parseFloat(amount);
                     
                     // 2. Update Balance

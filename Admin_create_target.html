@@ -98,13 +98,25 @@
     <div class="plan-list" id="planList">Loading...</div>
 
     <script>
-        auth.onAuthStateChanged(user => {
-            if(user && user.email === "rafsanvai388@gmail.com") {
-                loadPlans();
-            } else {
-                window.location.href = "Admin_login.html";
-            }
-        });
+        // --- UPDATED AUTHENTICATION LOGIC ---
+        const sessionAuth = sessionStorage.getItem("admin_access");
+
+        if (sessionAuth === "granted") {
+            // Access granted via Secret Login
+            loadPlans();
+        } else {
+            // Fallback to Firebase Email Check
+            auth.onAuthStateChanged(user => {
+                if(user && user.email === "rafsanvai388@gmail.com") {
+                    loadPlans();
+                } else {
+                    // Redirect back to main login if unauthorized
+                    window.location.href = "index.html";
+                }
+            });
+        }
+
+        // --- PLAN FUNCTIONS ---
 
         function createPlan() {
             const type = document.getElementById('p_type').value;
@@ -120,8 +132,9 @@
             if(!data.name || !data.cost) return alert("Fill all fields");
 
             db.ref('targets/' + type).push(data).then(() => {
-                alert("Target Created!");
-                location.reload();
+                alert("Target Created Successfully!");
+                // Clear inputs optional
+                // location.reload(); // Reload to refresh list
             });
         }
 
@@ -132,17 +145,23 @@
             // Load Weekly & Monthly
             ['weekly', 'monthly'].forEach(type => {
                 db.ref('targets/' + type).on('value', snap => {
+                    // We don't want to clear innerHTML inside the loop repeatedly or it might flicker/duplicate if not handled carefully
+                    // But for simple lists, appending is fine as long as we clear before the loop. 
+                    // Since we have two async calls, let's just append.
+                    
                     snap.forEach(child => {
                         const p = child.val();
-                        list.innerHTML += `
-                            <div class="plan-card">
-                                <div class="p-title">[${type.toUpperCase()}] ${p.name}</div>
-                                <i class="fas fa-trash del-btn" onclick="deletePlan('${type}', '${child.key}')"></i>
-                                <div class="p-detail">Cost: ${p.cost} Credits | Reward: $${p.reward}</div>
-                                <div class="p-detail">Target: ${p.targetRef} Refs & ${p.targetTask} Downline Tasks</div>
-                                <div class="p-detail">Duration: ${p.duration} Days</div>
-                            </div>
+                        // Add to list
+                        const div = document.createElement('div');
+                        div.className = "plan-card";
+                        div.innerHTML = `
+                            <div class="p-title">[${type.toUpperCase()}] ${p.name}</div>
+                            <i class="fas fa-trash del-btn" onclick="deletePlan('${type}', '${child.key}')"></i>
+                            <div class="p-detail">Cost: ${p.cost} Credits | Reward: $${p.reward}</div>
+                            <div class="p-detail">Target: ${p.targetRef} Refs & ${p.targetTask} Downline Tasks</div>
+                            <div class="p-detail">Duration: ${p.duration} Days</div>
                         `;
+                        list.appendChild(div);
                     });
                 });
             });
@@ -150,8 +169,10 @@
 
         function deletePlan(type, key) {
             if(confirm("Delete this plan?")) {
-                db.ref('targets/' + type + '/' + key).remove();
-                location.reload(); // Refresh to clear view
+                db.ref('targets/' + type + '/' + key).remove()
+                .then(() => {
+                    location.reload(); // Refresh to clear view
+                });
             }
         }
     </script>

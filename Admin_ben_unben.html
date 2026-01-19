@@ -9,20 +9,21 @@
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
-    <!-- FIREBASE -->
+    <!-- FIREBASE SDK -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <script>
+        // UPDATED CONFIG (Part-1)
         const firebaseConfig = {
-            apiKey: "AIzaSyDR38gO9SBcE3qcVvFHlpyE5YdEqo0n2XU",
-            authDomain: "task38-f7daa.firebaseapp.com",
-            databaseURL: "https://task38-f7daa-default-rtdb.firebaseio.com",
-            projectId: "task38-f7daa",
-            storageBucket: "task38-f7daa.firebasestorage.app",
-            messagingSenderId: "655282407518",
-            appId: "1:655282407518:web:637dd6ac82b6c5e6018ccf"
+            apiKey: "AIzaSyDuxSz3j5xMYDw5U9kLA0cjkpOE82D06MI",
+            authDomain: "part-1-f6d87.firebaseapp.com",
+            databaseURL: "https://part-1-f6d87-default-rtdb.firebaseio.com",
+            projectId: "part-1-f6d87",
+            storageBucket: "part-1-f6d87.firebasestorage.app",
+            messagingSenderId: "682699403122",
+            appId: "1:682699403122:web:038ffca84d489a6c0db7eb"
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
@@ -101,13 +102,22 @@
         let allUsers = [];
         let currentFilter = 'all';
 
-        auth.onAuthStateChanged(user => {
-            if(user && user.email === "rafsanvai388@gmail.com") {
-                loadUsers();
-            } else {
-                window.location.href = "Admin_login.html";
-            }
-        });
+        // --- UPDATED AUTH CHECK ---
+        const sessionAuth = sessionStorage.getItem("admin_access");
+
+        if (sessionAuth === "granted") {
+            // Secret Login Access
+            loadUsers();
+        } else {
+            // Firebase Auth Fallback
+            auth.onAuthStateChanged(user => {
+                if(user && user.email === "rafsanvai388@gmail.com") {
+                    loadUsers();
+                } else {
+                    window.location.href = "index.html";
+                }
+            });
+        }
 
         function loadUsers() {
             db.ref('users').on('value', snap => {
@@ -119,6 +129,8 @@
                         allUsers.push(child.val());
                     });
                     renderUsers(allUsers);
+                } else {
+                    document.getElementById('userList').innerHTML = "<p>No users found.</p>";
                 }
             });
         }

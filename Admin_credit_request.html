@@ -6,12 +6,22 @@
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
+    <!-- FIREBASE SDK -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <script>
-        const firebaseConfig = { apiKey: "AIzaSyDR38gO9SBcE3qcVvFHlpyE5YdEqo0n2XU", authDomain: "task38-f7daa.firebaseapp.com", databaseURL: "https://task38-f7daa-default-rtdb.firebaseio.com", projectId: "task38-f7daa", storageBucket: "task38-f7daa.firebasestorage.app", messagingSenderId: "655282407518", appId: "1:655282407518:web:637dd6ac82b6c5e6018ccf" };
+        // CONFIG (Part-1)
+        const firebaseConfig = {
+            apiKey: "AIzaSyDuxSz3j5xMYDw5U9kLA0cjkpOE82D06MI",
+            authDomain: "part-1-f6d87.firebaseapp.com",
+            databaseURL: "https://part-1-f6d87-default-rtdb.firebaseio.com",
+            projectId: "part-1-f6d87",
+            storageBucket: "part-1-f6d87.firebasestorage.app",
+            messagingSenderId: "682699403122",
+            appId: "1:682699403122:web:038ffca84d489a6c0db7eb"
+        };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
         const auth = firebase.auth();
@@ -23,9 +33,21 @@
         .title { color: #d4af37; font-family: 'Share Tech Mono', monospace; font-size: 1.5rem; }
         .back-btn { background: #333; color: #fff; border: none; padding: 8px 15px; cursor: pointer; }
 
+        /* WALLET SETUP BOX */
+        .wallet-box {
+            background: #111; padding: 20px; border-radius: 10px; border: 1px solid #d4af37;
+            margin-bottom: 30px; border-left: 5px solid #2ecc71; /* Green accent for money */
+        }
+        .wallet-inp-group { display: flex; gap: 10px; margin-top: 10px; }
+        .wallet-inp-group input { 
+            flex: 1; padding: 12px; background: #000; border: 1px solid #444; 
+            color: #2ecc71; font-family: monospace; font-size: 1rem; letter-spacing: 1px;
+        }
+        .wallet-btn { background: #2ecc71; color: #000; font-weight: bold; border: none; padding: 0 25px; cursor: pointer; }
+
         /* PACKAGE CREATOR */
         .creator-box {
-            background: #111; padding: 20px; border-radius: 10px; border: 1px solid #d4af37;
+            background: #111; padding: 20px; border-radius: 10px; border: 1px solid #333;
             margin-bottom: 30px; border-left: 5px solid #d4af37;
         }
         .form-row { display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end; }
@@ -42,42 +64,54 @@
 
         /* REQUESTS GRID */
         .req-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
-        .card { background: #0f0f0f; border: 1px solid #333; padding: 20px; border-radius: 8px; border-left: 4px solid #2ecc71; }
+        .card { background: #0f0f0f; border: 1px solid #333; padding: 20px; border-radius: 8px; border-left: 4px solid #ff9900; }
         .row { margin-bottom: 8px; font-size: 0.9rem; color: #ccc; word-break: break-all; }
-        .row strong { color: #888; display: block; font-size: 0.75rem; }
+        .row strong { color: #888; display: block; font-size: 0.75rem; text-transform: uppercase; }
         
-        .hl-amount { font-size: 1.5rem; color: #2ecc71; font-weight: bold; margin-bottom: 5px; }
+        .hl-amount { font-size: 1.5rem; color: #d4af37; font-weight: bold; margin-bottom: 5px; }
         
-        .btn-approve { width: 100%; padding: 12px; background: #d4af37; color: #000; border: none; cursor: pointer; font-weight: bold; margin-top: 10px; }
+        .btn-approve { width: 100%; padding: 12px; background: #2ecc71; color: #000; border: none; cursor: pointer; font-weight: bold; margin-top: 10px; }
         .btn-reject { width: 100%; padding: 8px; background: #c0392b; color: #fff; border: none; cursor: pointer; margin-top: 5px; font-size: 0.8rem; }
+        
+        .copy-icon { cursor: pointer; color: #d4af37; margin-left: 5px; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <div class="title">CREDIT PACKAGES & REQUESTS</div>
+        <div class="title">CREDIT MANAGER</div>
         <button class="back-btn" onclick="window.location.href='Admin_home.html'">BACK</button>
     </div>
 
-    <!-- CREATE PACKAGE -->
+    <!-- 1. WALLET ADDRESS SETUP -->
+    <div class="wallet-box">
+        <h3 style="color:#2ecc71; margin:0;">RECEIVING WALLET (USDT BEP20)</h3>
+        <p style="color:#888; font-size:0.8rem; margin: 5px 0;">Set the address where users will send money.</p>
+        
+        <div class="wallet-inp-group">
+            <input type="text" id="admin_wallet" placeholder="Paste your USDT Address here...">
+            <button class="wallet-btn" onclick="updateWallet()">SAVE ADDRESS</button>
+        </div>
+    </div>
+
+    <!-- 2. CREATE PACKAGE -->
     <div class="creator-box">
-        <h3 style="margin-bottom:10px; color:#d4af37;">Create New Package</h3>
+        <h3 style="margin-bottom:10px; color:#d4af37;">Create Credit Package</h3>
         <div class="form-row">
             <div class="inp-group">
                 <label>Credits Qty</label>
-                <input type="number" id="p_credits" placeholder="e.g. 5">
+                <input type="number" id="p_credits" placeholder="e.g. 100">
             </div>
             <div class="inp-group">
                 <label>Base Price ($)</label>
-                <input type="number" id="p_price" placeholder="e.g. 1.00">
+                <input type="number" id="p_price" placeholder="e.g. 10.00">
             </div>
             <div class="inp-group">
                 <label>Discount (%)</label>
-                <input type="number" id="p_discount" placeholder="e.g. 40">
+                <input type="number" id="p_discount" placeholder="e.g. 5">
             </div>
-            <button class="add-btn" onclick="addPackage()">ADD PACKAGE</button>
+            <button class="add-btn" onclick="addPackage()">ADD</button>
         </div>
-        <p style="color:#666; font-size:0.8rem; margin-top:10px;">System will calculate Final Price automatically.</p>
     </div>
 
     <h4 style="color:#aaa; margin-bottom:10px;">Active Packages</h4>
@@ -85,22 +119,51 @@
 
     <hr style="border-color:#333; margin: 30px 0;">
 
-    <h3 style="color:#fff; margin-bottom:15px;">USER BUY REQUESTS</h3>
+    <h3 style="color:#fff; margin-bottom:15px;">PENDING BUY REQUESTS</h3>
     <div class="req-grid" id="requestList">
         <p style="color:#666;">Loading requests...</p>
     </div>
 
     <script>
-        auth.onAuthStateChanged(user => {
-            if(user && user.email === "rafsanvai388@gmail.com") {
-                loadPackages();
-                loadRequests();
-            } else {
-                window.location.href = "Admin_login.html";
-            }
-        });
+        // --- AUTH CHECK ---
+        const sessionAuth = sessionStorage.getItem("admin_access");
 
-        // --- 1. PACKAGE MANAGEMENT ---
+        if (sessionAuth === "granted") {
+            initPage();
+        } else {
+            auth.onAuthStateChanged(user => {
+                if(user && user.email === "rafsanvai388@gmail.com") {
+                    initPage();
+                } else {
+                    window.location.href = "index.html"; 
+                }
+            });
+        }
+
+        function initPage() {
+            loadWallet(); // Load saved address
+            loadPackages();
+            loadRequests();
+        }
+
+        // --- 1. WALLET MANAGEMENT ---
+        function loadWallet() {
+            db.ref('adminSettings/walletAddress').on('value', snap => {
+                if(snap.exists()) {
+                    document.getElementById('admin_wallet').value = snap.val();
+                }
+            });
+        }
+
+        function updateWallet() {
+            const addr = document.getElementById('admin_wallet').value.trim();
+            if(!addr) return alert("Please enter a valid wallet address!");
+
+            db.ref('adminSettings').update({ walletAddress: addr })
+            .then(() => alert("Wallet Address Updated Successfully! Users will now see this address."));
+        }
+
+        // --- 2. PACKAGE MANAGEMENT ---
         function addPackage() {
             const cr = parseFloat(document.getElementById('p_credits').value);
             const pr = parseFloat(document.getElementById('p_price').value);
@@ -108,7 +171,6 @@
 
             if(!cr || !pr) return alert("Enter Credits and Price");
 
-            // Calculate Final Price
             const finalPrice = pr - (pr * (dis / 100));
 
             const newPkg = {
@@ -131,21 +193,22 @@
                 const list = document.getElementById('packageList');
                 list.innerHTML = "";
                 
-                snap.forEach(child => {
-                    const data = child.val();
-                    const key = child.key;
-                    
-                    const html = `
-                        <div class="pkg-card">
-                            <i class="fas fa-times pkg-del" onclick="delPackage('${key}')"></i>
-                            <div style="color:#d4af37; font-weight:bold;">${data.credits} Credits</div>
-                            <div style="font-size:0.8rem; text-decoration:line-through; color:#666;">$${data.basePrice}</div>
-                            <div style="color:#2ecc71; font-weight:bold;">$${data.finalPrice}</div>
-                            <div style="font-size:0.7rem; color:#aaa;">${data.discount}% OFF</div>
-                        </div>
-                    `;
-                    list.innerHTML += html;
-                });
+                if(snap.exists()){
+                    snap.forEach(child => {
+                        const data = child.val();
+                        const key = child.key;
+                        
+                        const html = `
+                            <div class="pkg-card">
+                                <i class="fas fa-times pkg-del" onclick="delPackage('${key}')"></i>
+                                <div style="color:#d4af37; font-weight:bold;">${data.credits} Credits</div>
+                                <div style="font-size:0.8rem; text-decoration:line-through; color:#666;">$${data.basePrice}</div>
+                                <div style="color:#2ecc71; font-weight:bold;">$${data.finalPrice}</div>
+                            </div>
+                        `;
+                        list.innerHTML += html;
+                    });
+                }
             });
         }
 
@@ -155,7 +218,7 @@
             }
         }
 
-        // --- 2. REQUEST MANAGEMENT ---
+        // --- 3. REQUEST VERIFICATION & APPROVAL ---
         function loadRequests() {
             db.ref('credit_requests').orderByChild('status').equalTo('pending').on('value', snap => {
                 const list = document.getElementById('requestList');
@@ -172,15 +235,23 @@
                     
                     const html = `
                         <div class="card">
-                            <div class="hl-amount">+${data.credits} CR</div>
-                            <div style="color:#aaa; font-size:0.9rem; margin-bottom:10px;">User Paid: <span style="color:#fff">$${data.pricePaid}</span></div>
+                            <div class="hl-amount">+${data.credits} Credits</div>
+                            <div style="color:#fff; font-size:1rem; margin-bottom:15px;">
+                                User Paid: <span style="color:#2ecc71; font-weight:bold;">$${data.pricePaid}</span>
+                            </div>
                             
-                            <div class="row"><strong>SENDER ADDRESS</strong> ${data.senderAddress}</div>
-                            <div class="row"><strong>USER UID</strong> ${data.uid}</div>
-                            <div class="row"><strong>DATE</strong> ${new Date(data.date).toLocaleString()}</div>
+                            <div class="row" style="background:#111; padding:5px; border:1px solid #333;">
+                                <strong>SENDER ADDRESS (Check This)</strong> 
+                                ${data.senderAddress || '<span style="color:red">Not Provided</span>'}
+                                <i class="fas fa-copy copy-icon" onclick="copyToClip('${data.senderAddress}')" title="Copy"></i>
+                            </div>
                             
-                            <button class="btn-approve" onclick="approveCredit('${key}', '${data.uid}', ${data.credits})">APPROVE</button>
-                            <button class="btn-reject" onclick="rejectCredit('${key}')">REJECT</button>
+                            <div class="row"><strong>TRANSACTION HASH / ID</strong> ${data.txnId || 'N/A'}</div>
+                            <div class="row"><strong>USER EMAIL</strong> ${data.email || 'N/A'}</div>
+                            <div class="row"><strong>DATE</strong> ${data.date ? new Date(data.date).toLocaleString() : 'N/A'}</div>
+                            
+                            <button class="btn-approve" onclick="approveCredit('${key}', '${data.uid}', ${data.credits})">PAYMENT RECEIVED - APPROVE</button>
+                            <button class="btn-reject" onclick="rejectCredit('${key}')">PAYMENT NOT FOUND - REJECT</button>
                         </div>
                     `;
                     list.innerHTML += html;
@@ -188,21 +259,29 @@
             });
         }
 
+        function copyToClip(text) {
+            if(!text) return;
+            navigator.clipboard.writeText(text).then(() => {
+                alert("Address Copied! Now check your wallet.");
+            });
+        }
+
         function approveCredit(key, uid, credits) {
-            if(confirm(`Add ${credits} Credits to User?`)) {
+            if(confirm(`Confirm that you received payment from this address?\n\nAdding ${credits} Credits to User...`)) {
                 db.ref('users/' + uid).once('value', s => {
-                    const current = parseFloat(s.val().credits || 0);
+                    const current = s.exists() && s.val().credits ? parseFloat(s.val().credits) : 0;
+                    
                     db.ref('users/' + uid).update({ credits: current + parseFloat(credits) })
                     .then(() => {
                         db.ref('credit_requests/' + key).update({ status: 'approved' });
-                        alert("Approved!");
+                        alert("Approved! Credits added to user balance.");
                     });
                 });
             }
         }
 
         function rejectCredit(key) {
-            if(confirm("Reject this request?")) {
+            if(confirm("Are you sure payment was NOT received? This will reject the request.")) {
                 db.ref('credit_requests/' + key).update({ status: 'rejected' });
             }
         }

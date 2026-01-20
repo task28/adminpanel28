@@ -166,7 +166,6 @@
 
         <div class="input-box">
             <label>Username / Email</label>
-            <!-- Changed type to 'text' to support spaces in username -->
             <input type="text" id="u_email" placeholder="ENTER ID">
         </div>
         <div class="input-box">
@@ -228,7 +227,13 @@
                         setTimeout(() => window.location.href = "Admin_home.html", 800);
                     } 
                     else if (user) {
-                        setTimeout(() => window.location.href = "Admin_home.html", 800);
+                        // FIX: Only redirect specific Admin email
+                        if(user.email === "rafsanvai388@gmail.com") {
+                            setTimeout(() => window.location.href = "Admin_home.html", 800);
+                        } else {
+                            // If regular user, redirect to User Dashboard
+                            window.location.href = "Home.html";
+                        }
                     } else {
                         showLoginForm();
                     }
@@ -263,7 +268,6 @@
                 btn.style.color = "#000";
                 btn.innerText = "ADMIN ACCESS GRANTED";
                 
-                // Set Session Flag
                 sessionStorage.setItem("admin_access", "granted");
 
                 setTimeout(() => {
@@ -275,11 +279,18 @@
             // --- 2. REGULAR FIREBASE LOGIN ---
             auth.signInWithEmailAndPassword(e, p)
             .then((cred) => {
+                // SUCCESS LOGIN
                 btn.style.background = "#00ff00";
                 btn.style.color = "#000";
                 btn.innerText = "ACCESS GRANTED";
+                
+                // FIX: Check if it's Admin or User
                 setTimeout(() => {
-                    window.location.href = "Admin_home.html";
+                    if(cred.user.email === "rafsanvai388@gmail.com") {
+                        window.location.href = "Admin_home.html";
+                    } else {
+                        window.location.href = "Home.html";
+                    }
                 }, 1000);
             })
             .catch((error) => {

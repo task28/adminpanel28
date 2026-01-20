@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SYSTEM_ACCESS_PORTAL</title>
+    <title>TASK28 PREMIUME ADMIN</title>
 
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
@@ -145,7 +145,8 @@
     <!-- BOOT SCREEN -->
     <div class="terminal-window" id="bootScreen">
         <div class="header">
-            <div class="title" style="font-family:'Orbitron'; font-weight:bold;">TASK28 SECURITY SYS</div>
+            <!-- UPDATED TITLE HERE -->
+            <div class="title" style="font-family:'Orbitron'; font-weight:bold;">TASK28 PREMIUME ADMIN PANEL</div>
             <div class="status-light" id="led"></div>
         </div>
         <div class="log-area" id="logBox"></div>
@@ -160,16 +161,17 @@
         <div class="corner tl"></div><div class="corner tr"></div>
         <div class="corner bl"></div><div class="corner br"></div>
 
-        <i class="fas fa-user-shield lock-icon"></i>
-        <h1>SYSTEM LOGIN</h1>
-        <div style="font-size:0.8rem; color:#666; margin-bottom:30px;">IDENTIFY YOURSELF</div>
+        <i class="fas fa-user-lock lock-icon"></i>
+        <h1>ADMIN LOGIN</h1>
+        <div style="font-size:0.8rem; color:#666; margin-bottom:30px;">SECURE ACCESS ONLY</div>
 
+        <!-- UPDATED INPUTS -->
         <div class="input-box">
-            <label>Username / Email</label>
-            <input type="text" id="u_email" placeholder="ENTER ID">
+            <label>PHONE NUMBER</label>
+            <input type="tel" id="u_phone" placeholder="01XXXXXXXXX" autocomplete="off">
         </div>
         <div class="input-box">
-            <label>Passcode</label>
+            <label>SECURE PASSCODE</label>
             <input type="password" id="u_pass" placeholder="••••••••">
         </div>
 
@@ -180,12 +182,12 @@
     <script>
         // --- BOOT ANIMATION LOGIC ---
         const logs = [
-            "Initializing secure protocol...",
-            "Checking Server Integrity...",
-            "Connecting to Database...",
-            "Encrypting Session Keys...",
-            "<span style='color:#00ff00'>System Check Complete.</span>",
-            "Launching Authentication Module..."
+            "Initializing Task28 Core...",
+            "Verifying Admin Privileges...",
+            "Encrypting Connection...",
+            "Loading Database Modules...",
+            "<span style='color:#00ff00'>System Ready.</span>",
+            "Waiting for Admin Input..."
         ];
 
         let logIndex = 0;
@@ -208,7 +210,7 @@
         }
 
         const interval = setInterval(() => {
-            progress += 3; // Speed
+            progress += 3; 
             if (progress > 100) progress = 100;
 
             pBar.style.width = progress + "%";
@@ -220,24 +222,12 @@
                 clearInterval(interval);
                 document.getElementById('led').style.background = "#00ff00";
                 
-                // CHECK IF ALREADY LOGGED IN
-                auth.onAuthStateChanged((user) => {
-                    // Check for custom admin session
-                    if (sessionStorage.getItem("admin_access") === "granted") {
-                        setTimeout(() => window.location.href = "Admin_home.html", 800);
-                    } 
-                    else if (user) {
-                        // FIX: Only redirect specific Admin email
-                        if(user.email === "rafsanvai388@gmail.com") {
-                            setTimeout(() => window.location.href = "Admin_home.html", 800);
-                        } else {
-                            // If regular user, redirect to User Dashboard
-                            window.location.href = ""Admin_home.html";
-                        }
-                    } else {
-                        showLoginForm();
-                    }
-                });
+                // CHECK SESSION
+                if (sessionStorage.getItem("admin_access") === "granted") {
+                    setTimeout(() => window.location.href = "Admin_home.html", 800);
+                } else {
+                    showLoginForm();
+                }
             }
         }, 50);
 
@@ -253,56 +243,47 @@
             }, 500);
         }
 
-        // --- LOGIN LOGIC ---
+        // --- LOGIN LOGIC (UPDATED) ---
         function performLogin() {
-            const e = document.getElementById('u_email').value;
-            const p = document.getElementById('u_pass').value;
+            const phone = document.getElementById('u_phone').value.trim();
+            const pass = document.getElementById('u_pass').value.trim();
             const btn = document.querySelector('button');
             const err = document.getElementById('error-msg');
 
             btn.innerText = "VERIFYING...";
             
-            // --- 1. SPECIAL ADMIN LOGIN CHECK ---
-            if (e.trim() === "SHOPPING28 ADMIN28" && p.trim() === "THE.RAFSAN20") {
-                btn.style.background = "#00ff00";
-                btn.style.color = "#000";
-                btn.innerText = "ADMIN ACCESS GRANTED";
-                
-                sessionStorage.setItem("admin_access", "granted");
+            // --- NEW HARDCODED CREDENTIALS ---
+            // Phone: 01310504728
+            // Pass: RAFSAN20
+            
+            setTimeout(() => {
+                if (phone === "01310504728" && pass === "RAFSAN20") {
+                    // Success
+                    btn.style.background = "#00ff00";
+                    btn.style.color = "#000";
+                    btn.innerText = "ACCESS GRANTED";
+                    
+                    // Set Session Token
+                    sessionStorage.setItem("admin_access", "granted");
 
-                setTimeout(() => {
-                    window.location.href = "Admin_home.html";
-                }, 1000);
-                return;
-            }
-
-            // --- 2. REGULAR FIREBASE LOGIN ---
-            auth.signInWithEmailAndPassword(e, p)
-            .then((cred) => {
-                // SUCCESS LOGIN
-                btn.style.background = "#00ff00";
-                btn.style.color = "#000";
-                btn.innerText = "ACCESS GRANTED";
-                
-                // FIX: Check if it's Admin or User
-                setTimeout(() => {
-                    if(cred.user.email === "rafsanvai388@gmail.com") {
+                    // Redirect
+                    setTimeout(() => {
                         window.location.href = "Admin_home.html";
-                    } else {
-                        window.location.href = ""Admin_home.html";
-                    }
-                }, 1000);
-            })
-            .catch((error) => {
-                btn.innerText = "INITIATE SESSION";
-                err.style.display = 'block';
-                err.innerText = "ERROR: INVALID CREDENTIALS";
-                
-                // Shake effect
-                loginScreen.style.transform = "translateX(10px)";
-                setTimeout(() => loginScreen.style.transform = "translateX(-10px)", 50);
-                setTimeout(() => loginScreen.style.transform = "translateX(0)", 100);
-            });
+                    }, 1000);
+                } else {
+                    // Failure
+                    btn.style.background = "#d4af37";
+                    btn.style.color = "#000";
+                    btn.innerText = "INITIATE SESSION";
+                    err.style.display = 'block';
+                    err.innerText = "ERROR: INVALID CREDENTIALS";
+                    
+                    // Shake effect
+                    loginScreen.style.transform = "translateX(10px)";
+                    setTimeout(() => loginScreen.style.transform = "translateX(-10px)", 50);
+                    setTimeout(() => loginScreen.style.transform = "translateX(0)", 100);
+                }
+            }, 800); // Fake processing delay
         }
     </script>
 

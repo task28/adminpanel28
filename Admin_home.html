@@ -205,7 +205,7 @@
     </div>
 
     <script>
-        // --- AUTHENTICATION CHECK ---
+        // --- AUTHENTICATION CHECK (FIXED) ---
         const sessionAuth = sessionStorage.getItem("admin_access");
 
         if (sessionAuth === "granted") {
@@ -217,7 +217,11 @@
                 if (user && user.email === "rafsanvai388@gmail.com") {
                     loadStats();
                 } else {
-                    window.location.href = "index.html"; // Redirect Back
+                    // PROBLEM SOLVED: If wrong user, Sign Out first, then redirect.
+                    // This breaks the loop.
+                    auth.signOut().then(() => {
+                        window.location.href = "index.html";
+                    });
                 }
             });
         }

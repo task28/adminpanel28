@@ -63,7 +63,6 @@
             font-size: 0.8rem; color: #2ecc71; cursor: pointer; border: 1px solid #2ecc71; padding: 5px 10px; border-radius: 20px;
         }
         
-        /* Error Message Style */
         .msg-empty { color: #666; font-style: italic; padding: 10px; border: 1px dashed #333; }
         .msg-error { color: #e74c3c; padding: 10px; border: 1px solid #e74c3c; background: rgba(231, 76, 60, 0.1); }
     </style>
@@ -91,14 +90,12 @@
     let lastPendingCount = -1;
     let lastReviewCount = -1;
 
-    // --- AUTH CHECK FIXED ---
     const sessionAuth = sessionStorage.getItem("admin_access");
     if (sessionAuth === "granted") {
         initPage();
     } else {
         auth.onAuthStateChanged(user => {
             if (user) {
-                // আমরা এখানে ইমেইল চেক করছি, কিন্তু যদি চেক ফেইল হয় তবুও Loading যেন না দেখায়
                 if(user.email === "rafsanvai388@gmail.com") {
                     initPage();
                 } else {
@@ -116,7 +113,6 @@
         loadReview();
     }
 
-    // --- VOICE ---
     function speak(text) {
         if ('speechSynthesis' in window) {
             const utterance = new SpeechSynthesisUtterance(text);
@@ -126,23 +122,17 @@
     }
     function testVoice() { speak("Voice Notification System Active"); }
 
-    // 1. PENDING LOAD (Fixed Error Handling)
     function loadPending() {
         const list = document.getElementById('pending_list');
-        
         db.ref('tasks').orderByChild('status').equalTo('pending').on('value', snap => {
             list.innerHTML = "";
-            
             if(!snap.exists()) { 
                 list.innerHTML = "<div class='msg-empty'>No pending requests found.</div>"; 
-                lastPendingCount = 0; 
-                return; 
+                lastPendingCount = 0; return; 
             }
-
             const currentCount = snap.numChildren();
             if (lastPendingCount !== -1 && currentCount > lastPendingCount) speak("New Task Request Received");
             lastPendingCount = currentCount;
-
             snap.forEach(child => {
                 const uid = child.key;
                 list.innerHTML += `
@@ -165,7 +155,6 @@
         });
     }
 
-    // AUTO FILL
     function autoFill(uid) {
         const text = document.getElementById('paste_' + uid).value;
         if(!text) return alert("Paste text first!");
@@ -198,23 +187,17 @@
         db.ref('tasks/' + uid).update({ status: 'active', adminData: adminData, startTime: Date.now() });
     }
 
-    // 2. REVIEW LOAD (Fixed Error Handling)
     function loadReview() {
         const list = document.getElementById('review_list');
-        
         db.ref('tasks').orderByChild('status').equalTo('review').on('value', snap => {
             list.innerHTML = "";
-
             if(!snap.exists()) { 
                 list.innerHTML = "<div class='msg-empty'>No submissions pending review.</div>"; 
-                lastReviewCount = 0; 
-                return; 
+                lastReviewCount = 0; return; 
             }
-
             const currentCount = snap.numChildren();
             if (lastReviewCount !== -1 && currentCount > lastReviewCount) speak("New Submission For Review");
             lastReviewCount = currentCount;
-
             snap.forEach(child => {
                 const data = child.val();
                 const uid = child.key;
@@ -241,7 +224,7 @@
 
     function copy(t) { navigator.clipboard.writeText(t); alert("Copied!"); }
 
-    // --- APPROVE & COMMISSION SYSTEM ---
+    // --- APPROVE & COMMISSION SYSTEM (FIXED) ---
     function approveTask(uid) {
         const payAmount = parseFloat(document.getElementById('pay_'+uid).value) || 0;
         
@@ -267,6 +250,15 @@
                     }
 
                     db.ref('users/' + uid).update(updates).then(() => {
+                        
+                        // ✅ HISTORY SAVE HERE ✅
+                        db.ref('history/' + uid).push({
+                            type: 'task',
+                            amount: payAmount,
+                            desc: 'Task Completed',
+                            date: Date.now()
+                        });
+
                         if (userData.referredBy && userData.referredBy !== 'none') {
                             handleUplineRewards(userData.referredBy, payAmount, tasksDone);
                         }
@@ -294,6 +286,14 @@
                     updates['totalEarnings'] = ((parseFloat(upData.totalEarnings) || 0) + comm).toFixed(4);
                     updates['todayProfit'] = (parseFloat(upData.todayProfit) || 0) + comm;
                     
+                    // ✅ UPLINE HISTORY SAVE ✅
+                    db.ref('history/' + upUid).push({
+                        type: 'commission',
+                        amount: comm,
+                        desc: 'Referral Task Bonus',
+                        date: Date.now()
+                    });
+
                     if (upData.activePlan) {
                         if (workerTotalTasks === 2) {
                             const currentRefCount = (upData.activePlan.currentRef || 0) + 1;

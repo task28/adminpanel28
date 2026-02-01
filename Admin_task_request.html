@@ -4,20 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin - Task Manager</title>
-    <!-- Fonts & Icons -->
-    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Montserrat:wght@400 ;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css ">
     
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js "></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js "></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js "></script>
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Firebase SDK (v8.10.1) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     
     <script>
         const firebaseConfig = {
             apiKey: "AIzaSyDuxSz3j5xMYDw5U9kLA0cjkpOE82D06MI",
             authDomain: "part-1-f6d87.firebaseapp.com",
-            databaseURL: "https://part-1-f6d87-default-rtdb.firebaseio.com ",
+            databaseURL: "https://part-1-f6d87-default-rtdb.firebaseio.com",
             projectId: "part-1-f6d87",
             storageBucket: "part-1-f6d87.firebasestorage.app",
             messagingSenderId: "682699403122",
@@ -29,73 +30,118 @@
     </script>
 
     <style>
-        body { background: #050505; color: #ccc; font-family: 'Montserrat', sans-serif; padding: 20px; }
-        .header { display: flex; justify-content: space-between; border-bottom: 2px solid #d4af37; padding-bottom: 15px; margin-bottom: 20px; }
-        .title { color: #d4af37; font-family: 'Share Tech Mono', monospace; font-size: 1.5rem; }
-        .back-btn { background: #333; color: #fff; border: none; padding: 8px 15px; cursor: pointer; }
+        /* --- CSS STYLING --- */
+        body { background: #050505; color: #ccc; font-family: 'Montserrat', sans-serif; padding: 20px; margin: 0; }
         
-        .section-title { color: #fff; margin: 20px 0 10px; border-left: 4px solid #d4af37; padding-left: 10px; font-weight: bold; }
+        /* Header */
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #d4af37; padding-bottom: 15px; margin-bottom: 20px; }
+        .title { color: #d4af37; font-family: 'Share Tech Mono', monospace; font-size: 1.5rem; letter-spacing: 1px; }
+        
+        /* Buttons */
+        .back-btn { background: #333; color: #fff; border: none; padding: 8px 15px; cursor: pointer; border-radius: 4px; font-family: 'Share Tech Mono', monospace; }
+        .back-btn:hover { background: #444; }
+        
+        .sound-control {
+            font-size: 0.8rem; color: #2ecc71; cursor: pointer; border: 1px solid #2ecc71; 
+            padding: 5px 15px; border-radius: 20px; margin-right: 10px; transition: 0.3s;
+        }
+        .sound-control:hover { background: rgba(46, 204, 113, 0.1); }
+
+        /* Sections */
+        .section-title { 
+            color: #fff; margin: 30px 0 15px; border-left: 4px solid #d4af37; 
+            padding-left: 10px; font-weight: bold; font-size: 1.1rem; text-transform: uppercase;
+        }
+        
         .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px; }
-        .card { background: #111; border: 1px solid #333; padding: 20px; border-radius: 8px; position: relative; }
         
+        /* Cards */
+        .card { background: #111; border: 1px solid #333; padding: 20px; border-radius: 8px; position: relative; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        
+        /* Input Fields */
         .input-group { margin-bottom: 10px; }
-        .input-group label { display: block; font-size: 0.7rem; color: #666; }
-        .input-group input { width: 100%; background: #000; border: 1px solid #444; color: #fff; padding: 8px; }
-        
+        .input-group label { display: block; font-size: 0.7rem; color: #888; margin-bottom: 2px; }
+        .input-group input { width: 100%; box-sizing: border-box; background: #000; border: 1px solid #444; color: #fff; padding: 8px; font-family: 'Share Tech Mono', monospace; }
+        .input-group input:focus { border-color: #d4af37; outline: none; }
+
+        /* Paste Area */
         .paste-area {
             width: 100%; height: 60px; background: #080808; border: 1px dashed #2ecc71; 
-            color: #2ecc71; font-size: 0.7rem; padding: 5px; margin-bottom: 5px; resize: none;
+            color: #2ecc71; font-size: 0.7rem; padding: 5px; margin-bottom: 5px; resize: none; box-sizing: border-box;
         }
+        
+        /* Action Buttons */
         .btn-autofill {
             width: 100%; background: #222; color: #2ecc71; border: 1px solid #2ecc71; 
-            padding: 5px; cursor: pointer; font-size: 0.8rem; margin-bottom: 15px;
+            padding: 8px; cursor: pointer; font-size: 0.8rem; margin-bottom: 15px; text-transform: uppercase;
         }
         .btn-autofill:hover { background: #2ecc71; color: #000; }
 
-        .data-display { background: #000; padding: 10px; border: 1px dashed #444; margin-bottom: 10px; cursor: pointer; word-break: break-all; }
-        .btn-action { width: 100%; padding: 10px; border: none; font-weight: bold; cursor: pointer; margin-top: 5px; }
+        .btn-action { width: 100%; padding: 10px; border: none; font-weight: bold; cursor: pointer; margin-top: 5px; border-radius: 4px; }
         .btn-send { background: #d4af37; color: #000; }
-        .btn-approve { background: #27ae60; color: #fff; }
-        .btn-reject { background: #c0392b; color: #fff; }
-        .profit-input { width: 100%; padding: 8px; margin-bottom: 5px; background: #222; border: 1px solid #27ae60; color: #fff; text-align: center; }
-
-        .sound-control {
-            font-size: 0.8rem; color: #2ecc71; cursor: pointer; border: 1px solid #2ecc71; padding: 5px 10px; border-radius: 20px;
-        }
+        .btn-send:hover { background: #b8962e; }
         
-        .msg-empty { color: #666; font-style: italic; padding: 10px; border: 1px dashed #333; }
+        .btn-approve { background: #27ae60; color: #fff; }
+        .btn-approve:hover { background: #219150; }
+        
+        .btn-reject { background: #c0392b; color: #fff; }
+        .btn-reject:hover { background: #a93226; }
+
+        /* Review Data Display */
+        .data-display { 
+            background: #000; padding: 10px; border: 1px dashed #444; margin-bottom: 10px; 
+            cursor: pointer; word-break: break-all; color: #aaa; font-size: 0.9rem;
+        }
+        .data-display:hover { border-color: #fff; color: #fff; }
+        
+        .profit-input { 
+            width: 100%; padding: 8px; margin-bottom: 5px; background: #222; 
+            border: 1px solid #27ae60; color: #fff; text-align: center; font-weight: bold; box-sizing: border-box;
+        }
+
+        /* Messages */
+        .msg-empty { color: #666; font-style: italic; padding: 10px; border: 1px dashed #333; text-align: center; }
         .msg-error { color: #e74c3c; padding: 10px; border: 1px solid #e74c3c; background: rgba(231, 76, 60, 0.1); }
     </style>
 </head>
 <body>
+
+<!-- Header -->
 <div class="header">
     <div class="title">TASK MANAGER</div>
-    <div style="display: flex; gap: 10px; align-items: center;">
-        <div class="sound-control" onclick="testVoice()"><i class="fas fa-volume-up"></i> Test Voice</div>
+    <div style="display: flex; align-items: center;">
+        <div class="sound-control" onclick="testVoice()">
+            <i class="fas fa-volume-up"></i> Test Voice
+        </div>
         <button class="back-btn" onclick="window.location.href='Admin_home.html'">BACK</button>
     </div>
 </div>
 
-<div class="section-title">PENDING REQUESTS</div>
+<!-- Section 1: Pending Task Requests (Assign Data) -->
+<div class="section-title">| PENDING REQUESTS</div>
 <div class="grid-container" id="pending_list">
     <div class="msg-empty">Waiting for data connection...</div>
 </div>
 
-<div class="section-title">SUBMITTED FOR REVIEW</div>
+<!-- Section 2: Submitted for Review (Approve/Reject) -->
+<div class="section-title">| SUBMITTED FOR REVIEW</div>
 <div class="grid-container" id="review_list">
     <div class="msg-empty">Waiting for data connection...</div>
 </div>
 
+<!-- LOGIC -->
 <script>
     let lastPendingCount = -1;
     let lastReviewCount = -1;
 
+    // --- ADMIN SECURITY CHECK ---
     const sessionAuth = sessionStorage.getItem("admin_access");
     if (sessionAuth === "granted") {
         initPage();
     } else {
         auth.onAuthStateChanged(user => {
             if (user) {
+                // Change this email to your specific admin email
                 if(user.email === "rafsanvai388@gmail.com") {
                     initPage();
                 } else {
@@ -113,40 +159,55 @@
         loadReview();
     }
 
+    // --- VOICE NOTIFICATIONS ---
     function speak(text) {
         if ('speechSynthesis' in window) {
             const utterance = new SpeechSynthesisUtterance(text);
-            utterance.pitch = 1; utterance.rate = 1;
+            utterance.pitch = 1; 
+            utterance.rate = 1;
             window.speechSynthesis.speak(utterance);
         }
     }
     function testVoice() { speak("Voice Notification System Active"); }
 
+    // --- 1. LOAD PENDING REQUESTS ---
     function loadPending() {
         const list = document.getElementById('pending_list');
+        // Listens for tasks where status is 'pending' (User requested a task)
         db.ref('tasks').orderByChild('status').equalTo('pending').on('value', snap => {
             list.innerHTML = "";
+            
             if(!snap.exists()) { 
                 list.innerHTML = "<div class='msg-empty'>No pending requests found.</div>"; 
-                lastPendingCount = 0; return; 
+                lastPendingCount = 0; 
+                return; 
             }
+
+            // Notification Logic
             const currentCount = snap.numChildren();
-            if (lastPendingCount !== -1 && currentCount > lastPendingCount) speak("New Task Request Received");
+            if (lastPendingCount !== -1 && currentCount > lastPendingCount) {
+                speak("New Task Request Received");
+            }
             lastPendingCount = currentCount;
+
+            // Render Cards
             snap.forEach(child => {
                 const uid = child.key;
                 list.innerHTML += `
                     <div class="card">
-                        <div style="color:#d4af37; margin-bottom:10px;">UID: ${uid.substring(0,6)}...</div>
-                        <textarea id="paste_${uid}" class="paste-area" placeholder="Paste full text here..."></textarea>
+                        <div style="color:#d4af37; margin-bottom:10px; font-weight:bold;">UID: ${uid.substring(0,8)}...</div>
+                        
+                        <textarea id="paste_${uid}" class="paste-area" placeholder="Paste full text here (Name: ... Email: ...)..."></textarea>
                         <button class="btn-autofill" onclick="autoFill('${uid}')"><i class="fas fa-magic"></i> AUTO FILL FORM</button>
-                        <div class="input-group"><label>First Name</label><input id="fn_${uid}"></div>
-                        <div class="input-group"><label>Last Name</label><input id="ln_${uid}"></div>
+                        
+                        <div class="input-group"><label>First Name</label><input id="fn_${uid}" placeholder="John"></div>
+                        <div class="input-group"><label>Last Name</label><input id="ln_${uid}" placeholder="Doe"></div>
                         <div class="input-group"><label>Email (Main)</label><input id="email_${uid}"></div>
-                        <div class="input-group"><label>DOB</label><input id="dob_${uid}"></div>
-                        <div class="input-group"><label>Recovery</label><input id="rec_${uid}"></div>
-                        <div class="input-group"><label>Pass</label><input id="pass_${uid}"></div>
-                        <button class="btn-action btn-send" onclick="sendData('${uid}')">SEND DATA</button>
+                        <div class="input-group"><label>DOB</label><input id="dob_${uid}" placeholder="DD/MM/YYYY"></div>
+                        <div class="input-group"><label>Recovery Email</label><input id="rec_${uid}"></div>
+                        <div class="input-group"><label>Password</label><input id="pass_${uid}"></div>
+                        
+                        <button class="btn-action btn-send" onclick="sendData('${uid}')">SEND DATA TO USER</button>
                     </div>`;
             });
         }, (error) => {
@@ -155,17 +216,25 @@
         });
     }
 
+    // Helper: Auto-fill form from pasted text
     function autoFill(uid) {
         const text = document.getElementById('paste_' + uid).value;
         if(!text) return alert("Paste text first!");
+        
+        // Simple Regex extraction
         const extract = (key) => {
-            const regex = new RegExp(key + ":\\s*(.*)", "i");
+            const regex = new RegExp(key + "[:\\s-]*(.*)", "i");
             const match = text.match(regex);
+            // Takes the rest of the line until newline
             return match ? match[1].trim() : "";
         };
-        const fname = extract("First name"); const lname = extract("Last name");
-        const email = extract("Email"); const pass = extract("Password");
-        const dob = extract("Birthdate"); const recovery = extract("Recovery email"); 
+
+        const fname = extract("First name"); 
+        const lname = extract("Last name");
+        const email = extract("Email"); 
+        const pass = extract("Password");
+        const dob = extract("Birthdate"); 
+        const recovery = extract("Recovery email"); 
         
         if(fname) document.getElementById('fn_' + uid).value = fname;
         if(lname) document.getElementById('ln_' + uid).value = lname;
@@ -175,6 +244,7 @@
         if(pass) document.getElementById('pass_' + uid).value = pass;
     }
 
+    // Action: Send details to user (Moves task to 'active')
     function sendData(uid) {
         const adminData = {
             fname: document.getElementById('fn_'+uid).value || "User",
@@ -184,20 +254,36 @@
             recovery: document.getElementById('rec_'+uid).value || "none",
             pass: document.getElementById('pass_'+uid).value || "123456"
         };
-        db.ref('tasks/' + uid).update({ status: 'active', adminData: adminData, startTime: Date.now() });
+        
+        if(confirm("Send this data to the user?")) {
+            db.ref('tasks/' + uid).update({ 
+                status: 'active', 
+                adminData: adminData, 
+                startTime: Date.now() 
+            });
+        }
     }
 
+    // --- 2. LOAD SUBMISSIONS FOR REVIEW ---
     function loadReview() {
         const list = document.getElementById('review_list');
+        // Listens for tasks where status is 'review' (User submitted work)
         db.ref('tasks').orderByChild('status').equalTo('review').on('value', snap => {
             list.innerHTML = "";
+            
             if(!snap.exists()) { 
                 list.innerHTML = "<div class='msg-empty'>No submissions pending review.</div>"; 
-                lastReviewCount = 0; return; 
+                lastReviewCount = 0; 
+                return; 
             }
+
+            // Notification
             const currentCount = snap.numChildren();
-            if (lastReviewCount !== -1 && currentCount > lastReviewCount) speak("New Submission For Review");
+            if (lastReviewCount !== -1 && currentCount > lastReviewCount) {
+                speak("New Submission For Review");
+            }
             lastReviewCount = currentCount;
+
             snap.forEach(child => {
                 const data = child.val();
                 const uid = child.key;
@@ -206,12 +292,20 @@
 
                 list.innerHTML += `
                     <div class="card" style="border-color: #2980b9;">
-                        <div style="color:#2980b9; margin-bottom:10px;">SUBMISSION: ${uid.substring(0,6)}...</div>
-                        <div class="data-display" onclick="copy('${email}')">Email: ${email}</div>
-                        <div class="data-display" onclick="copy('${pass}')">Pass: ${pass}</div>
+                        <div style="color:#2980b9; margin-bottom:10px; font-weight:bold;">SUBMISSION: ${uid.substring(0,8)}...</div>
+                        
+                        <div class="data-display" onclick="copy('${email}')" title="Click to copy">
+                            <i class="far fa-envelope"></i> ${email}
+                        </div>
+                        <div class="data-display" onclick="copy('${pass}')" title="Click to copy">
+                            <i class="fas fa-key"></i> ${pass}
+                        </div>
+                        
                         <div style="margin-top:10px;">
-                            <input id="pay_${uid}" type="number" class="profit-input" value="0.10">
-                            <button class="btn-action btn-approve" onclick="approveTask('${uid}')">APPROVE</button>
+                            <label style="font-size:0.7rem; color:#27ae60;">Profit Amount ($):</label>
+                            <input id="pay_${uid}" type="number" step="0.01" class="profit-input" value="0.10">
+                            
+                            <button class="btn-action btn-approve" onclick="approveTask('${uid}')">APPROVE & PAY</button>
                             <button class="btn-action btn-reject" onclick="rejectTask('${uid}')">REJECT</button>
                         </div>
                     </div>`;
@@ -222,36 +316,43 @@
         });
     }
 
-    function copy(t) { navigator.clipboard.writeText(t); alert("Copied!"); }
+    function copy(t) { 
+        navigator.clipboard.writeText(t); 
+        // Optional: toast notification could go here
+    }
 
-    // --- APPROVE & COMMISSION SYSTEM (FIXED) ---
+    // --- APPROVE LOGIC (Includes Balance Update & Referral Commission) ---
     function approveTask(uid) {
         const payAmount = parseFloat(document.getElementById('pay_'+uid).value) || 0;
         
-        if(confirm(`Approve? User gets $${payAmount}`)) {
+        if(confirm(`Approve task? User will receive $${payAmount}`)) {
             db.ref('users/' + uid).once('value', snapshot => {
                 if(snapshot.exists()) {
                     const userData = snapshot.val();
                     
+                    // Calculations
                     const newBal = (parseFloat(userData.balance) || 0) + payAmount;
                     const newLifetime = (parseFloat(userData.totalEarnings) || 0) + payAmount;
                     const tasksDone = (userData.totalTasksDone || 0) + 1;
+                    const todayProfit = (parseFloat(userData.todayProfit) || 0) + payAmount;
 
                     let updates = {
                         balance: newBal.toFixed(4),
                         totalEarnings: newLifetime.toFixed(4),
                         totalTasksDone: tasksDone,
-                        todayProfit: (parseFloat(userData.todayProfit)||0) + payAmount
+                        todayProfit: todayProfit.toFixed(4)
                     };
 
+                    // Logic for specific plan task counting (if applicable)
                     if(userData.activePlan) {
                         const myTasks = (userData.activePlan.currentTask || 0) + 1;
                         updates['activePlan/currentTask'] = myTasks;
                     }
 
+                    // Perform Update
                     db.ref('users/' + uid).update(updates).then(() => {
                         
-                        // ✅ HISTORY SAVE HERE ✅
+                        // 1. Save History for Worker
                         db.ref('history/' + uid).push({
                             type: 'task',
                             amount: payAmount,
@@ -259,41 +360,42 @@
                             date: Date.now()
                         });
 
+                        // 2. Handle Upline Commission (20%)
                         if (userData.referredBy && userData.referredBy !== 'none') {
                             handleUplineRewards(userData.referredBy, payAmount, tasksDone);
                         }
+                        
+                        // 3. Close Task
                         db.ref('tasks/' + uid).update({ status: 'completed' });
-                        alert("Approved! Money & Lifetime Earn updated.");
+                        alert("Approved Successfully!");
                     });
                 } else {
-                    if(confirm("User not found! Delete task?")) db.ref('tasks/' + uid).remove();
+                    if(confirm("User not found in database! Remove this task request?")) {
+                        db.ref('tasks/' + uid).remove();
+                    }
                 }
             });
         }
     }
 
+    // Helper: Send commission to the person who referred this user
     function handleUplineRewards(refCode, payAmount, workerTotalTasks) {
+        // Find user with this referral code
         db.ref('users').orderByChild('myRefCode').equalTo(refCode).once('value', snap => {
             if(snap.exists()) {
                 snap.forEach(u => {
                     const upUid = u.key;
                     const upData = u.val();
-                    let updates = {};
-
+                    
+                    // 20% Commission
                     const comm = payAmount * 0.20;
                     
+                    let updates = {};
                     updates['balance'] = ((parseFloat(upData.balance) || 0) + comm).toFixed(4);
                     updates['totalEarnings'] = ((parseFloat(upData.totalEarnings) || 0) + comm).toFixed(4);
-                    updates['todayProfit'] = (parseFloat(upData.todayProfit) || 0) + comm;
+                    updates['todayProfit'] = ((parseFloat(upData.todayProfit) || 0) + comm).toFixed(4);
                     
-                    // ✅ UPLINE HISTORY SAVE ✅
-                    db.ref('history/' + upUid).push({
-                        type: 'commission',
-                        amount: comm,
-                        desc: 'Referral Task Bonus',
-                        date: Date.now()
-                    });
-
+                    // Specific plan logic: If worker finished 2 tasks, count as a valid referral
                     if (upData.activePlan) {
                         if (workerTotalTasks === 2) {
                             const currentRefCount = (upData.activePlan.currentRef || 0) + 1;
@@ -301,15 +403,25 @@
                         }
                     }
                     
-                    db.ref('users/' + upUid).update(updates);
-                    console.log(`Commission $${comm} sent to Upline`);
+                    db.ref('users/' + upUid).update(updates).then(() => {
+                         // Save History for Upline
+                        db.ref('history/' + upUid).push({
+                            type: 'commission',
+                            amount: comm,
+                            desc: 'Referral Task Bonus (20%)',
+                            date: Date.now()
+                        });
+                        console.log(`Commission $${comm} sent to Upline`);
+                    });
                 });
             }
         });
     }
 
     function rejectTask(uid) {
-        if(confirm("Reject this submission?")) db.ref('tasks/' + uid).update({ status: 'rejected' });
+        if(confirm("Reject this submission? User will be notified.")) {
+            db.ref('tasks/' + uid).update({ status: 'rejected' });
+        }
     }
 </script>
 </body>

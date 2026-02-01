@@ -1,22 +1,23 @@
-<!DOCTYPE html>
+Admin_task_request.html <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - Task Manager | TASK28</title>
+    <title>Admin - Task Manager</title>
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Montserrat:wght@400 ;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css ">
     
-    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js "></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js "></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js "></script>
     
     <script>
         const firebaseConfig = {
             apiKey: "AIzaSyDuxSz3j5xMYDw5U9kLA0cjkpOE82D06MI",
             authDomain: "part-1-f6d87.firebaseapp.com",
-            databaseURL: "https://part-1-f6d87-default-rtdb.firebaseio.com",
+            databaseURL: "https://part-1-f6d87-default-rtdb.firebaseio.com ",
             projectId: "part-1-f6d87",
             storageBucket: "part-1-f6d87.firebasestorage.app",
             messagingSenderId: "682699403122",
@@ -25,842 +26,291 @@
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.database();
-        
-        // Global variables
-        let lastPendingCount = 0;
-        let lastReviewCount = 0;
-        let soundEnabled = true;
     </script>
 
     <style>
-        body { 
-            background: #050505; 
-            color: #ccc; 
-            font-family: 'Montserrat', sans-serif; 
-            padding: 20px; 
-            max-width: 1400px;
-            margin: 0 auto;
-        }
+        body { background: #050505; color: #ccc; font-family: 'Montserrat', sans-serif; padding: 20px; }
+        .header { display: flex; justify-content: space-between; border-bottom: 2px solid #d4af37; padding-bottom: 15px; margin-bottom: 20px; }
+        .title { color: #d4af37; font-family: 'Share Tech Mono', monospace; font-size: 1.5rem; }
+        .back-btn { background: #333; color: #fff; border: none; padding: 8px 15px; cursor: pointer; }
         
-        .header { 
-            display: flex; 
-            justify-content: space-between; 
-            border-bottom: 2px solid #d4af37; 
-            padding-bottom: 15px; 
-            margin-bottom: 20px;
-            align-items: center;
-        }
+        .section-title { color: #fff; margin: 20px 0 10px; border-left: 4px solid #d4af37; padding-left: 10px; font-weight: bold; }
+        .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px; }
+        .card { background: #111; border: 1px solid #333; padding: 20px; border-radius: 8px; position: relative; }
         
-        .title { 
-            color: #d4af37; 
-            font-family: 'Share Tech Mono', monospace; 
-            font-size: 1.5rem; 
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .header-actions {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-        
-        .back-btn { 
-            background: #333; 
-            color: #fff; 
-            border: none; 
-            padding: 10px 20px; 
-            cursor: pointer;
-            border-radius: 5px;
-            transition: 0.3s;
-        }
-        .back-btn:hover { background: #d4af37; color: #000; }
-        
-        .sound-control {
-            font-size: 0.9rem; 
-            color: #2ecc71; 
-            cursor: pointer; 
-            border: 1px solid #2ecc71; 
-            padding: 10px 15px; 
-            border-radius: 5px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: 0.3s;
-        }
-        .sound-control:hover { background: rgba(46, 204, 113, 0.1); }
-        .sound-control.muted { color: #e74c3c; border-color: #e74c3c; }
-        
-        .section-title { 
-            color: #fff; 
-            margin: 25px 0 15px; 
-            border-left: 4px solid #d4af37; 
-            padding-left: 10px; 
-            font-weight: bold;
-            font-size: 1.1rem;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .grid-container { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); 
-            gap: 20px; 
-        }
-        
-        .card { 
-            background: #111; 
-            border: 1px solid #333; 
-            padding: 20px; 
-            border-radius: 12px; 
-            position: relative;
-            transition: 0.3s;
-        }
-        .card:hover {
-            border-color: #444;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-        }
-        
-        .card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #222;
-        }
-        
-        .uid-display {
-            color: #d4af37; 
-            font-family: 'Share Tech Mono', monospace;
-            font-size: 0.9rem;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .copy-btn-small {
-            background: transparent;
-            border: none;
-            color: #888;
-            cursor: pointer;
-            font-size: 0.8rem;
-            padding: 5px;
-        }
-        .copy-btn-small:hover { color: #00d2ff; }
-        
-        .input-group { margin-bottom: 12px; }
-        .input-group label { 
-            display: block; 
-            font-size: 0.75rem; 
-            color: #666; 
-            margin-bottom: 5px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .input-group input { 
-            width: 100%; 
-            background: #000; 
-            border: 1px solid #444; 
-            color: #fff; 
-            padding: 10px;
-            font-family: 'Share Tech Mono', monospace;
-            border-radius: 5px;
-            font-size: 0.9rem;
-        }
-        .input-group input:focus {
-            outline: none;
-            border-color: #d4af37;
-        }
+        .input-group { margin-bottom: 10px; }
+        .input-group label { display: block; font-size: 0.7rem; color: #666; }
+        .input-group input { width: 100%; background: #000; border: 1px solid #444; color: #fff; padding: 8px; }
         
         .paste-area {
-            width: 100%; 
-            height: 80px; 
-            background: #080808; 
-            border: 2px dashed #2ecc71; 
-            color: #2ecc71; 
-            font-size: 0.8rem; 
-            padding: 10px; 
-            margin-bottom: 10px; 
-            resize: vertical;
-            border-radius: 5px;
-            font-family: monospace;
+            width: 100%; height: 60px; background: #080808; border: 1px dashed #2ecc71; 
+            color: #2ecc71; font-size: 0.7rem; padding: 5px; margin-bottom: 5px; resize: none;
         }
-        .paste-area:focus {
-            outline: none;
-            background: rgba(46, 204, 113, 0.05);
-        }
-        
         .btn-autofill {
-            width: 100%; 
-            background: #1a3a1a; 
-            color: #2ecc71; 
-            border: 1px solid #2ecc71; 
-            padding: 8px; 
-            cursor: pointer; 
-            font-size: 0.85rem; 
-            margin-bottom: 15px;
-            border-radius: 5px;
-            transition: 0.3s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
+            width: 100%; background: #222; color: #2ecc71; border: 1px solid #2ecc71; 
+            padding: 5px; cursor: pointer; font-size: 0.8rem; margin-bottom: 15px;
         }
-        .btn-autofill:hover { 
-            background: #2ecc71; 
-            color: #000; 
-        }
+        .btn-autofill:hover { background: #2ecc71; color: #000; }
 
-        .data-display { 
-            background: #000; 
-            padding: 12px; 
-            border: 1px dashed #444; 
-            margin-bottom: 10px; 
-            cursor: pointer; 
-            word-break: break-all;
-            border-radius: 5px;
-            font-family: 'Share Tech Mono', monospace;
-            font-size: 0.85rem;
-            transition: 0.2s;
-        }
-        .data-display:hover {
-            border-color: #d4af37;
-            background: rgba(212, 175, 55, 0.05);
-        }
-        
-        .btn-action { 
-            width: 100%; 
-            padding: 12px; 
-            border: none; 
-            font-weight: bold; 
-            cursor: pointer; 
-            margin-top: 8px;
-            border-radius: 5px;
-            transition: 0.3s;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .btn-send { 
-            background: #d4af37; 
-            color: #000; 
-        }
-        .btn-send:hover { background: #f1c40f; }
-        
-        .btn-approve { 
-            background: #27ae60; 
-            color: #fff; 
-            margin-top: 15px;
-        }
-        .btn-approve:hover { background: #2ecc71; }
-        
-        .btn-reject { 
-            background: #c0392b; 
-            color: #fff; 
-            margin-top: 8px;
-        }
-        .btn-reject:hover { background: #e74c3c; }
-        
-        .profit-input { 
-            width: 100%; 
-            padding: 12px; 
-            margin: 15px 0 8px 0; 
-            background: #000; 
-            border: 2px solid #27ae60; 
-            color: #2ecc71; 
-            text-align: center;
-            font-size: 1.2rem;
-            font-weight: bold;
-            border-radius: 5px;
-            font-family: 'Share Tech Mono', monospace;
-        }
-        .profit-input:focus {
-            outline: none;
-            box-shadow: 0 0 10px rgba(46, 204, 113, 0.3);
-        }
-        
-        .section-badge {
-            background: #d4af37;
-            color: #000;
-            padding: 2px 10px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: bold;
-        }
+        .data-display { background: #000; padding: 10px; border: 1px dashed #444; margin-bottom: 10px; cursor: pointer; word-break: break-all; }
+        .btn-action { width: 100%; padding: 10px; border: none; font-weight: bold; cursor: pointer; margin-top: 5px; }
+        .btn-send { background: #d4af37; color: #000; }
+        .btn-approve { background: #27ae60; color: #fff; }
+        .btn-reject { background: #c0392b; color: #fff; }
+        .profit-input { width: 100%; padding: 8px; margin-bottom: 5px; background: #222; border: 1px solid #27ae60; color: #fff; text-align: center; }
 
-        .msg-empty { 
-            color: #666; 
-            font-style: italic; 
-            padding: 20px; 
-            border: 2px dashed #333;
-            border-radius: 10px;
-            text-align: center;
-            grid-column: 1 / -1;
-        }
-        .msg-error { 
-            color: #e74c3c; 
-            padding: 15px; 
-            border: 1px solid #e74c3c; 
-            background: rgba(231, 76, 60, 0.1);
-            border-radius: 5px;
-            grid-column: 1 / -1;
+        .sound-control {
+            font-size: 0.8rem; color: #2ecc71; cursor: pointer; border: 1px solid #2ecc71; padding: 5px 10px; border-radius: 20px;
         }
         
-        .status-badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: bold;
-        }
-        .badge-pending { background: rgba(241, 196, 15, 0.2); color: #f1c40f; }
-        .badge-review { background: rgba(52, 152, 219, 0.2); color: #3498db; }
-
-        .submission-data {
-            background: #0a0a0a;
-            padding: 15px;
-            border-radius: 8px;
-            margin: 10px 0;
-            border: 1px solid #333;
-        }
-        .submission-data h4 {
-            color: #888;
-            font-size: 0.8rem;
-            margin-bottom: 8px;
-            text-transform: uppercase;
-        }
-        
-        .profit-presets {
-            display: flex;
-            gap: 5px;
-            margin-bottom: 10px;
-        }
-        .preset-btn {
-            flex: 1;
-            padding: 5px;
-            background: #222;
-            border: 1px solid #444;
-            color: #888;
-            cursor: pointer;
-            border-radius: 5px;
-            font-size: 0.8rem;
-            transition: 0.2s;
-        }
-        .preset-btn:hover {
-            border-color: #27ae60;
-            color: #27ae60;
-        }
+        .msg-empty { color: #666; font-style: italic; padding: 10px; border: 1px dashed #333; }
+        .msg-error { color: #e74c3c; padding: 10px; border: 1px solid #e74c3c; background: rgba(231, 76, 60, 0.1); }
     </style>
 </head>
 <body>
-    <div class="header">
-        <div class="title">
-            <i class="fas fa-crown"></i> 
-            TASK MANAGER 
-            <span style="font-size:0.7rem; color:#666; margin-left:10px;">v2.0</span>
-        </div>
-        <div class="header-actions">
-            <div class="sound-control" id="soundBtn" onclick="toggleSound()">
-                <i class="fas fa-volume-up"></i> 
-                <span>Sound On</span>
-            </div>
-            <button class="back-btn" onclick="window.location.href='Admin_home.html'">
-                <i class="fas fa-arrow-left"></i> Back
-            </button>
-        </div>
+<div class="header">
+    <div class="title">TASK MANAGER</div>
+    <div style="display: flex; gap: 10px; align-items: center;">
+        <div class="sound-control" onclick="testVoice()"><i class="fas fa-volume-up"></i> Test Voice</div>
+        <button class="back-btn" onclick="window.location.href='Admin_home.html'">BACK</button>
     </div>
+</div>
 
-    <!-- PENDING REQUESTS SECTION -->
-    <div class="section-title">
-        <i class="fas fa-clock"></i> 
-        PENDING REQUESTS 
-        <span class="section-badge" id="pendingBadge">0</span>
-    </div>
-    <div class="grid-container" id="pending_list">
-        <div class="msg-empty">Connecting to Firebase...</div>
-    </div>
+<div class="section-title">PENDING REQUESTS</div>
+<div class="grid-container" id="pending_list">
+    <div class="msg-empty">Waiting for data connection...</div>
+</div>
 
-    <!-- UNDER REVIEW SECTION -->
-    <div class="section-title">
-        <i class="fas fa-search"></i> 
-        SUBMITTED FOR REVIEW 
-        <span class="section-badge" id="reviewBadge">0</span>
-    </div>
-    <div class="grid-container" id="review_list">
-        <div class="msg-empty">Connecting to Firebase...</div>
-    </div>
+<div class="section-title">SUBMITTED FOR REVIEW</div>
+<div class="grid-container" id="review_list">
+    <div class="msg-empty">Waiting for data connection...</div>
+</div>
 
-    <script>
-        // Check Admin Access
-        const ADMIN_EMAIL = "rafsanvai388@gmail.com";
-        
+<script>
+    let lastPendingCount = -1;
+    let lastReviewCount = -1;
+
+    const sessionAuth = sessionStorage.getItem("admin_access");
+    if (sessionAuth === "granted") {
+        initPage();
+    } else {
         auth.onAuthStateChanged(user => {
-            if (!user) {
-                window.location.href = "registration_login.html";
-                return;
-            }
-            
-            if (user.email !== ADMIN_EMAIL) {
-                document.body.innerHTML = `
-                    <div style='color:red; text-align:center; margin-top:50px; padding:20px;'>
-                        <h2><i class="fas fa-ban"></i> ACCESS DENIED</h2>
-                        <p>Admin privileges required.</p>
-                        <button onclick='auth.signOut()' style='margin-top:20px; padding:10px 20px;'>Logout</button>
-                    </div>
-                `;
-                return;
-            }
-            
-            console.log("Admin authenticated. Loading data...");
-            initPage();
-        });
-
-        function initPage() {
-            loadPending();
-            loadReview();
-        }
-
-        // Sound Control
-        function toggleSound() {
-            soundEnabled = !soundEnabled;
-            const btn = document.getElementById('soundBtn');
-            if(soundEnabled) {
-                btn.classList.remove('muted');
-                btn.innerHTML = '<i class="fas fa-volume-up"></i> <span>Sound On</span>';
-                speak("Sound notifications enabled");
+            if (user) {
+                if(user.email === "rafsanvai388@gmail.com") {
+                    initPage();
+                } else {
+                    document.body.innerHTML = "<h2 style='color:red; text-align:center; margin-top:50px;'>ACCESS DENIED: Wrong Admin Account</h2><button onclick='auth.signOut()'>Logout</button>";
+                }
             } else {
-                btn.classList.add('muted');
-                btn.innerHTML = '<i class="fas fa-volume-mute"></i> <span>Sound Off</span>';
+                window.location.href = "index.html";
             }
-        }
+        });
+    }
 
-        function speak(text) {
-            if (!soundEnabled || !('speechSynthesis' in window)) return;
-            
-            window.speechSynthesis.cancel();
-            
+    function initPage() {
+        console.log("Admin Logged In. Loading Data...");
+        loadPending();
+        loadReview();
+    }
+
+    function speak(text) {
+        if ('speechSynthesis' in window) {
             const utterance = new SpeechSynthesisUtterance(text);
-            utterance.rate = 1.1;
-            utterance.pitch = 1;
+            utterance.pitch = 1; utterance.rate = 1;
             window.speechSynthesis.speak(utterance);
         }
+    }
+    function testVoice() { speak("Voice Notification System Active"); }
 
-        // --- LOAD PENDING REQUESTS ---
-        function loadPending() {
-            const list = document.getElementById('pending_list');
-            const badge = document.getElementById('pendingBadge');
-            
-            db.ref('tasks').orderByChild('status').equalTo('pending').on('value', snap => {
-                list.innerHTML = "";
-                
-                if(!snap.exists()) {
-                    list.innerHTML = "<div class='msg-empty'><i class='fas fa-check-circle'></i> No pending requests</div>";
-                    badge.innerText = '0';
-                    lastPendingCount = 0;
-                    return;
-                }
-
-                const currentCount = snap.numChildren();
-                badge.innerText = currentCount;
-                
-                if (lastPendingCount > 0 && currentCount > lastPendingCount) {
-                    speak(`${currentCount - lastPendingCount} new task request received`);
-                }
-                lastPendingCount = currentCount;
-
-                snap.forEach(child => {
-                    const uid = child.key;
-                    const data = child.val();
-                    
-                    list.innerHTML += `
-                        <div class="card">
-                            <div class="card-header">
-                                <div class="uid-display">
-                                    <i class="fas fa-user"></i> 
-                                    ${uid.substring(0,8)}...
-                                    <button class="copy-btn-small" onclick="copyText('${uid}')" title="Copy UID">
-                                        <i class="fas fa-copy"></i>
-                                    </button>
-                                </div>
-                                <span class="status-badge badge-pending">PENDING</span>
-                            </div>
-                            
-                            <textarea id="paste_${uid}" class="paste-area" placeholder="Paste full Gmail details here..."></textarea>
-                            <button class="btn-autofill" onclick="autoFill('${uid}')">
-                                <i class="fas fa-magic"></i> Auto Fill from Text
-                            </button>
-                            
-                            <div class="input-group">
-                                <label>First Name</label>
-                                <input type="text" id="fn_${uid}" placeholder="John">
-                            </div>
-                            <div class="input-group">
-                                <label>Last Name</label>
-                                <input type="text" id="ln_${uid}" placeholder="Doe">
-                            </div>
-                            <div class="input-group">
-                                <label>Gmail to Create</label>
-                                <input type="text" id="email_${uid}" placeholder="john.doe123@gmail.com">
-                            </div>
-                            <div class="input-group">
-                                <label>Date of Birth</label>
-                                <input type="text" id="dob_${uid}" placeholder="01/01/2000">
-                            </div>
-                            <div class="input-group">
-                                <label>Recovery Email</label>
-                                <input type="text" id="rec_${uid}" placeholder="recovery@example.com">
-                            </div>
-                            <div class="input-group">
-                                <label>Password</label>
-                                <input type="text" id="pass_${uid}" placeholder="StrongPass123!">
-                            </div>
-                            
-                            <button class="btn-action btn-send" onclick="sendData('${uid}')">
-                                <i class="fas fa-paper-plane"></i> SEND TO USER
-                            </button>
-                        </div>
-                    `;
-                });
-            }, error => {
-                console.error(error);
-                list.innerHTML = `<div class='msg-error'><i class='fas fa-exclamation-triangle'></i> ${error.message}</div>`;
-            });
-        }
-
-        // --- AUTO FILL FUNCTION ---
-        function autoFill(uid) {
-            const text = document.getElementById('paste_' + uid).value.trim();
-            if(!text) return alert("Please paste Gmail details first!");
-
-            const extract = (patterns) => {
-                for(let pattern of patterns) {
-                    const match = text.match(pattern);
-                    if(match) return match[1].trim();
-                }
-                return "";
-            };
-
-            const fname = extract([
-                /First\s*name[:\s]+([^\n]+)/i,
-                /First[:\s]+([^\n]+)/i,
-                /Given\s*name[:\s]+([^\n]+)/i
-            ]);
-            
-            const lname = extract([
-                /Last\s*name[:\s]+([^\n]+)/i,
-                /Last[:\s]+([^\n]+)/i,
-                /Surname[:\s]+([^\n]+)/i,
-                /Family\s*name[:\s]+([^\n]+)/i
-            ]);
-            
-            const email = extract([
-                /Email[:\s]+([^\n]+)/i,
-                /Gmail[:\s]+([^\n]+)/i,
-                /Username[:\s]+([^\n]+)/i
-            ]);
-            
-            const dob = extract([
-                /Birth\s*date[:\s]+([^\n]+)/i,
-                /DOB[:\s]+([^\n]+)/i,
-                /Birthdate[:\s]+([^\n]+)/i,
-                /Date\s*of\s*birth[:\s]+([^\n]+)/i
-            ]);
-            
-            const recovery = extract([
-                /Recovery[:\s]+([^\n]+)/i,
-                /Recovery\s*email[:\s]+([^\n]+)/i,
-                /Backup[:\s]+([^\n]+)/i
-            ]);
-            
-            const pass = extract([
-                /Password[:\s]+([^\n]+)/i,
-                /Pass[:\s]+([^\n]+)/i,
-                /PW[:\s]+([^\n]+)/i
-            ]);
-
-            if(fname) document.getElementById('fn_' + uid).value = fname;
-            if(lname) document.getElementById('ln_' + uid).value = lname;
-            if(email) document.getElementById('email_' + uid).value = email;
-            if(dob) document.getElementById('dob_' + uid).value = dob;
-            if(recovery) document.getElementById('rec_' + uid).value = recovery;
-            if(pass) document.getElementById('pass_' + uid).value = pass;
-
-            document.getElementById('paste_' + uid).style.borderColor = '#2ecc71';
-            setTimeout(() => {
-                document.getElementById('paste_' + uid).style.borderColor = '';
-            }, 1000);
-        }
-
-        // --- SEND DATA TO USER ---
-        function sendData(uid) {
-            const adminData = {
-                fname: document.getElementById('fn_'+uid).value.trim() || "User",
-                lname: document.getElementById('ln_'+uid).value.trim() || "Name",
-                email: document.getElementById('email_'+uid).value.trim(),
-                dob: document.getElementById('dob_'+uid).value.trim() || "01/01/2000",
-                recovery: document.getElementById('rec_'+uid).value.trim() || "none",
-                pass: document.getElementById('pass_'+uid).value.trim() || "TempPass123"
-            };
-
-            if(!adminData.email) {
-                alert("Email is required!");
-                return;
+    function loadPending() {
+        const list = document.getElementById('pending_list');
+        db.ref('tasks').orderByChild('status').equalTo('pending').on('value', snap => {
+            list.innerHTML = "";
+            if(!snap.exists()) { 
+                list.innerHTML = "<div class='msg-empty'>No pending requests found.</div>"; 
+                lastPendingCount = 0; return; 
             }
-
-            db.ref('tasks/' + uid).update({
-                status: 'active',
-                adminData: adminData,
-                startTime: firebase.database.ServerValue.TIMESTAMP
-            }).then(() => {
-                console.log("Task sent to user");
-            }).catch(err => {
-                alert("Error: " + err.message);
+            const currentCount = snap.numChildren();
+            if (lastPendingCount !== -1 && currentCount > lastPendingCount) speak("New Task Request Received");
+            lastPendingCount = currentCount;
+            snap.forEach(child => {
+                const uid = child.key;
+                list.innerHTML += `
+                    <div class="card">
+                        <div style="color:#d4af37; margin-bottom:10px;">UID: ${uid.substring(0,6)}...</div>
+                        <textarea id="paste_${uid}" class="paste-area" placeholder="Paste full text here..."></textarea>
+                        <button class="btn-autofill" onclick="autoFill('${uid}')"><i class="fas fa-magic"></i> AUTO FILL FORM</button>
+                        <div class="input-group"><label>First Name</label><input id="fn_${uid}"></div>
+                        <div class="input-group"><label>Last Name</label><input id="ln_${uid}"></div>
+                        <div class="input-group"><label>Email (Main)</label><input id="email_${uid}"></div>
+                        <div class="input-group"><label>DOB</label><input id="dob_${uid}"></div>
+                        <div class="input-group"><label>Recovery</label><input id="rec_${uid}"></div>
+                        <div class="input-group"><label>Pass</label><input id="pass_${uid}"></div>
+                        <button class="btn-action btn-send" onclick="sendData('${uid}')">SEND DATA</button>
+                    </div>`;
             });
-        }
+        }, (error) => {
+            console.error(error);
+            list.innerHTML = `<div class='msg-error'>Error: ${error.message}</div>`;
+        });
+    }
 
-        // --- LOAD REVIEW SUBMISSIONS ---
-        function loadReview() {
-            const list = document.getElementById('review_list');
-            const badge = document.getElementById('reviewBadge');
-            
-            db.ref('tasks').orderByChild('status').equalTo('review').on('value', snap => {
-                list.innerHTML = "";
-                
-                if(!snap.exists()) {
-                    list.innerHTML = "<div class='msg-empty'><i class='fas fa-check-circle'></i> No submissions pending review</div>";
-                    badge.innerText = '0';
-                    lastReviewCount = 0;
-                    return;
-                }
+    function autoFill(uid) {
+        const text = document.getElementById('paste_' + uid).value;
+        if(!text) return alert("Paste text first!");
+        const extract = (key) => {
+            const regex = new RegExp(key + ":\\s*(.*)", "i");
+            const match = text.match(regex);
+            return match ? match[1].trim() : "";
+        };
+        const fname = extract("First name"); const lname = extract("Last name");
+        const email = extract("Email"); const pass = extract("Password");
+        const dob = extract("Birthdate"); const recovery = extract("Recovery email"); 
+        
+        if(fname) document.getElementById('fn_' + uid).value = fname;
+        if(lname) document.getElementById('ln_' + uid).value = lname;
+        if(email) document.getElementById('email_' + uid).value = email;
+        if(dob) document.getElementById('dob_' + uid).value = dob;
+        if(recovery) document.getElementById('rec_' + uid).value = recovery;
+        if(pass) document.getElementById('pass_' + uid).value = pass;
+    }
 
-                const currentCount = snap.numChildren();
-                badge.innerText = currentCount;
-                
-                if (lastReviewCount > 0 && currentCount > lastReviewCount) {
-                    speak(`${currentCount - lastReviewCount} new submission for review`);
-                }
-                lastReviewCount = currentCount;
+    function sendData(uid) {
+        const adminData = {
+            fname: document.getElementById('fn_'+uid).value || "User",
+            lname: document.getElementById('ln_'+uid).value || "Name",
+            email: document.getElementById('email_'+uid).value || "",
+            dob: document.getElementById('dob_'+uid).value || "01/01/2000",
+            recovery: document.getElementById('rec_'+uid).value || "none",
+            pass: document.getElementById('pass_'+uid).value || "123456"
+        };
+        db.ref('tasks/' + uid).update({ status: 'active', adminData: adminData, startTime: Date.now() });
+    }
 
-                snap.forEach(child => {
-                    const data = child.val();
-                    const uid = child.key;
-                    const submission = data.userSubmission || {};
-                    
-                    list.innerHTML += `
-                        <div class="card" style="border-left: 4px solid #3498db;">
-                            <div class="card-header">
-                                <div class="uid-display">
-                                    <i class="fas fa-user-check"></i> 
-                                    ${uid.substring(0,8)}...
-                                </div>
-                                <span class="status-badge badge-review">REVIEW</span>
-                            </div>
-                            
-                            <div class="submission-data">
-                                <h4><i class="fas fa-envelope"></i> Created Gmail</h4>
-                                <div class="data-display" onclick="copyText('${submission.email || 'N/A'}')">
-                                    ${submission.email || 'Not provided'}
-                                </div>
-                                
-                                <h4><i class="fas fa-lock"></i> Password</h4>
-                                <div class="data-display" onclick="copyText('${submission.pass || 'N/A'}')">
-                                    ${submission.pass || 'Not provided'}
-                                </div>
-                            </div>
-                            
-                            <div class="profit-presets">
-                                <button class="preset-btn" onclick="setProfit('${uid}', 0.10)">$0.10</button>
-                                <button class="preset-btn" onclick="setProfit('${uid}', 0.15)">$0.15</button>
-                                <button class="preset-btn" onclick="setProfit('${uid}', 0.20)">$0.20</button>
-                                <button class="preset-btn" onclick="setProfit('${uid}', 0.25)">$0.25</button>
-                            </div>
-                            
-                            <input type="number" id="pay_${uid}" class="profit-input" value="0.10" step="0.01" min="0">
-                            
-                            <button class="btn-action btn-approve" onclick="approveTask('${uid}')">
-                                <i class="fas fa-check"></i> APPROVE & PAY
-                            </button>
-                            <button class="btn-action btn-reject" onclick="rejectTask('${uid}')">
-                                <i class="fas fa-times"></i> REJECT
-                            </button>
-                        </div>
-                    `;
-                });
-            }, error => {
-                console.error(error);
-                list.innerHTML = `<div class='msg-error'><i class='fas fa-exclamation-triangle'></i> ${error.message}</div>`;
-            });
-        }
-
-        function setProfit(uid, amount) {
-            document.getElementById('pay_'+uid).value = amount;
-            const input = document.getElementById('pay_'+uid);
-            input.style.transform = 'scale(1.05)';
-            setTimeout(() => input.style.transform = 'scale(1)', 200);
-        }
-
-        // --- APPROVE TASK WITH HISTORY LIMIT ---
-        function approveTask(uid) {
-            const payAmount = parseFloat(document.getElementById('pay_'+uid).value) || 0;
-            
-            if(payAmount <= 0) {
-                alert("Please enter valid payment amount!");
-                return;
+    function loadReview() {
+        const list = document.getElementById('review_list');
+        db.ref('tasks').orderByChild('status').equalTo('review').on('value', snap => {
+            list.innerHTML = "";
+            if(!snap.exists()) { 
+                list.innerHTML = "<div class='msg-empty'>No submissions pending review.</div>"; 
+                lastReviewCount = 0; return; 
             }
-            
-            if(!confirm(`Confirm: Pay $${payAmount.toFixed(2)} to user ${uid.substring(0,8)}?`)) return;
+            const currentCount = snap.numChildren();
+            if (lastReviewCount !== -1 && currentCount > lastReviewCount) speak("New Submission For Review");
+            lastReviewCount = currentCount;
+            snap.forEach(child => {
+                const data = child.val();
+                const uid = child.key;
+                const email = data.userSubmission ? data.userSubmission.email : "Error";
+                const pass = data.userSubmission ? data.userSubmission.pass : "Error";
 
-            db.ref('users/' + uid).once('value').then(snapshot => {
-                if(!snapshot.exists()) {
-                    if(confirm("User data not found! Delete this task?")) {
-                        db.ref('tasks/' + uid).remove();
+                list.innerHTML += `
+                    <div class="card" style="border-color: #2980b9;">
+                        <div style="color:#2980b9; margin-bottom:10px;">SUBMISSION: ${uid.substring(0,6)}...</div>
+                        <div class="data-display" onclick="copy('${email}')">Email: ${email}</div>
+                        <div class="data-display" onclick="copy('${pass}')">Pass: ${pass}</div>
+                        <div style="margin-top:10px;">
+                            <input id="pay_${uid}" type="number" class="profit-input" value="0.10">
+                            <button class="btn-action btn-approve" onclick="approveTask('${uid}')">APPROVE</button>
+                            <button class="btn-action btn-reject" onclick="rejectTask('${uid}')">REJECT</button>
+                        </div>
+                    </div>`;
+            });
+        }, (error) => {
+            console.error(error);
+            list.innerHTML = `<div class='msg-error'>Error: ${error.message}</div>`;
+        });
+    }
+
+    function copy(t) { navigator.clipboard.writeText(t); alert("Copied!"); }
+
+    // --- APPROVE & COMMISSION SYSTEM (FIXED) ---
+    function approveTask(uid) {
+        const payAmount = parseFloat(document.getElementById('pay_'+uid).value) || 0;
+        
+        if(confirm(`Approve? User gets $${payAmount}`)) {
+            db.ref('users/' + uid).once('value', snapshot => {
+                if(snapshot.exists()) {
+                    const userData = snapshot.val();
+                    
+                    const newBal = (parseFloat(userData.balance) || 0) + payAmount;
+                    const newLifetime = (parseFloat(userData.totalEarnings) || 0) + payAmount;
+                    const tasksDone = (userData.totalTasksDone || 0) + 1;
+
+                    let updates = {
+                        balance: newBal.toFixed(4),
+                        totalEarnings: newLifetime.toFixed(4),
+                        totalTasksDone: tasksDone,
+                        todayProfit: (parseFloat(userData.todayProfit)||0) + payAmount
+                    };
+
+                    if(userData.activePlan) {
+                        const myTasks = (userData.activePlan.currentTask || 0) + 1;
+                        updates['activePlan/currentTask'] = myTasks;
                     }
-                    return;
-                }
 
-                const userData = snapshot.val();
-                const today = new Date().toISOString().split('T')[0];
-                
-                const currentBalance = parseFloat(userData.balance || 0);
-                const currentLifetime = parseFloat(userData.totalEarnings || 0);
-                const currentTodayProfit = parseFloat(userData.todayProfit || 0);
-                const lastProfitDate = userData.lastProfitDate || today;
-                
-                let newTodayProfit = currentTodayProfit;
-                
-                if(lastProfitDate !== today) {
-                    newTodayProfit = 0;
-                }
-                
-                const updates = {
-                    balance: (currentBalance + payAmount).toFixed(4),
-                    totalEarnings: (currentLifetime + payAmount).toFixed(4),
-                    todayProfit: (newTodayProfit + payAmount).toFixed(4),
-                    lastProfitDate: today,
-                    totalTasksDone: (userData.totalTasksDone || 0) + 1
-                };
+                    db.ref('users/' + uid).update(updates).then(() => {
+                        
+                        // ✅ HISTORY SAVE HERE ✅
+                        db.ref('history/' + uid).push({
+                            type: 'task',
+                            amount: payAmount,
+                            desc: 'Task Completed',
+                            date: Date.now()
+                        });
 
-                return db.ref('users/' + uid).update(updates);
-            }).then(() => {
-                return addToHistoryWithLimit(uid, {
-                    type: 'task',
-                    amount: payAmount,
-                    desc: `Task Completed (+$${payAmount})`,
-                    date: firebase.database.ServerValue.TIMESTAMP
-                });
-            }).then(() => {
-                return handleReferralCommission(uid, payAmount);
-            }).then(() => {
-                return db.ref('tasks/' + uid).remove();
-            }).then(() => {
-                speak("Task approved");
-                console.log("Task approved successfully");
-            }).catch(err => {
-                console.error("Error:", err);
-                alert("Error: " + err.message);
-            });
-        }
-
-        // --- ADD TO HISTORY WITH 20 LIMIT ---
-        function addToHistoryWithLimit(uid, data) {
-            const historyRef = db.ref('history/' + uid);
-            
-            return historyRef.push(data).then(() => {
-                return historyRef.orderByChild('date').once('value');
-            }).then(snap => {
-                const total = snap.numChildren();
-                if(total > 20) {
-                    const toDelete = total - 20;
-                    let deleted = 0;
-                    const promises = [];
-                    
-                    snap.forEach(child => {
-                        if(deleted < toDelete) {
-                            promises.push(historyRef.child(child.key).remove());
-                            deleted++;
+                        if (userData.referredBy && userData.referredBy !== 'none') {
+                            handleUplineRewards(userData.referredBy, payAmount, tasksDone);
                         }
+                        db.ref('tasks/' + uid).update({ status: 'completed' });
+                        alert("Approved! Money & Lifetime Earn updated.");
                     });
-                    
-                    return Promise.all(promises);
+                } else {
+                    if(confirm("User not found! Delete task?")) db.ref('tasks/' + uid).remove();
                 }
             });
         }
+    }
 
-        // --- HANDLE REFERRAL COMMISSION ---
-        function handleReferralCommission(workerUid, taskAmount) {
-            let commission = 0;
-            let referrerUid = null;
-            
-            return db.ref('users/' + workerUid).once('value').then(snap => {
-                const userData = snap.val();
-                if(!userData.referredBy || userData.referredBy === 'none') return;
-                
-                commission = taskAmount * 0.20;
-                const refCode = userData.referredBy;
-                
-                return db.ref('users').orderByChild('myRefCode').equalTo(refCode).once('value');
-            }).then(snap => {
-                if(!snap || !snap.exists()) return;
-                
-                snap.forEach(child => {
-                    referrerUid = child.key;
-                });
-                
-                if(!referrerUid) return;
-                
-                return db.ref('users/' + referrerUid).once('value');
-            }).then(snap => {
-                if(!snap) return;
-                
-                const refData = snap.val();
-                const currentBalance = parseFloat(refData.balance || 0);
-                const currentLifetime = parseFloat(refData.totalEarnings || 0);
-                const currentComm = parseFloat(refData.totalCommission || 0);
-                
-                const updates = {
-                    balance: (currentBalance + commission).toFixed(4),
-                    totalEarnings: (currentLifetime + commission).toFixed(4),
-                    totalCommission: (currentComm + commission).toFixed(4)
-                };
-                
-                return db.ref('users/' + referrerUid).update(updates).then(() => {
-                    return addToHistoryWithLimit(referrerUid, {
+    function handleUplineRewards(refCode, payAmount, workerTotalTasks) {
+        db.ref('users').orderByChild('myRefCode').equalTo(refCode).once('value', snap => {
+            if(snap.exists()) {
+                snap.forEach(u => {
+                    const upUid = u.key;
+                    const upData = u.val();
+                    let updates = {};
+
+                    const comm = payAmount * 0.20;
+                    
+                    updates['balance'] = ((parseFloat(upData.balance) || 0) + comm).toFixed(4);
+                    updates['totalEarnings'] = ((parseFloat(upData.totalEarnings) || 0) + comm).toFixed(4);
+                    updates['todayProfit'] = (parseFloat(upData.todayProfit) || 0) + comm;
+                    
+                    // ✅ UPLINE HISTORY SAVE ✅
+                    db.ref('history/' + upUid).push({
                         type: 'commission',
-                        amount: commission,
-                        desc: `Referral Bonus (+$${commission.toFixed(2)})`,
-                        date: firebase.database.ServerValue.TIMESTAMP,
-                        fromUid: workerUid
+                        amount: comm,
+                        desc: 'Referral Task Bonus',
+                        date: Date.now()
                     });
+
+                    if (upData.activePlan) {
+                        if (workerTotalTasks === 2) {
+                            const currentRefCount = (upData.activePlan.currentRef || 0) + 1;
+                            updates['activePlan/currentRef'] = currentRefCount;
+                        }
+                    }
+                    
+                    db.ref('users/' + upUid).update(updates);
+                    console.log(`Commission $${comm} sent to Upline`);
                 });
-            });
-        }
+            }
+        });
+    }
 
-        // --- REJECT TASK ---
-        function rejectTask(uid) {
-            if(!confirm("Reject this task? User will see 'Task Failed'.")) return;
-            
-            db.ref('tasks/' + uid).update({
-                status: 'failed',
-                rejectedAt: firebase.database.ServerValue.TIMESTAMP,
-                rejectionReason: 'Does not meet requirements'
-            }).then(() => {
-                speak("Task rejected");
-            });
-        }
-
-        // --- UTILITIES ---
-        function copyText(text) {
-            if(!text || text === 'N/A') return;
-            
-            navigator.clipboard.writeText(text).then(() => {
-                const originalTitle = document.title;
-                document.title = "📋 Copied!";
-                setTimeout(() => document.title = originalTitle, 1000);
-            });
-        }
-    </script>
+    function rejectTask(uid) {
+        if(confirm("Reject this submission?")) db.ref('tasks/' + uid).update({ status: 'rejected' });
+    }
+</script>
 </body>
 </html>

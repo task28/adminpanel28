@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - Task Manager | TASK28</title>
+    <title>Admin Dashboard - TASK28</title>
     
-    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&family=Orbitron:wght@700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-    
+
     <script>
         const firebaseConfig = {
             apiKey: "AIzaSyDuxSz3j5xMYDw5U9kLA0cjkpOE82D06MI",
@@ -26,859 +26,497 @@
         const auth = firebase.auth();
         const db = firebase.database();
         
-        // Global variables
-        let lastPendingCount = 0;
-        let lastReviewCount = 0;
-        let soundEnabled = true;
+        const ADMIN_EMAIL = "rafsanvai388@gmail.com";
     </script>
 
     <style>
-        body { 
-            background: #050505; 
-            color: #ccc; 
-            font-family: 'Montserrat', sans-serif; 
-            padding: 20px; 
-            max-width: 1400px;
-            margin: 0 auto;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         
-        .header { 
-            display: flex; 
-            justify-content: space-between; 
-            border-bottom: 2px solid #d4af37; 
-            padding-bottom: 15px; 
-            margin-bottom: 20px;
+        body {
+            background-color: #050505;
+            color: #fff;
+            font-family: 'Montserrat', sans-serif;
+            min-height: 100vh;
+        }
+
+        /* Access Denied Screen */
+        .access-denied {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #000;
+            z-index: 9999;
+            flex-direction: column;
+            justify-content: center;
             align-items: center;
+            text-align: center;
         }
-        
-        .title { 
-            color: #d4af37; 
-            font-family: 'Share Tech Mono', monospace; 
-            font-size: 1.5rem; 
+        .access-denied.active { display: flex; }
+        .access-denied i {
+            font-size: 4rem;
+            color: #e74c3c;
+            margin-bottom: 20px;
+            animation: pulse 2s infinite;
+        }
+        .access-denied h1 {
+            color: #e74c3c;
+            font-size: 2rem;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        .access-denied p {
+            color: #e74c3c;
+            margin-bottom: 30px;
+            opacity: 0.8;
+        }
+        .access-denied button {
+            padding: 12px 30px;
+            background: #e74c3c;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: 0.3s;
+        }
+        .access-denied button:hover {
+            background: #c0392b;
+            transform: scale(1.05);
+        }
+
+        /* Main Dashboard */
+        .dashboard { display: none; }
+        .dashboard.active { display: block; }
+
+        .header {
+            background: linear-gradient(135deg, #1a1a1a, #0f0f0f);
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #d4af37;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 15px;
+        }
+        .logo i {
+            font-size: 2rem;
+            color: #d4af37;
+        }
+        .logo h1 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #d4af37;
+            font-family: 'Orbitron', sans-serif;
+        }
+        .logo span {
+            display: block;
+            font-size: 0.7rem;
+            color: #666;
+            font-weight: 400;
+            font-family: 'Montserrat', sans-serif;
         }
 
         .header-actions {
             display: flex;
-            gap: 10px;
+            gap: 15px;
             align-items: center;
         }
-        
-        .back-btn { 
-            background: #333; 
-            color: #fff; 
-            border: none; 
-            padding: 10px 20px; 
-            cursor: pointer;
-            border-radius: 5px;
-            transition: 0.3s;
-        }
-        .back-btn:hover { background: #d4af37; color: #000; }
-        
-        .sound-control {
-            font-size: 0.9rem; 
-            color: #2ecc71; 
-            cursor: pointer; 
-            border: 1px solid #2ecc71; 
-            padding: 10px 15px; 
-            border-radius: 5px;
+
+        .admin-badge {
+            background: rgba(212, 175, 55, 0.2);
+            color: #d4af37;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            border: 1px solid #d4af37;
             display: flex;
             align-items: center;
             gap: 8px;
-            transition: 0.3s;
         }
-        .sound-control:hover { background: rgba(46, 204, 113, 0.1); }
-        .sound-control.muted { color: #e74c3c; border-color: #e74c3c; }
-        
-        .section-title { 
-            color: #fff; 
-            margin: 25px 0 15px; 
-            border-left: 4px solid #d4af37; 
-            padding-left: 10px; 
-            font-weight: bold;
-            font-size: 1.1rem;
+
+        .logout-btn {
+            background: #e74c3c;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: 0.3s;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
         }
-        
-        .grid-container { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); 
-            gap: 20px; 
+        .logout-btn:hover {
+            background: #c0392b;
+            transform: translateY(-2px);
         }
-        
-        .card { 
-            background: #111; 
-            border: 1px solid #333; 
-            padding: 20px; 
-            border-radius: 12px; 
+
+        .container {
+            padding: 30px 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(145deg, #111, #1a1a1a);
+            border: 1px solid #333;
+            border-radius: 15px;
+            padding: 25px;
             position: relative;
+            overflow: hidden;
             transition: 0.3s;
         }
-        .card:hover {
+        .stat-card:hover {
+            transform: translateY(-5px);
             border-color: #444;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
-        
-        .card-header {
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 4px;
+        }
+        .stat-card.users::before { background: #3498db; }
+        .stat-card.tasks::before { background: #f39c12; }
+        .stat-card.withdraw::before { background: #e74c3c; }
+        .stat-card.balance::before { background: #2ecc71; }
+
+        .stat-header {
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            align-items: flex-start;
             margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #222;
         }
-        
-        .uid-display {
-            color: #d4af37; 
-            font-family: 'Share Tech Mono', monospace;
-            font-size: 0.9rem;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .copy-btn-small {
-            background: transparent;
-            border: none;
-            color: #888;
-            cursor: pointer;
-            font-size: 0.8rem;
-            padding: 5px;
-        }
-        .copy-btn-small:hover { color: #00d2ff; }
-        
-        .input-group { margin-bottom: 12px; }
-        .input-group label { 
-            display: block; 
-            font-size: 0.75rem; 
-            color: #666; 
-            margin-bottom: 5px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .input-group input { 
-            width: 100%; 
-            background: #000; 
-            border: 1px solid #444; 
-            color: #fff; 
-            padding: 10px;
-            font-family: 'Share Tech Mono', monospace;
-            border-radius: 5px;
-            font-size: 0.9rem;
-        }
-        .input-group input:focus {
-            outline: none;
-            border-color: #d4af37;
-        }
-        
-        .paste-area {
-            width: 100%; 
-            height: 80px; 
-            background: #080808; 
-            border: 2px dashed #2ecc71; 
-            color: #2ecc71; 
-            font-size: 0.8rem; 
-            padding: 10px; 
-            margin-bottom: 10px; 
-            resize: vertical;
-            border-radius: 5px;
-            font-family: monospace;
-        }
-        .paste-area:focus {
-            outline: none;
-            background: rgba(46, 204, 113, 0.05);
-        }
-        
-        .btn-autofill {
-            width: 100%; 
-            background: #1a3a1a; 
-            color: #2ecc71; 
-            border: 1px solid #2ecc71; 
-            padding: 8px; 
-            cursor: pointer; 
-            font-size: 0.85rem; 
-            margin-bottom: 15px;
-            border-radius: 5px;
-            transition: 0.3s;
+        .stat-icon {
+            width: 50px; height: 50px;
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
+            font-size: 1.5rem;
         }
-        .btn-autofill:hover { 
-            background: #2ecc71; 
-            color: #000; 
-        }
+        .users .stat-icon { background: rgba(52, 152, 219, 0.2); color: #3498db; }
+        .tasks .stat-icon { background: rgba(243, 156, 18, 0.2); color: #f39c12; }
+        .withdraw .stat-icon { background: rgba(231, 76, 60, 0.2); color: #e74c3c; }
+        .balance .stat-icon { background: rgba(46, 204, 113, 0.2); color: #2ecc71; }
 
-        .data-display { 
-            background: #000; 
-            padding: 12px; 
-            border: 1px dashed #444; 
-            margin-bottom: 10px; 
-            cursor: pointer; 
-            word-break: break-all;
-            border-radius: 5px;
-            font-family: 'Share Tech Mono', monospace;
-            font-size: 0.85rem;
-            transition: 0.2s;
-        }
-        .data-display:hover {
-            border-color: #d4af37;
-            background: rgba(212, 175, 55, 0.05);
-        }
-        
-        .btn-action { 
-            width: 100%; 
-            padding: 12px; 
-            border: none; 
-            font-weight: bold; 
-            cursor: pointer; 
-            margin-top: 8px;
-            border-radius: 5px;
-            transition: 0.3s;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .btn-send { 
-            background: #d4af37; 
-            color: #000; 
-        }
-        .btn-send:hover { background: #f1c40f; }
-        
-        .btn-approve { 
-            background: #27ae60; 
-            color: #fff; 
-            margin-top: 15px;
-        }
-        .btn-approve:hover { background: #2ecc71; }
-        
-        .btn-reject { 
-            background: #c0392b; 
-            color: #fff; 
-            margin-top: 8px;
-        }
-        .btn-reject:hover { background: #e74c3c; }
-        
-        .profit-input { 
-            width: 100%; 
-            padding: 12px; 
-            margin: 15px 0 8px 0; 
-            background: #000; 
-            border: 2px solid #27ae60; 
-            color: #2ecc71; 
-            text-align: center;
-            font-size: 1.2rem;
-            font-weight: bold;
-            border-radius: 5px;
-            font-family: 'Share Tech Mono', monospace;
-        }
-        .profit-input:focus {
-            outline: none;
-            box-shadow: 0 0 10px rgba(46, 204, 113, 0.3);
-        }
-        
-        .section-badge {
-            background: #d4af37;
-            color: #000;
-            padding: 2px 10px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: bold;
-        }
-
-        .msg-empty { 
-            color: #666; 
-            font-style: italic; 
-            padding: 20px; 
-            border: 2px dashed #333;
-            border-radius: 10px;
-            text-align: center;
-            grid-column: 1 / -1;
-        }
-        .msg-error { 
-            color: #e74c3c; 
-            padding: 15px; 
-            border: 1px solid #e74c3c; 
-            background: rgba(231, 76, 60, 0.1);
-            border-radius: 5px;
-            grid-column: 1 / -1;
-        }
-        
-        .status-badge {
-            display: inline-block;
-            padding: 4px 12px;
+        .stat-badge {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+            padding: 5px 10px;
             border-radius: 20px;
             font-size: 0.75rem;
-            font-weight: bold;
         }
-        .badge-pending { background: rgba(241, 196, 15, 0.2); color: #f1c40f; }
-        .badge-review { background: rgba(52, 152, 219, 0.2); color: #3498db; }
 
-        .submission-data {
-            background: #0a0a0a;
-            padding: 15px;
-            border-radius: 8px;
-            margin: 10px 0;
-            border: 1px solid #333;
+        .stat-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 5px;
         }
-        .submission-data h4 {
+        .stat-label {
             color: #888;
-            font-size: 0.8rem;
-            margin-bottom: 8px;
+            font-size: 0.9rem;
             text-transform: uppercase;
+            letter-spacing: 1px;
         }
-        
-        .quick-actions {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-top: 10px;
-        }
-        
-        .profit-presets {
+
+        /* Quick Actions */
+        .section-title {
+            color: #d4af37;
+            font-size: 1.2rem;
+            margin: 30px 0 20px;
             display: flex;
-            gap: 5px;
-            margin-bottom: 10px;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
         }
-        .preset-btn {
-            flex: 1;
-            padding: 5px;
-            background: #222;
-            border: 1px solid #444;
-            color: #888;
+
+        .actions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .action-card {
+            background: #111;
+            border: 1px solid #333;
+            border-radius: 15px;
+            padding: 25px;
             cursor: pointer;
-            border-radius: 5px;
-            font-size: 0.8rem;
-            transition: 0.2s;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            text-decoration: none;
+            color: #fff;
         }
-        .preset-btn:hover {
-            border-color: #27ae60;
-            color: #27ae60;
+        .action-card:hover {
+            background: #161616;
+            border-color: #d4af37;
+            transform: translateX(10px);
         }
+
+        .action-icon {
+            width: 60px; height: 60px;
+            background: linear-gradient(135deg, #d4af37, #b8860b);
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: #000;
+        }
+
+        .action-content h3 {
+            font-size: 1.1rem;
+            margin-bottom: 5px;
+        }
+        .action-content p {
+            font-size: 0.85rem;
+            color: #888;
+        }
+        .action-arrow {
+            margin-left: auto;
+            color: #666;
+            font-size: 1.2rem;
+        }
+        .action-card:hover .action-arrow {
+            color: #d4af37;
+        }
+
+        /* Notification Badge */
+        .notify-badge {
+            background: #e74c3c;
+            color: #fff;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            margin-left: 10px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.05); }
+        }
+
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: #d4af37;
+            font-size: 1.2rem;
+            gap: 15px;
+        }
+        .loading i {
+            font-size: 2rem;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
-    <div class="header">
-        <div class="title">
-            <i class="fas fa-crown"></i> 
-            TASK MANAGER 
-            <span style="font-size:0.7rem; color:#666; margin-left:10px;">v2.0</span>
-        </div>
-        <div class="header-actions">
-            <div class="sound-control" id="soundBtn" onclick="toggleSound()">
-                <i class="fas fa-volume-up"></i> 
-                <span>Sound On</span>
+
+    <!-- Access Denied Screen -->
+    <div class="access-denied" id="accessDenied">
+        <i class="fas fa-ban"></i>
+        <h1>Access Denied</h1>
+        <p>Admin privileges required.</p>
+        <button onclick="auth.signOut()">
+            <i class="fas fa-sign-out-alt"></i> Logout
+        </button>
+    </div>
+
+    <!-- Loading -->
+    <div class="loading" id="loading">
+        <i class="fas fa-circle-notch"></i>
+        <span>Verifying Admin Access...</span>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div class="dashboard" id="dashboard">
+        <div class="header">
+            <div class="logo">
+                <i class="fas fa-crown"></i>
+                <div>
+                    <h1>TASK28 <span>Admin Portal</span></h1>
+                </div>
             </div>
-            <button class="back-btn" onclick="window.location.href='Admin_home.html'">
-                <i class="fas fa-arrow-left"></i> Back
-            </button>
+            
+            <div class="header-actions">
+                <div class="admin-badge">
+                    <i class="fas fa-shield-alt"></i>
+                    <span id="adminEmail">Loading...</span>
+                </div>
+                <button class="logout-btn" onclick="auth.signOut()">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
         </div>
-    </div>
 
-    <!-- PENDING REQUESTS SECTION -->
-    <div class="section-title">
-        <i class="fas fa-clock"></i> 
-        PENDING REQUESTS 
-        <span class="section-badge" id="pendingBadge">0</span>
-    </div>
-    <div class="grid-container" id="pending_list">
-        <div class="msg-empty">Connecting to Firebase...</div>
-    </div>
+        <div class="container">
+            <!-- Stats Overview -->
+            <div class="stats-grid">
+                <div class="stat-card users">
+                    <div class="stat-header">
+                        <div class="stat-icon"><i class="fas fa-users"></i></div>
+                        <span class="stat-badge">Total</span>
+                    </div>
+                    <div class="stat-value" id="totalUsers">0</div>
+                    <div class="stat-label">Registered Users</div>
+                </div>
 
-    <!-- UNDER REVIEW SECTION -->
-    <div class="section-title">
-        <i class="fas fa-search"></i> 
-        SUBMITTED FOR REVIEW 
-        <span class="section-badge" id="reviewBadge">0</span>
-    </div>
-    <div class="grid-container" id="review_list">
-        <div class="msg-empty">Connecting to Firebase...</div>
+                <div class="stat-card tasks">
+                    <div class="stat-header">
+                        <div class="stat-icon"><i class="fas fa-tasks"></i></div>
+                        <span class="notify-badge" id="pendingTasksBadge">0</span>
+                    </div>
+                    <div class="stat-value" id="pendingTasks">0</div>
+                    <div class="stat-label">Pending Tasks</div>
+                </div>
+
+                <div class="stat-card withdraw">
+                    <div class="stat-header">
+                        <div class="stat-icon"><i class="fas fa-wallet"></i></div>
+                        <span class="notify-badge" id="pendingWithdrawBadge">0</span>
+                    </div>
+                    <div class="stat-value" id="pendingWithdraws">0</div>
+                    <div class="stat-label">Pending Withdrawals</div>
+                </div>
+
+                <div class="stat-card balance">
+                    <div class="stat-header">
+                        <div class="stat-icon"><i class="fas fa-coins"></i></div>
+                        <span class="stat-badge">System</span>
+                    </div>
+                    <div class="stat-value" id="systemBalance">$0</div>
+                    <div class="stat-label">Total User Balance</div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <h2 class="section-title">
+                <i class="fas fa-bolt"></i> Quick Actions
+            </h2>
+            
+            <div class="actions-grid">
+                <a href="Admin_task_request.html" class="action-card">
+                    <div class="action-icon">
+                        <i class="fas fa-clipboard-check"></i>
+                    </div>
+                    <div class="action-content">
+                        <h3>Manage Tasks</h3>
+                        <p>Approve/reject user tasks</p>
+                    </div>
+                    <i class="fas fa-chevron-right action-arrow"></i>
+                </a>
+
+                <a href="Admin_withdraw.html" class="action-card">
+                    <div class="action-icon">
+                        <i class="fas fa-money-bill-wave"></i>
+                    </div>
+                    <div class="action-content">
+                        <h3>Process Withdrawals</h3>
+                        <p>Approve pending payments</p>
+                    </div>
+                    <i class="fas fa-chevron-right action-arrow"></i>
+                </a>
+
+                <a href="Admin_users.html" class="action-card">
+                    <div class="action-icon">
+                        <i class="fas fa-user-cog"></i>
+                    </div>
+                    <div class="action-content">
+                        <h3>User Management</h3>
+                        <p>View/ban users</p>
+                    </div>
+                    <i class="fas fa-chevron-right action-arrow"></i>
+                </a>
+
+                <a href="Admin_settings.html" class="action-card">
+                    <div class="action-icon">
+                        <i class="fas fa-cog"></i>
+                    </div>
+                    <div class="action-content">
+                        <h3>Settings</h3>
+                        <p>System configuration</p>
+                    </div>
+                    <i class="fas fa-chevron-right action-arrow"></i>
+                </a>
+            </div>
+        </div>
     </div>
 
     <script>
         // Check Admin Access
-        const ADMIN_EMAIL = "rafsanvai388@gmail.com";
-        
         auth.onAuthStateChanged(user => {
+            const loading = document.getElementById('loading');
+            const accessDenied = document.getElementById('accessDenied');
+            const dashboard = document.getElementById('dashboard');
+            
             if (!user) {
                 window.location.href = "registration_login.html";
                 return;
             }
             
-            if (user.email !== ADMIN_EMAIL) {
-                document.body.innerHTML = `
-                    <div style='color:red; text-align:center; margin-top:50px; padding:20px;'>
-                        <h2><i class="fas fa-ban"></i> ACCESS DENIED</h2>
-                        <p>Admin privileges required.</p>
-                        <button onclick='auth.signOut()' style='margin-top:20px; padding:10px 20px;'>Logout</button>
-                    </div>
-                `;
-                return;
-            }
+            loading.style.display = 'none';
             
-            console.log("Admin authenticated. Loading data...");
-            initPage();
+            if (user.email !== ADMIN_EMAIL) {
+                accessDenied.classList.add('active');
+            } else {
+                dashboard.classList.add('active');
+                document.getElementById('adminEmail').innerText = user.email;
+                loadDashboardData();
+            }
         });
 
-        function initPage() {
-            loadPending();
-            loadReview();
-        }
+        function loadDashboardData() {
+            // Total Users Count
+            db.ref('users').on('value', snap => {
+                document.getElementById('totalUsers').innerText = snap.numChildren();
+                
+                // Calculate total system balance
+                let totalBalance = 0;
+                snap.forEach(child => {
+                    const userData = child.val();
+                    totalBalance += parseFloat(userData.balance || 0);
+                });
+                document.getElementById('systemBalance').innerText = '$' + totalBalance.toFixed(2);
+            });
 
-        // Sound Control
-        function toggleSound() {
-            soundEnabled = !soundEnabled;
-            const btn = document.getElementById('soundBtn');
-            if(soundEnabled) {
-                btn.classList.remove('muted');
-                btn.innerHTML = '<i class="fas fa-volume-up"></i> <span>Sound On</span>';
-                speak("Sound notifications enabled");
-            } else {
-                btn.classList.add('muted');
-                btn.innerHTML = '<i class="fas fa-volume-mute"></i> <span>Sound Off</span>';
-            }
-        }
-
-        function speak(text) {
-            if (!soundEnabled || !('speechSynthesis' in window)) return;
-            
-            // Cancel previous speech
-            window.speechSynthesis.cancel();
-            
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.rate = 1.1;
-            utterance.pitch = 1;
-            window.speechSynthesis.speak(utterance);
-        }
-
-        // --- LOAD PENDING REQUESTS ---
-        function loadPending() {
-            const list = document.getElementById('pending_list');
-            const badge = document.getElementById('pendingBadge');
-            
+            // Pending Tasks
             db.ref('tasks').orderByChild('status').equalTo('pending').on('value', snap => {
-                list.innerHTML = "";
-                
-                if(!snap.exists()) {
-                    list.innerHTML = "<div class='msg-empty'><i class='fas fa-check-circle'></i> No pending requests</div>";
-                    badge.innerText = '0';
-                    lastPendingCount = 0;
-                    return;
-                }
-
-                const currentCount = snap.numChildren();
-                badge.innerText = currentCount;
-                
-                if (lastPendingCount > 0 && currentCount > lastPendingCount) {
-                    speak(`${currentCount - lastPendingCount} new task request received`);
-                }
-                lastPendingCount = currentCount;
-
-                snap.forEach(child => {
-                    const uid = child.key;
-                    const data = child.val();
-                    
-                    list.innerHTML += `
-                        <div class="card">
-                            <div class="card-header">
-                                <div class="uid-display">
-                                    <i class="fas fa-user"></i> 
-                                    ${uid.substring(0,8)}...
-                                    <button class="copy-btn-small" onclick="copyText('${uid}')" title="Copy UID">
-                                        <i class="fas fa-copy"></i>
-                                    </button>
-                                </div>
-                                <span class="status-badge badge-pending">PENDING</span>
-                            </div>
-                            
-                            <textarea id="paste_${uid}" class="paste-area" placeholder="Paste full Gmail details here..."></textarea>
-                            <button class="btn-autofill" onclick="autoFill('${uid}')">
-                                <i class="fas fa-magic"></i> Auto Fill from Text
-                            </button>
-                            
-                            <div class="input-group">
-                                <label>First Name</label>
-                                <input type="text" id="fn_${uid}" placeholder="John">
-                            </div>
-                            <div class="input-group">
-                                <label>Last Name</label>
-                                <input type="text" id="ln_${uid}" placeholder="Doe">
-                            </div>
-                            <div class="input-group">
-                                <label>Gmail to Create</label>
-                                <input type="text" id="email_${uid}" placeholder="john.doe123@gmail.com">
-                            </div>
-                            <div class="input-group">
-                                <label>Date of Birth</label>
-                                <input type="text" id="dob_${uid}" placeholder="01/01/2000">
-                            </div>
-                            <div class="input-group">
-                                <label>Recovery Email</label>
-                                <input type="text" id="rec_${uid}" placeholder="recovery@example.com">
-                            </div>
-                            <div class="input-group">
-                                <label>Password</label>
-                                <input type="text" id="pass_${uid}" placeholder="StrongPass123!">
-                            </div>
-                            
-                            <button class="btn-action btn-send" onclick="sendData('${uid}')">
-                                <i class="fas fa-paper-plane"></i> SEND TO USER
-                            </button>
-                        </div>
-                    `;
-                });
-            }, error => {
-                console.error(error);
-                list.innerHTML = `<div class='msg-error'><i class='fas fa-exclamation-triangle'></i> ${error.message}</div>`;
+                const count = snap.numChildren();
+                document.getElementById('pendingTasks').innerText = count;
+                document.getElementById('pendingTasksBadge').innerText = count;
+                document.getElementById('pendingTasksBadge').style.display = count > 0 ? 'inline-block' : 'none';
             });
-        }
 
-        // --- AUTO FILL FUNCTION ---
-        function autoFill(uid) {
-            const text = document.getElementById('paste_' + uid).value.trim();
-            if(!text) return alert("Please paste Gmail details first!");
-
-            // Multiple regex patterns for flexibility
-            const extract = (patterns) => {
-                for(let pattern of patterns) {
-                    const match = text.match(pattern);
-                    if(match) return match[1].trim();
-                }
-                return "";
-            };
-
-            const fname = extract([
-                /First\s*name[:\s]+([^\n]+)/i,
-                /First[:\s]+([^\n]+)/i,
-                /Given\s*name[:\s]+([^\n]+)/i
-            ]);
-            
-            const lname = extract([
-                /Last\s*name[:\s]+([^\n]+)/i,
-                /Last[:\s]+([^\n]+)/i,
-                /Surname[:\s]+([^\n]+)/i,
-                /Family\s*name[:\s]+([^\n]+)/i
-            ]);
-            
-            const email = extract([
-                /Email[:\s]+([^\n]+)/i,
-                /Gmail[:\s]+([^\n]+)/i,
-                /Username[:\s]+([^\n]+)/i
-            ]);
-            
-            const dob = extract([
-                /Birth\s*date[:\s]+([^\n]+)/i,
-                /DOB[:\s]+([^\n]+)/i,
-                /Birthdate[:\s]+([^\n]+)/i,
-                /Date\s*of\s*birth[:\s]+([^\n]+)/i
-            ]);
-            
-            const recovery = extract([
-                /Recovery[:\s]+([^\n]+)/i,
-                /Recovery\s*email[:\s]+([^\n]+)/i,
-                /Backup[:\s]+([^\n]+)/i
-            ]);
-            
-            const pass = extract([
-                /Password[:\s]+([^\n]+)/i,
-                /Pass[:\s]+([^\n]+)/i,
-                /PW[:\s]+([^\n]+)/i
-            ]);
-
-            // Fill inputs
-            if(fname) document.getElementById('fn_' + uid).value = fname;
-            if(lname) document.getElementById('ln_' + uid).value = lname;
-            if(email) document.getElementById('email_' + uid).value = email;
-            if(dob) document.getElementById('dob_' + uid).value = dob;
-            if(recovery) document.getElementById('rec_' + uid).value = recovery;
-            if(pass) document.getElementById('pass_' + uid).value = pass;
-
-            // Visual feedback
-            document.getElementById('paste_' + uid).style.borderColor = '#2ecc71';
-            setTimeout(() => {
-                document.getElementById('paste_' + uid).style.borderColor = '';
-            }, 1000);
-        }
-
-        // --- SEND DATA TO USER ---
-        function sendData(uid) {
-            const adminData = {
-                fname: document.getElementById('fn_'+uid).value.trim() || "User",
-                lname: document.getElementById('ln_'+uid).value.trim() || "Name",
-                email: document.getElementById('email_'+uid).value.trim(),
-                dob: document.getElementById('dob_'+uid).value.trim() || "01/01/2000",
-                recovery: document.getElementById('rec_'+uid).value.trim() || "none",
-                pass: document.getElementById('pass_'+uid).value.trim() || "TempPass123"
-            };
-
-            // Validation
-            if(!adminData.email) {
-                alert("Email is required!");
-                return;
-            }
-
-            db.ref('tasks/' + uid).update({
-                status: 'active',
-                adminData: adminData,
-                startTime: firebase.database.ServerValue.TIMESTAMP
-            }).then(() => {
-                console.log("Task sent to user");
-            }).catch(err => {
-                alert("Error: " + err.message);
-            });
-        }
-
-        // --- LOAD REVIEW SUBMISSIONS ---
-        function loadReview() {
-            const list = document.getElementById('review_list');
-            const badge = document.getElementById('reviewBadge');
-            
-            db.ref('tasks').orderByChild('status').equalTo('review').on('value', snap => {
-                list.innerHTML = "";
-                
-                if(!snap.exists()) {
-                    list.innerHTML = "<div class='msg-empty'><i class='fas fa-check-circle'></i> No submissions pending review</div>";
-                    badge.innerText = '0';
-                    lastReviewCount = 0;
-                    return;
-                }
-
-                const currentCount = snap.numChildren();
-                badge.innerText = currentCount;
-                
-                if (lastReviewCount > 0 && currentCount > lastReviewCount) {
-                    speak(`${currentCount - lastReviewCount} new submission for review`);
-                }
-                lastReviewCount = currentCount;
-
-                snap.forEach(child => {
-                    const data = child.val();
-                    const uid = child.key;
-                    const submission = data.userSubmission || {};
-                    
-                    list.innerHTML += `
-                        <div class="card" style="border-left: 4px solid #3498db;">
-                            <div class="card-header">
-                                <div class="uid-display">
-                                    <i class="fas fa-user-check"></i> 
-                                    ${uid.substring(0,8)}...
-                                </div>
-                                <span class="status-badge badge-review">REVIEW</span>
-                            </div>
-                            
-                            <div class="submission-data">
-                                <h4><i class="fas fa-envelope"></i> Created Gmail</h4>
-                                <div class="data-display" onclick="copyText('${submission.email || 'N/A'}')">
-                                    ${submission.email || 'Not provided'}
-                                </div>
-                                
-                                <h4><i class="fas fa-lock"></i> Password</h4>
-                                <div class="data-display" onclick="copyText('${submission.pass || 'N/A'}')">
-                                    ${submission.pass || 'Not provided'}
-                                </div>
-                            </div>
-                            
-                            <div class="profit-presets">
-                                <button class="preset-btn" onclick="setProfit('${uid}', 0.10)">$0.10</button>
-                                <button class="preset-btn" onclick="setProfit('${uid}', 0.15)">$0.15</button>
-                                <button class="preset-btn" onclick="setProfit('${uid}', 0.20)">$0.20</button>
-                                <button class="preset-btn" onclick="setProfit('${uid}', 0.25)">$0.25</button>
-                            </div>
-                            
-                            <input type="number" id="pay_${uid}" class="profit-input" value="0.10" step="0.01" min="0">
-                            
-                            <button class="btn-action btn-approve" onclick="approveTask('${uid}')">
-                                <i class="fas fa-check"></i> APPROVE & PAY
-                            </button>
-                            <button class="btn-action btn-reject" onclick="rejectTask('${uid}')">
-                                <i class="fas fa-times"></i> REJECT
-                            </button>
-                        </div>
-                    `;
-                });
-            }, error => {
-                console.error(error);
-                list.innerHTML = `<div class='msg-error'><i class='fas fa-exclamation-triangle'></i> ${error.message}</div>`;
-            });
-        }
-
-        function setProfit(uid, amount) {
-            document.getElementById('pay_'+uid).value = amount;
-            // Visual feedback
-            const input = document.getElementById('pay_'+uid);
-            input.style.transform = 'scale(1.05)';
-            setTimeout(() => input.style.transform = 'scale(1)', 200);
-        }
-
-        // --- APPROVE TASK WITH HISTORY LIMIT ---
-        function approveTask(uid) {
-            const payAmount = parseFloat(document.getElementById('pay_'+uid).value) || 0;
-            
-            if(payAmount <= 0) {
-                alert("Please enter valid payment amount!");
-                return;
-            }
-            
-            if(!confirm(`Confirm: Pay $${payAmount.toFixed(2)} to user ${uid.substring(0,8)}?`)) return;
-
-            db.ref('users/' + uid).once('value').then(snapshot => {
-                if(!snapshot.exists()) {
-                    if(confirm("User data not found! Delete this task?")) {
-                        db.ref('tasks/' + uid).remove();
-                    }
-                    return;
-                }
-
-                const userData = snapshot.val();
-                const today = new Date().toISOString().split('T')[0];
-                
-                // Calculate new values
-                const currentBalance = parseFloat(userData.balance || 0);
-                const currentLifetime = parseFloat(userData.totalEarnings || 0);
-                const currentTodayProfit = parseFloat(userData.todayProfit || 0);
-                const lastProfitDate = userData.lastProfitDate || today;
-                
-                let newTodayProfit = currentTodayProfit;
-                
-                // Reset today profit if new day
-                if(lastProfitDate !== today) {
-                    newTodayProfit = 0;
-                }
-                
-                const updates = {
-                    balance: (currentBalance + payAmount).toFixed(4),
-                    totalEarnings: (currentLifetime + payAmount).toFixed(4),
-                    todayProfit: (newTodayProfit + payAmount).toFixed(4),
-                    lastProfitDate: today,
-                    totalTasksDone: (userData.totalTasksDone || 0) + 1
-                };
-
-                // Update user data
-                return db.ref('users/' + uid).update(updates);
-            }).then(() => {
-                // Add to history with 20 limit
-                return addToHistoryWithLimit(uid, {
-                    type: 'task',
-                    amount: payAmount,
-                    desc: `Task Completed (+$${payAmount})`,
-                    date: firebase.database.ServerValue.TIMESTAMP
-                });
-            }).then(() => {
-                // Handle referral commission (20%)
-                return handleReferralCommission(uid, payAmount);
-            }).then(() => {
-                // Remove task
-                return db.ref('tasks/' + uid).remove();
-            }).then(() => {
-                speak("Task approved");
-                console.log("Task approved successfully");
-            }).catch(err => {
-                console.error("Error:", err);
-                alert("Error: " + err.message);
-            });
-        }
-
-        // --- ADD TO HISTORY WITH 20 LIMIT ---
-        function addToHistoryWithLimit(uid, data) {
-            const historyRef = db.ref('history/' + uid);
-            
-            return historyRef.push(data).then(() => {
-                // Check and cleanup old entries
-                return historyRef.orderByChild('date').once('value');
-            }).then(snap => {
-                const total = snap.numChildren();
-                if(total > 20) {
-                    const toDelete = total - 20;
-                    let deleted = 0;
-                    const promises = [];
-                    
-                    snap.forEach(child => {
-                        if(deleted < toDelete) {
-                            promises.push(historyRef.child(child.key).remove());
-                            deleted++;
-                        }
-                    });
-                    
-                    return Promise.all(promises);
-                }
-            });
-        }
-
-        // --- HANDLE REFERRAL COMMISSION ---
-        function handleReferralCommission(workerUid, taskAmount) {
-            return db.ref('users/' + workerUid).once('value').then(snap => {
-                const userData = snap.val();
-                if(!userData.referredBy || userData.referredBy === 'none') return;
-                
-                const commission = taskAmount * 0.20; // 20% commission
-                const refCode = userData.referredBy;
-                
-                // Find referrer by code
-                return db.ref('users').orderByChild('myRefCode').equalTo(refCode).once('value');
-            }).then(snap => {
-                if(!snap || !snap.exists()) return;
-                
-                let referrerUid = null;
-                let referrerData = null;
-                
-                snap.forEach(child => {
-                    referrerUid = child.key;
-                    referrerData = child.val();
-                });
-                
-                if(!referrerUid) return;
-                
-                const currentBalance = parseFloat(referrerData.balance || 0);
-                const currentLifetime = parseFloat(referrerData.totalEarnings || 0);
-                const currentComm = parseFloat(referrerData.totalCommission || 0);
-                
-                const updates = {
-                    balance: (currentBalance + commission).toFixed(4),
-                    totalEarnings: (currentLifetime + commission).toFixed(4),
-                    totalCommission: (currentComm + commission).toFixed(4)
-                };
-                
-                // Update referrer
-                return db.ref('users/' + referrerUid).update(updates).then(() => {
-                    // Add commission to referrer's history
-                    return addToHistoryWithLimit(referrerUid, {
-                        type: 'commission',
-                        amount: commission,
-                        desc: `Referral Bonus (+$${commission.toFixed(2)})`,
-                        date: firebase.database.ServerValue.TIMESTAMP,
-                        fromUid: workerUid
-                    });
-                });
-            });
-        }
-
-        // --- REJECT TASK ---
-        function rejectTask(uid) {
-            if(!confirm("Reject this task? User will see 'Task Failed'.")) return;
-            
-            db.ref('tasks/' + uid).update({
-                status: 'failed',
-                rejectedAt: firebase.database.ServerValue.TIMESTAMP,
-                rejectionReason: 'Does not meet requirements'
-            }).then(() => {
-                speak("Task rejected");
-            });
-        }
-
-        // --- UTILITIES ---
-        function copyText(text) {
-            if(!text || text === 'N/A') return;
-            
-            navigator.clipboard.writeText(text).then(() => {
-                // Temporary visual feedback
-                const originalTitle = document.title;
-                document.title = "📋 Copied!";
-                setTimeout(() => document.title = originalTitle, 1000);
+            // Pending Withdrawals
+            db.ref('withdrawals').orderByChild('status').equalTo('pending').on('value', snap => {
+                const count = snap.numChildren();
+                document.getElementById('pendingWithdraws').innerText = count;
+                document.getElementById('pendingWithdrawBadge').innerText = count;
+                document.getElementById('pendingWithdrawBadge').style.display = count > 0 ? 'inline-block' : 'none';
             });
         }
     </script>

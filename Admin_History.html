@@ -34,23 +34,40 @@
         .back-btn { background: #333; color: #fff; border: none; padding: 8px 15px; cursor: pointer; }
 
         /* SEARCH BOX */
-        .search-box { display: flex; gap: 10px; margin-bottom: 20px; }
-        .search-inp { flex: 1; padding: 12px; background: #111; border: 1px solid #444; color: #fff; }
-        .search-btn { background: #d4af37; border: none; padding: 0 20px; font-weight: bold; cursor: pointer; }
+        .search-container { background: #111; padding: 15px; border: 1px solid #333; border-radius: 8px; margin-bottom: 20px; }
+        .search-box { display: flex; gap: 10px; }
+        .search-inp { flex: 1; padding: 12px; background: #000; border: 1px solid #444; color: #fff; font-family: 'Share Tech Mono', monospace; }
+        .search-btn { background: #d4af37; border: none; padding: 0 20px; font-weight: bold; cursor: pointer; color: #000; }
+        .list-btn { background: #222; border: 1px solid #d4af37; color: #d4af37; padding: 10px; width: 100%; margin-top: 10px; cursor: pointer; font-weight: bold; }
+        .list-btn:hover { background: #d4af37; color: #000; }
+
+        /* USER LIST TABLE */
+        .user-list-container { max-height: 300px; overflow-y: auto; margin-top: 10px; display: none; border: 1px solid #333; }
+        .ul-item { 
+            display: flex; justify-content: space-between; align-items: center; 
+            padding: 10px; background: #080808; border-bottom: 1px solid #222; font-size: 0.8rem; 
+        }
+        .ul-item:hover { background: #1a1a1a; }
+        .ul-info { display: flex; flex-direction: column; }
+        .ul-uid { color: #666; font-size: 0.7rem; font-family: monospace; }
+        .ul-email { color: #2ecc71; }
+        .btn-select { background: #333; color: #fff; border: none; padding: 5px 10px; cursor: pointer; font-size: 0.7rem; }
 
         /* USER CARD */
         .user-card { 
             background: #111; border: 1px solid #333; padding: 20px; border-radius: 8px; 
-            margin-bottom: 20px; display: none; 
+            margin-bottom: 20px; display: none; border-left: 4px solid #d4af37;
         }
         .uc-header { display: flex; justify-content: space-between; border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 15px; }
-        .uc-info h3 { margin: 0; color: #2ecc71; }
+        .uc-info h3 { margin: 0; color: #fff; }
         .uc-info p { font-size: 0.8rem; color: #888; }
+        .copy-icon { cursor: pointer; color: #d4af37; margin-left: 5px; }
 
         /* GIFT FORM */
-        .gift-section { background: rgba(212, 175, 55, 0.1); padding: 15px; border-radius: 8px; border: 1px dashed #d4af37; }
-        .gift-inp { width: 100%; padding: 10px; margin-bottom: 10px; background: #000; border: 1px solid #555; color: #fff; }
-        .btn-gift { width: 100%; padding: 12px; background: #d4af37; border: none; font-weight: bold; cursor: pointer; }
+        .gift-section { background: rgba(212, 175, 55, 0.05); padding: 15px; border-radius: 8px; border: 1px dashed #d4af37; }
+        .gift-inp { width: 100%; padding: 10px; margin-bottom: 10px; background: #000; border: 1px solid #555; color: #fff; box-sizing: border-box; }
+        .btn-gift { width: 100%; padding: 12px; background: #d4af37; border: none; font-weight: bold; cursor: pointer; color: #000; transition: 0.3s; }
+        .btn-gift:hover { background: #fff; }
 
         /* HISTORY LOG */
         .history-log { margin-top: 20px; }
@@ -60,125 +77,195 @@
 <body>
 
     <div class="header">
-        <div class="title">ADMIN - USER & GIFT</div>
+        <div class="title">ADMIN - USER MANAGER</div>
         <button class="back-btn" onclick="window.location.href='Admin_home.html'">BACK</button>
     </div>
 
-    <div class="search-box">
-        <input type="text" id="searchUid" class="search-inp" placeholder="Paste User UID here...">
-        <button class="search-btn" onclick="searchUser()">SEARCH</button>
+    <!-- SEARCH AREA -->
+    <div class="search-container">
+        <div class="search-box">
+            <input type="text" id="searchInput" class="search-inp" placeholder="Enter UID or Email Address...">
+            <button class="search-btn" onclick="searchUser()"><i class="fas fa-search"></i></button>
+        </div>
+        
+        <button class="list-btn" onclick="toggleUserList()"><i class="fas fa-list"></i> SHOW / HIDE ALL USERS LIST</button>
+        
+        <!-- HIDDEN USER LIST -->
+        <div id="allUsersList" class="user-list-container">
+            <div style="padding:10px; color:#666; text-align:center;">Loading users...</div>
+        </div>
     </div>
 
-    <!-- USER DETAILS CARD -->
+    <!-- SELECTED USER CARD -->
     <div id="userCard" class="user-card">
         <div class="uc-header">
             <div class="uc-info">
                 <h3 id="uName">User Name</h3>
-                <p id="uEmail">email@example.com</p>
-                <p>UID: <span id="uUid">...</span></p>
+                <p><i class="fas fa-envelope"></i> <span id="uEmail">email@example.com</span></p>
+                <p>UID: <span id="uUid">...</span> <i class="fas fa-copy copy-icon" onclick="copyUid()"></i></p>
             </div>
             <div style="text-align: right;">
                 <div style="font-size: 1.5rem; color: #d4af37; font-weight: bold;">$<span id="uBal">0.00</span></div>
-                <div style="font-size: 0.7rem; color: #888;">Current Balance</div>
+                <div style="font-size: 0.7rem; color: #888;">Wallet Balance</div>
             </div>
         </div>
 
         <!-- GIFT SENDER -->
         <div class="gift-section">
-            <h4 style="color:#d4af37; margin-bottom:10px;"><i class="fas fa-gift"></i> SEND GIFT / BONUS</h4>
+            <h4 style="color:#d4af37; margin: 0 0 10px 0;"><i class="fas fa-gift"></i> SEND BALANCE / GIFT</h4>
             <input type="number" id="giftAmount" class="gift-inp" placeholder="Amount (e.g., 5.00)">
-            <input type="text" id="giftMsg" class="gift-inp" placeholder="Reason (e.g., Good Work, Weekly Bonus)">
-            <button class="btn-gift" onclick="sendGift()">SEND MONEY & NOTIFY</button>
+            <input type="text" id="giftMsg" class="gift-inp" placeholder="Message (e.g., Bonus Reward)">
+            <button class="btn-gift" onclick="sendGift()">SEND NOW</button>
         </div>
 
-        <!-- USER HISTORY -->
-        <h4 style="margin-top:20px; border-bottom:1px solid #333; padding-bottom:5px;">USER TRANSACTION HISTORY (Last 10)</h4>
-        <div class="history-log" id="logList">
-            <!-- Logs load here -->
-        </div>
+        <!-- HISTORY -->
+        <h4 style="margin-top:20px; border-bottom:1px solid #333; padding-bottom:5px; color:#888;">RECENT HISTORY</h4>
+        <div class="history-log" id="logList"></div>
     </div>
 
     <script>
-        // --- 1. AUTHENTICATION FIX (UPDATED) ---
-        // Firebase Auth এর বদলে Session Storage চেক করা হচ্ছে
-        const sessionAuth = sessionStorage.getItem("admin_access");
-        if (sessionAuth !== "granted") {
+        // --- 1. SESSION CHECK ---
+        if (sessionStorage.getItem("admin_access") !== "granted") {
             window.location.href = "index.html";
         }
 
         let currentTargetUid = null;
 
-        // --- 2. SEARCH USER FUNCTION ---
+        // --- 2. INTELLIGENT SEARCH (UID OR EMAIL) ---
         function searchUser() {
-            const uid = document.getElementById('searchUid').value.trim();
-            if(!uid) return alert("Enter UID");
+            const input = document.getElementById('searchInput').value.trim();
+            if(!input) return alert("Enter UID or Email!");
 
-            db.ref('users/' + uid).once('value', snap => {
-                if(snap.exists()) {
-                    const data = snap.val();
-                    currentTargetUid = uid;
-                    
-                    document.getElementById('userCard').style.display = 'block';
-                    document.getElementById('uName').innerText = data.name || "No Name";
-                    document.getElementById('uEmail').innerText = data.email || "No Email";
-                    document.getElementById('uUid').innerText = uid;
-                    document.getElementById('uBal').innerText = parseFloat(data.balance || 0).toFixed(4);
-                    
-                    loadUserHistory(uid);
-                } else {
-                    alert("User not found!");
-                    document.getElementById('userCard').style.display = 'none';
+            // Check if input looks like an email
+            if(input.includes('@')) {
+                // Search by Email
+                db.ref('users').orderByChild('email').equalTo(input).once('value', snap => {
+                    if(snap.exists()) {
+                        // Get the first matching UID
+                        const uid = Object.keys(snap.val())[0]; 
+                        const userData = snap.val()[uid];
+                        loadUserData(uid, userData);
+                    } else {
+                        alert("No user found with this Email!");
+                        document.getElementById('userCard').style.display = 'none';
+                    }
+                });
+            } else {
+                // Search by UID
+                db.ref('users/' + input).once('value', snap => {
+                    if(snap.exists()) {
+                        loadUserData(input, snap.val());
+                    } else {
+                        alert("No user found with this UID!");
+                        document.getElementById('userCard').style.display = 'none';
+                    }
+                });
+            }
+        }
+
+        function loadUserData(uid, data) {
+            currentTargetUid = uid;
+            document.getElementById('userCard').style.display = 'block';
+            
+            document.getElementById('uName').innerText = data.name || "No Name";
+            document.getElementById('uEmail').innerText = data.email || "No Email";
+            document.getElementById('uUid').innerText = uid;
+            document.getElementById('uBal').innerText = parseFloat(data.balance || 0).toFixed(4);
+            
+            loadUserHistory(uid);
+        }
+
+        // --- 3. SHOW ALL USERS LIST ---
+        let usersLoaded = false;
+        function toggleUserList() {
+            const container = document.getElementById('allUsersList');
+            if(container.style.display === 'block') {
+                container.style.display = 'none';
+            } else {
+                container.style.display = 'block';
+                if(!usersLoaded) loadAllUsers();
+            }
+        }
+
+        function loadAllUsers() {
+            const listDiv = document.getElementById('allUsersList');
+            db.ref('users').limitToLast(100).once('value', snap => {
+                if(!snap.exists()) {
+                    listDiv.innerHTML = "<div style='padding:10px;'>No users found.</div>";
+                    return;
                 }
+                
+                listDiv.innerHTML = "";
+                snap.forEach(child => {
+                    const uid = child.key;
+                    const u = child.val();
+                    const email = u.email || "No Email";
+                    const bal = parseFloat(u.balance || 0).toFixed(2);
+
+                    listDiv.innerHTML += `
+                        <div class="ul-item">
+                            <div class="ul-info">
+                                <span class="ul-email">${email}</span>
+                                <span class="ul-uid">UID: ${uid} | Bal: $${bal}</span>
+                            </div>
+                            <button class="btn-select" onclick="selectUser('${uid}')">SELECT</button>
+                        </div>
+                    `;
+                });
+                usersLoaded = true;
             });
         }
 
-        // --- 3. SEND GIFT LOGIC ---
+        function selectUser(uid) {
+            document.getElementById('searchInput').value = uid;
+            searchUser();
+            document.getElementById('allUsersList').style.display = 'none';
+        }
+
+        // --- 4. SEND GIFT LOGIC ---
         function sendGift() {
             if(!currentTargetUid) return;
             const amount = parseFloat(document.getElementById('giftAmount').value);
             const msg = document.getElementById('giftMsg').value || "Admin Bonus";
 
-            if(!amount || amount <= 0) return alert("Invalid Amount");
+            if(!amount || amount <= 0) return alert("Enter valid amount!");
 
-            if(confirm(`Send $${amount} to this user?`)) {
+            if(confirm(`Send $${amount} to ${document.getElementById('uEmail').innerText}?`)) {
                 db.ref('users/' + currentTargetUid).once('value', snap => {
                     const u = snap.val();
                     const newBal = (parseFloat(u.balance || 0) + amount).toFixed(4);
                     const newLife = (parseFloat(u.totalEarnings || 0) + amount).toFixed(4);
 
-                    // 1. Update User Balance & Lifetime
                     db.ref('users/' + currentTargetUid).update({
                         balance: newBal,
                         totalEarnings: newLife
                     });
 
-                    // 2. Add to History
-                    const histData = {
+                    db.ref('history/' + currentTargetUid).push({
                         type: 'gift',
                         amount: amount,
                         desc: msg,
                         date: Date.now()
-                    };
-                    db.ref('history/' + currentTargetUid).push(histData);
+                    });
 
-                    // 3. Clear Inputs
                     document.getElementById('giftAmount').value = "";
                     document.getElementById('giftMsg').value = "";
-                    alert("Gift Sent Successfully!");
+                    alert("Success! Balance Updated.");
                     
-                    // Refresh data
-                    searchUser();
+                    // Refresh Display
+                    document.getElementById('uBal').innerText = newBal;
+                    loadUserHistory(currentTargetUid);
                 });
             }
         }
 
-        // --- 4. LOAD HISTORY ---
+        // --- 5. HISTORY ---
         function loadUserHistory(uid) {
             db.ref('history/' + uid).limitToLast(10).on('value', snap => {
                 const list = document.getElementById('logList');
                 list.innerHTML = "";
                 if(!snap.exists()) {
-                    list.innerHTML = "<p style='color:#666;'>No history found.</p>";
+                    list.innerHTML = "<p style='color:#666; font-size:0.8rem;'>No transactions found.</p>";
                     return;
                 }
 
@@ -187,19 +274,24 @@
                 items.reverse();
 
                 items.forEach(item => {
-                    let color = "#2ecc71"; // Green for money in
+                    let color = "#2ecc71";
                     let sign = "+";
-                    
-                    if(item.type === 'withdraw') { color = "#e74c3c"; sign = "-"; } // Red for money out
+                    if(item.type === 'withdraw') { color = "#e74c3c"; sign = "-"; }
 
                     list.innerHTML += `
                         <div class="log-item">
-                            <span>${item.desc} (${item.type})</span>
+                            <span style="color:#ccc;">${item.desc}</span>
                             <span style="color:${color}; font-weight:bold;">${sign}$${parseFloat(item.amount).toFixed(2)}</span>
                         </div>
                     `;
                 });
             });
+        }
+
+        function copyUid() {
+            const uid = document.getElementById('uUid').innerText;
+            navigator.clipboard.writeText(uid);
+            alert("UID Copied!");
         }
     </script>
 </body>

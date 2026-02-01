@@ -99,15 +99,16 @@
     </div>
 
     <script>
+        // --- 1. AUTHENTICATION FIX (UPDATED) ---
+        // Firebase Auth এর বদলে Session Storage চেক করা হচ্ছে
+        const sessionAuth = sessionStorage.getItem("admin_access");
+        if (sessionAuth !== "granted") {
+            window.location.href = "index.html";
+        }
+
         let currentTargetUid = null;
 
-        // AUTH CHECK
-        auth.onAuthStateChanged(user => {
-            if(!user || user.email !== "rafsanvai388@gmail.com") {
-                window.location.href = "index.html";
-            }
-        });
-
+        // --- 2. SEARCH USER FUNCTION ---
         function searchUser() {
             const uid = document.getElementById('searchUid').value.trim();
             if(!uid) return alert("Enter UID");
@@ -118,8 +119,8 @@
                     currentTargetUid = uid;
                     
                     document.getElementById('userCard').style.display = 'block';
-                    document.getElementById('uName').innerText = data.name;
-                    document.getElementById('uEmail').innerText = data.email;
+                    document.getElementById('uName').innerText = data.name || "No Name";
+                    document.getElementById('uEmail').innerText = data.email || "No Email";
                     document.getElementById('uUid').innerText = uid;
                     document.getElementById('uBal').innerText = parseFloat(data.balance || 0).toFixed(4);
                     
@@ -131,7 +132,7 @@
             });
         }
 
-        // SEND GIFT LOGIC
+        // --- 3. SEND GIFT LOGIC ---
         function sendGift() {
             if(!currentTargetUid) return;
             const amount = parseFloat(document.getElementById('giftAmount').value);
@@ -165,12 +166,13 @@
                     document.getElementById('giftMsg').value = "";
                     alert("Gift Sent Successfully!");
                     
-                    // Refresh
+                    // Refresh data
                     searchUser();
                 });
             }
         }
 
+        // --- 4. LOAD HISTORY ---
         function loadUserHistory(uid) {
             db.ref('history/' + uid).limitToLast(10).on('value', snap => {
                 const list = document.getElementById('logList');
@@ -185,9 +187,10 @@
                 items.reverse();
 
                 items.forEach(item => {
-                    let color = "#2ecc71";
+                    let color = "#2ecc71"; // Green for money in
                     let sign = "+";
-                    if(item.type === 'withdraw') { color = "#e74c3c"; sign = "-"; }
+                    
+                    if(item.type === 'withdraw') { color = "#e74c3c"; sign = "-"; } // Red for money out
 
                     list.innerHTML += `
                         <div class="log-item">

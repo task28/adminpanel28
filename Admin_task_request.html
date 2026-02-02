@@ -102,6 +102,32 @@
         /* Messages */
         .msg-empty { color: #666; font-style: italic; padding: 10px; border: 1px dashed #333; text-align: center; }
         .msg-error { color: #e74c3c; padding: 10px; border: 1px solid #e74c3c; background: rgba(231, 76, 60, 0.1); }
+        
+        /* User Info Box in Pending Cards */
+        .user-info-box {
+            background: #1a1a1a; 
+            padding: 10px; 
+            border-radius: 4px; 
+            margin-bottom: 15px; 
+            border-left: 3px solid #2ecc71;
+        }
+        .user-info-item {
+            color: #fff; 
+            font-size: 0.9rem; 
+            margin-bottom: 4px; 
+            font-weight: bold;
+        }
+        .user-info-email {
+            color: #888; 
+            font-size: 0.85rem;
+        }
+        .user-info-label {
+            color: #666;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+        }
     </style>
 </head>
 <body>
@@ -174,7 +200,7 @@
     function loadPending() {
         const list = document.getElementById('pending_list');
         // Listens for tasks where status is 'pending' (User requested a task)
-        db.ref('tasks').orderByChild('status').equalTo('pending').on('value', snap => {
+        db.ref('tasks').orderByChild('status').equalTo('pending').on('value', async snap => {
             list.innerHTML = "";
             
             if(!snap.exists()) { 
@@ -190,26 +216,85 @@
             }
             lastPendingCount = currentCount;
 
-            // Render Cards
+            // Convert snapshot to array to handle async operations
+            const tasks = [];
             snap.forEach(child => {
-                const uid = child.key;
-                list.innerHTML += `
-                    <div class="card">
-                        <div style="color:#d4af37; margin-bottom:10px; font-weight:bold;">UID: ${uid.substring(0,8)}...</div>
-                        
-                        <textarea id="paste_${uid}" class="paste-area" placeholder="Paste full text here (Name: ... Email: ...)..."></textarea>
-                        <button class="btn-autofill" onclick="autoFill('${uid}')"><i class="fas fa-magic"></i> AUTO FILL FORM</button>
-                        
-                        <div class="input-group"><label>First Name</label><input id="fn_${uid}" placeholder="John"></div>
-                        <div class="input-group"><label>Last Name</label><input id="ln_${uid}" placeholder="Doe"></div>
-                        <div class="input-group"><label>Email (Main)</label><input id="email_${uid}"></div>
-                        <div class="input-group"><label>DOB</label><input id="dob_${uid}" placeholder="DD/MM/YYYY"></div>
-                        <div class="input-group"><label>Recovery Email</label><input id="rec_${uid}"></div>
-                        <div class="input-group"><label>Password</label><input id="pass_${uid}"></div>
-                        
-                        <button class="btn-action btn-send" onclick="sendData('${uid}')">SEND DATA TO USER</button>
-                    </div>`;
+                tasks.push({uid: child.key, data: child.val()});
             });
+
+            // Process each task and fetch user details
+            for (let task of tasks) {
+                const uid = task.uid;
+                
+                try {
+                    // Fetch user details from users node
+                    const userSnap = await db.ref('users/' + uid).once('value');
+                    const userData = userSnap.val() || {};
+                    
+                    // Get name (check for 'name' field or combine fname + lname)
+                    let displayName = 'Unknown User';
+                    if (userData.name) {
+                        displayName = userData.name;
+                    } else if (userData.fname || userData.lname) {
+                        displayName = `${userData.fname || ''} ${userData.lname || ''}`.trim();
+                    }
+                    
+                    const displayEmail = userData.email || 'No Email';
+                    
+                    list.innerHTML += `
+                        <div class="card">
+                            <div style="color:#d4af37; margin-bottom:5px; font-weight:bold; font-family:'Share Tech Mono', monospace;">
+                                <i class="fas fa-fingerprint" style="margin-right:5px;"></i>UID: ${uid.substring(0,8)}...
+                            </div>
+                            
+                            <div class="user-info-box">
+                                <div class="user-info-label">Applicant Info</div>
+                                <div class="user-info-item">
+                                    <i class="fas fa-user" style="color:#2ecc71; margin-right:8px; width:16px;"></i>${displayName}
+                                </div>
+                                <div class="user-info-email">
+                                    <i class="fas fa-envelope" style="color:#2ecc71; margin-right:8px; width:16px;"></i>${displayEmail}
+                                </div>
+                            </div>
+                            
+                            <textarea id="paste_${uid}" class="paste-area" placeholder="Paste full text here (Name: ... Email: ...)..."></textarea>
+                            <button class="btn-autofill" onclick="autoFill('${uid}')"><i class="fas fa-magic"></i> AUTO FILL FORM</button>
+                            
+                            <div class="input-group"><label>First Name</label><input id="fn_${uid}" placeholder="John"></div>
+                            <div class="input-group"><label>Last Name</label><input id="ln_${uid}" placeholder="Doe"></div>
+                            <div class="input-group"><label>Email (Main)</label><input id="email_${uid}"></div>
+                            <div class="input-group"><label>DOB</label><input id="dob_${uid}" placeholder="DD/MM/YYYY"></div>
+                            <div class="input-group"><label>Recovery Email</label><input id="rec_${uid}"></div>
+                            <div class="input-group"><label>Password</label><input id="pass_${uid}"></div>
+                            
+                            <button class="btn-action btn-send" onclick="sendData('${uid}')">SEND DATA TO USER</button>
+                        </div>`;
+                } catch (error) {
+                    console.error("Error fetching user:", error);
+                    // Render card without user info if there's an error
+                    list.innerHTML += `
+                        <div class="card">
+                            <div style="color:#d4af37; margin-bottom:10px; font-weight:bold;">
+                                <i class="fas fa-fingerprint" style="margin-right:5px;"></i>UID: ${uid.substring(0,8)}...
+                            </div>
+                            <div class="msg-error" style="margin-bottom:10px; font-size:0.8rem; padding:5px;">
+                                <i class="fas fa-exclamation-triangle"></i> Error loading user data
+                            </div>
+                            
+                            <textarea id="paste_${uid}" class="paste-area" placeholder="Paste full text here..."></textarea>
+                            <button class="btn-autofill" onclick="autoFill('${uid}')"><i class="fas fa-magic"></i> AUTO FILL FORM</button>
+                            
+                            <div class="input-group"><label>First Name</label><input id="fn_${uid}"></div>
+                            <div class="input-group"><label>Last Name</label><input id="ln_${uid}"></div>
+                            <div class="input-group"><label>Email (Main)</label><input id="email_${uid}"></div>
+                            <div class="input-group"><label>DOB</label><input id="dob_${uid}"></div>
+                            <div class="input-group"><label>Recovery Email</label><input id="rec_${uid}"></div>
+                            <div class="input-group"><label>Password</label><input id="pass_${uid}"></div>
+                            
+                            <button class="btn-action btn-send" onclick="sendData('${uid}')">SEND DATA TO USER</button>
+                        </div>`;
+                }
+            }
         }, (error) => {
             console.error(error);
             list.innerHTML = `<div class='msg-error'>Error: ${error.message}</div>`;

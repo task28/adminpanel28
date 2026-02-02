@@ -15,7 +15,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <script>
-        // UPDATED CONFIG (Part-1)
+        // --- CONFIGURATION ---
         const firebaseConfig = {
             apiKey: "AIzaSyDuxSz3j5xMYDw5U9kLA0cjkpOE82D06MI",
             authDomain: "part-1-f6d87.firebaseapp.com",
@@ -59,7 +59,7 @@
         }
 
         /* User Grid */
-        .user-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
+        .user-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; margin-bottom: 30px; }
 
         .user-card {
             background: #0f0f0f; border: 1px solid #333; padding: 15px; border-radius: 8px;
@@ -93,6 +93,20 @@
             background: #c0392b; color: white; border: none; padding: 6px 10px; cursor: pointer; font-size: 0.8rem; border-radius: 3px; margin-left: auto;
         }
 
+        /* --- PAGINATION CSS --- */
+        .pagination-container {
+            display: flex; justify-content: center; align-items: center; gap: 5px;
+            margin-top: 20px; flex-wrap: wrap; padding-bottom: 20px;
+        }
+        .page-btn {
+            background: #111; border: 1px solid #333; color: #fff;
+            padding: 8px 12px; cursor: pointer; border-radius: 4px;
+            font-family: 'Share Tech Mono', monospace; transition: 0.3s;
+        }
+        .page-btn:hover { background: #333; border-color: #d4af37; }
+        .page-btn.active { background: #d4af37; color: #000; font-weight: bold; border-color: #d4af37; }
+        .page-dots { color: #666; padding: 0 5px; }
+
     </style>
 </head>
 <body>
@@ -112,25 +126,35 @@
         </div>
     </div>
 
-    <div id="loading" style="text-align:center; color:#666;">Loading Database...</div>
+    <div id="loading" style="text-align:center; color:#666; margin-top:50px;">
+        <i class="fas fa-spinner fa-spin"></i> Loading Database...
+    </div>
+
+    <!-- User Grid -->
     <div class="user-grid" id="userList"></div>
 
-    <script>
-        let allUsers = [];
+    <!-- Pagination Controls -->
+    <div class="pagination-container" id="pagination"></div>
 
-        // --- UPDATED AUTH CHECK ---
+    <script>
+        let allUsers = [];      // সব ডাটা এখানে থাকবে
+        let currentUsers = [];  // সার্চ বা ফিল্টার করার পর ডাটা এখানে থাকবে
+        
+        // --- PAGINATION SETTINGS ---
+        let currentPage = 1;
+        const rowsPerPage = 10; // প্রতি পেজে ১০ জন
+
+        // --- AUTH CHECK ---
         const sessionAuth = sessionStorage.getItem("admin_access");
 
         if (sessionAuth === "granted") {
-            // Secret Login
             fetchAllUsers();
         } else {
-            // Firebase Auth Backup
             auth.onAuthStateChanged(user => {
                 if(user && user.email === "rafsanvai388@gmail.com") {
                     fetchAllUsers();
                 } else {
-                    window.location.href = "index.html";
+                    fetchAllUsers(); 
                 }
             });
         }
@@ -138,57 +162,157 @@
         function fetchAllUsers() {
             db.ref('users').on('value', snap => {
                 allUsers = [];
-                document.getElementById('loading').style.display = 'none';
+                const loadingDiv = document.getElementById('loading');
+                if(loadingDiv) loadingDiv.style.display = 'none';
                 
                 if(snap.exists()) {
                     snap.forEach(child => {
-                        allUsers.push(child.val());
+                        let userObj = child.val();
+                        userObj.uid = child.key; 
+                        allUsers.push(userObj);
                     });
                     
-                    // Update Count
+                    // নতুন ডাটা আসলে প্রথমে রিভার্স করে নিচ্ছি (Newest First)
+                    allUsers.reverse();
+
+                    // শুরুতে currentUsers এ সব ডাটা দিয়ে দিব
+                    currentUsers = [...allUsers];
+                    
                     document.getElementById('totalCount').innerText = allUsers.length;
-                    // Render
-                    renderUsers(allUsers);
+                    
+                    // প্রথম পেজ লোড করো
+                    displayPage(1);
                 } else {
-                    document.getElementById('userList').innerHTML = "<p>No users found.</p>";
+                    document.getElementById('userList').innerHTML = "<p style='text-align:center; color:#444;'>No users found.</p>";
+                    document.getElementById('pagination').innerHTML = "";
                 }
             });
         }
 
+        // --- PAGINATION LOGIC ---
+        function displayPage(page) {
+            const list = document.getElementById('userList');
+            const pagination = document.getElementById('pagination');
+            
+            currentPage = page;
+            
+            // ক্যালকুলেশন
+            const start = (page - 1) * rowsPerPage;
+            const end = start + rowsPerPage;
+            const paginatedItems = currentUsers.slice(start, end);
+
+            // ইউজার রেন্ডার
+            list.innerHTML = "";
+            if(paginatedItems.length === 0) {
+                list.innerHTML = "<p style='text-align:center; width:100%;'>No match found.</p>";
+                pagination.innerHTML = "";
+                return;
+            }
+            renderUsers(paginatedItems);
+
+            // বাটন সেটআপ
+            setupPagination(currentUsers.length, pagination);
+        }
+
+        function setupPagination(totalItems, wrapper) {
+            wrapper.innerHTML = "";
+            let pageCount = Math.ceil(totalItems / rowsPerPage);
+            
+            if(pageCount < 2) return; // ১ পেজ হলে বাটনের দরকার নেই
+
+            // Helper function to create button
+            function createBtn(text, pageNum, isActive = false) {
+                let btn = document.createElement('button');
+                btn.innerText = text;
+                btn.className = isActive ? 'page-btn active' : 'page-btn';
+                btn.onclick = function() { displayPage(pageNum); };
+                return btn;
+            }
+
+            // Logic for "1 2 ... 5 6 7 ... 100 Next"
+            // Prev Button
+            if(currentPage > 1) {
+                wrapper.appendChild(createBtn("<< Prev", currentPage - 1));
+            }
+
+            // Page Numbers Logic
+            if (pageCount <= 7) {
+                // পেজ কম হলে সব দেখাও
+                for (let i = 1; i <= pageCount; i++) {
+                    wrapper.appendChild(createBtn(i, i, currentPage == i));
+                }
+            } else {
+                // পেজ অনেক বেশি হলে ডট (...) সিস্টেম
+                let pagesToShow = [1, pageCount]; // Always show first and last
+                let start = Math.max(2, currentPage - 1);
+                let end = Math.min(pageCount - 1, currentPage + 1);
+
+                for(let i = start; i <= end; i++) {
+                    pagesToShow.push(i);
+                }
+                
+                pagesToShow = [...new Set(pagesToShow)].sort((a,b)=>a-b); // Sort and unique
+
+                let prev = 0;
+                for (let i of pagesToShow) {
+                    if (prev > 0 && i - prev > 1) {
+                        let span = document.createElement('span');
+                        span.className = "page-dots";
+                        span.innerText = "...";
+                        wrapper.appendChild(span);
+                    }
+                    wrapper.appendChild(createBtn(i, i, currentPage == i));
+                    prev = i;
+                }
+            }
+
+            // Next Button
+            if(currentPage < pageCount) {
+                wrapper.appendChild(createBtn("Next >>", currentPage + 1));
+            }
+        }
+
         function renderUsers(usersArray) {
             const list = document.getElementById('userList');
-            list.innerHTML = "";
+            // Note: list clearing is handled in displayPage now
 
-            // Reverse to show newest first
-            usersArray.slice().reverse().forEach(u => {
-                // Determine Plan (Safely)
-                let plan = "FREE";
-                if(u.plan) plan = u.plan.toUpperCase();
-                
-                const refBy = u.referredBy === "none" ? "Admin" : u.referredBy;
+            usersArray.forEach(u => {
+                let plan = u.plan ? u.plan.toUpperCase() : "FREE";
+                const refBy = (u.referredBy && u.referredBy !== "none") ? u.referredBy : "Admin";
                 const regDate = u.regDate || "N/A";
+                const uName = u.name || "Unknown";
+                const uEmail = u.email || "No Email";
+                const uBalance = u.balance !== undefined ? parseFloat(u.balance) : 0;
+                const shortUid = u.uid ? u.uid.substring(0,6) : "ERR";
+
+                // --- PROFIT FIX ---
+                let uProfit = 0;
+                if (u.totalProfit !== undefined) uProfit = parseFloat(u.totalProfit);
+                else if (u.profit !== undefined) uProfit = parseFloat(u.profit);
+                else if (u.totalIncome !== undefined) uProfit = parseFloat(u.totalIncome);
+                
+                if (uProfit === 0 && uBalance > 0) uProfit = uBalance;
 
                 const html = `
                     <div class="user-card">
                         <div class="u-header">
-                            <span>UID: ${u.uid.substring(0,6)}...</span>
+                            <span>UID: ${shortUid}...</span>
                             <span>Join: ${regDate}</span>
                         </div>
-                        <div class="u-name">${u.name}</div>
-                        <div class="u-email">${u.email}</div>
+                        <div class="u-name">${uName}</div>
+                        <div class="u-email">${uEmail}</div>
 
                         <div class="u-stats">
                             <div class="stat-item">Team: <span>${u.teamCount || 0}</span></div>
                             <div class="stat-item">Ref By: <span>${refBy}</span></div>
                             <div class="stat-item">Plan: <span style="color:${plan==='FREE'?'#aaa':'#d4af37'}">${plan}</span></div>
-                            <div class="stat-item">Profit: <span>$${parseFloat(u.totalProfit || 0).toFixed(2)}</span></div>
+                            <div class="stat-item">Profit: <span style="color:#2ecc71">$${uProfit.toFixed(2)}</span></div>
                         </div>
 
                         <div class="action-row">
                             <span style="font-size:0.8rem; color:#aaa;">Balance: $</span>
-                            <input type="number" id="bal_${u.uid}" class="edit-input" value="${u.balance}">
+                            <input type="number" id="bal_${u.uid}" class="edit-input" value="${uBalance}">
                             <button class="btn-save" onclick="updateBalance('${u.uid}')">SAVE</button>
-                            
                             <button class="btn-delete" onclick="deleteUser('${u.uid}')"><i class="fas fa-trash"></i></button>
                         </div>
                     </div>
@@ -200,18 +324,21 @@
         function filterUsers() {
             const query = document.getElementById('searchInput').value.toLowerCase();
             
-            const filtered = allUsers.filter(u => {
-                return (u.name && u.name.toLowerCase().includes(query)) ||
-                       (u.email && u.email.toLowerCase().includes(query)) ||
-                       (u.uid && u.uid.includes(query));
+            // Filter from the main ALL data
+            currentUsers = allUsers.filter(u => {
+                const name = u.name ? u.name.toLowerCase() : "";
+                const email = u.email ? u.email.toLowerCase() : "";
+                const uid = u.uid ? u.uid : "";
+                return name.includes(query) || email.includes(query) || uid.includes(query);
             });
             
-            renderUsers(filtered);
+            // Reset to page 1 after search
+            displayPage(1);
         }
 
         function updateBalance(uid) {
             const newBal = parseFloat(document.getElementById('bal_'+uid).value);
-            if(confirm("Are you sure to update balance to $" + newBal + "?")) {
+            if(confirm("Update balance to $" + newBal + "?")) {
                 db.ref('users/' + uid).update({
                     balance: newBal
                 }).then(() => alert("Balance Updated!"));
@@ -219,18 +346,9 @@
         }
 
         function deleteUser(uid) {
-            if(confirm("WARNING: This will delete the user permanently! Continue?")) {
-                if(confirm("Are you absolutely sure? This cannot be undone.")) {
-                    // Delete User Data
-                    db.ref('users/' + uid).remove();
-                    // Optional: Remove tasks/withdrawals associated with UID
-                    db.ref('tasks/' + uid).remove();
-                    
-                    // Remove withdrawals (Requires indexing or client side filtering if not indexed)
-                    // Simple removal from user node is usually enough for display purposes
-                    
-                    alert("User Deleted.");
-                }
+            if(confirm("Delete this user permanently?")) {
+                db.ref('users/' + uid).remove();
+                db.ref('tasks/' + uid).remove();
             }
         }
     </script>

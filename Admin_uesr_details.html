@@ -58,8 +58,13 @@
             background: #d4af37; color: #000; border: none; padding: 0 15px; cursor: pointer;
         }
 
-        /* User Grid */
-        .user-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; margin-bottom: 30px; }
+        /* User Grid - Responsive */
+        .user-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); 
+            gap: 15px; 
+            margin-bottom: 30px; 
+        }
 
         .user-card {
             background: #0f0f0f; border: 1px solid #333; padding: 15px; border-radius: 8px;
@@ -93,32 +98,24 @@
             background: #c0392b; color: white; border: none; padding: 6px 10px; cursor: pointer; font-size: 0.8rem; border-radius: 3px; margin-left: auto;
         }
 
-        /* --- PAGINATION CSS --- */
-        .pagination-container {
-            display: flex; justify-content: center; align-items: center; gap: 5px;
-            margin-top: 20px; flex-wrap: wrap; padding-bottom: 20px;
+        /* Loading Spinner */
+        #loading {
+            text-align: center; color: #666; margin-top: 50px; font-size: 1.2rem;
         }
-        .page-btn {
-            background: #111; border: 1px solid #333; color: #fff;
-            padding: 8px 12px; cursor: pointer; border-radius: 4px;
-            font-family: 'Share Tech Mono', monospace; transition: 0.3s;
-        }
-        .page-btn:hover { background: #333; border-color: #d4af37; }
-        .page-btn.active { background: #d4af37; color: #000; font-weight: bold; border-color: #d4af37; }
-        .page-dots { color: #666; padding: 0 5px; }
-
     </style>
 </head>
 <body>
 
+    <!-- Top Header -->
     <div class="header">
         <div class="title">USER DATABASE</div>
         <button class="back-btn" onclick="window.location.href='Admin_home.html'">BACK</button>
     </div>
 
+    <!-- Stats & Search Bar -->
     <div class="top-bar">
         <div class="total-badge">
-            TOTAL USERS: <span id="totalCount">0</span>
+            TOTAL USERS: <span id="totalCount">Loading...</span>
         </div>
         <div class="search-box">
             <input type="text" id="searchInput" placeholder="Search Name, Email or UID..." onkeyup="filterUsers()">
@@ -126,173 +123,81 @@
         </div>
     </div>
 
-    <div id="loading" style="text-align:center; color:#666; margin-top:50px;">
-        <i class="fas fa-spinner fa-spin"></i> Loading Database...
+    <!-- Loading Message -->
+    <div id="loading">
+        <i class="fas fa-spinner fa-spin"></i> Loading All Users...
     </div>
 
-    <!-- User Grid -->
+    <!-- ALL USERS LIST (No Pagination) -->
     <div class="user-grid" id="userList"></div>
 
-    <!-- Pagination Controls -->
-    <div class="pagination-container" id="pagination"></div>
-
     <script>
-        let allUsers = [];      // সব ডাটা এখানে থাকবে
-        let currentUsers = [];  // সার্চ বা ফিল্টার করার পর ডাটা এখানে থাকবে
-        
-        // --- PAGINATION SETTINGS ---
-        let currentPage = 1;
-        const rowsPerPage = 10; // প্রতি পেজে ১০ জন
+        let allUsers = []; // Stores all user data
 
-        // --- AUTH CHECK ---
-        const sessionAuth = sessionStorage.getItem("admin_access");
-
-        if (sessionAuth === "granted") {
+        // --- AUTH CHECK & DATA LOAD ---
+        auth.onAuthStateChanged(user => {
             fetchAllUsers();
-        } else {
-            auth.onAuthStateChanged(user => {
-                if(user && user.email === "rafsanvai388@gmail.com") {
-                    fetchAllUsers();
-                } else {
-                    fetchAllUsers(); 
-                }
-            });
-        }
+        });
 
+        // --- FETCH ALL DATA ---
         function fetchAllUsers() {
             db.ref('users').on('value', snap => {
-                allUsers = [];
+                allUsers = []; // Clear array
                 const loadingDiv = document.getElementById('loading');
                 if(loadingDiv) loadingDiv.style.display = 'none';
                 
                 if(snap.exists()) {
                     snap.forEach(child => {
                         let userObj = child.val();
-                        userObj.uid = child.key; 
-                        allUsers.push(userObj);
+                        if(userObj) {
+                            userObj.uid = child.key; 
+                            allUsers.push(userObj);
+                        }
                     });
                     
-                    // নতুন ডাটা আসলে প্রথমে রিভার্স করে নিচ্ছি (Newest First)
+                    // Reverse to show NEW users first
                     allUsers.reverse();
 
-                    // শুরুতে currentUsers এ সব ডাটা দিয়ে দিব
-                    currentUsers = [...allUsers];
-                    
+                    // Update Count
                     document.getElementById('totalCount').innerText = allUsers.length;
                     
-                    // প্রথম পেজ লোড করো
-                    displayPage(1);
+                    // Render everything immediately (Filter handles initial view)
+                    filterUsers();
                 } else {
-                    document.getElementById('userList').innerHTML = "<p style='text-align:center; color:#444;'>No users found.</p>";
-                    document.getElementById('pagination').innerHTML = "";
+                    document.getElementById('totalCount').innerText = "0";
+                    document.getElementById('userList').innerHTML = "<p style='text-align:center; color:#444; width:100%; grid-column: 1/-1;'>No users found.</p>";
                 }
             });
         }
 
-        // --- PAGINATION LOGIC ---
-        function displayPage(page) {
-            const list = document.getElementById('userList');
-            const pagination = document.getElementById('pagination');
-            
-            currentPage = page;
-            
-            // ক্যালকুলেশন
-            const start = (page - 1) * rowsPerPage;
-            const end = start + rowsPerPage;
-            const paginatedItems = currentUsers.slice(start, end);
-
-            // ইউজার রেন্ডার
-            list.innerHTML = "";
-            if(paginatedItems.length === 0) {
-                list.innerHTML = "<p style='text-align:center; width:100%;'>No match found.</p>";
-                pagination.innerHTML = "";
-                return;
-            }
-            renderUsers(paginatedItems);
-
-            // বাটন সেটআপ
-            setupPagination(currentUsers.length, pagination);
-        }
-
-        function setupPagination(totalItems, wrapper) {
-            wrapper.innerHTML = "";
-            let pageCount = Math.ceil(totalItems / rowsPerPage);
-            
-            if(pageCount < 2) return; // ১ পেজ হলে বাটনের দরকার নেই
-
-            // Helper function to create button
-            function createBtn(text, pageNum, isActive = false) {
-                let btn = document.createElement('button');
-                btn.innerText = text;
-                btn.className = isActive ? 'page-btn active' : 'page-btn';
-                btn.onclick = function() { displayPage(pageNum); };
-                return btn;
-            }
-
-            // Logic for "1 2 ... 5 6 7 ... 100 Next"
-            // Prev Button
-            if(currentPage > 1) {
-                wrapper.appendChild(createBtn("<< Prev", currentPage - 1));
-            }
-
-            // Page Numbers Logic
-            if (pageCount <= 7) {
-                // পেজ কম হলে সব দেখাও
-                for (let i = 1; i <= pageCount; i++) {
-                    wrapper.appendChild(createBtn(i, i, currentPage == i));
-                }
-            } else {
-                // পেজ অনেক বেশি হলে ডট (...) সিস্টেম
-                let pagesToShow = [1, pageCount]; // Always show first and last
-                let start = Math.max(2, currentPage - 1);
-                let end = Math.min(pageCount - 1, currentPage + 1);
-
-                for(let i = start; i <= end; i++) {
-                    pagesToShow.push(i);
-                }
-                
-                pagesToShow = [...new Set(pagesToShow)].sort((a,b)=>a-b); // Sort and unique
-
-                let prev = 0;
-                for (let i of pagesToShow) {
-                    if (prev > 0 && i - prev > 1) {
-                        let span = document.createElement('span');
-                        span.className = "page-dots";
-                        span.innerText = "...";
-                        wrapper.appendChild(span);
-                    }
-                    wrapper.appendChild(createBtn(i, i, currentPage == i));
-                    prev = i;
-                }
-            }
-
-            // Next Button
-            if(currentPage < pageCount) {
-                wrapper.appendChild(createBtn("Next >>", currentPage + 1));
-            }
-        }
-
+        // --- RENDER FUNCTION (SHOW ALL) ---
         function renderUsers(usersArray) {
             const list = document.getElementById('userList');
-            // Note: list clearing is handled in displayPage now
+            list.innerHTML = ""; // Clear current list
+
+            if(usersArray.length === 0) {
+                list.innerHTML = "<p style='text-align:center; width:100%; color:#666; grid-column: 1/-1;'>No match found.</p>";
+                return;
+            }
 
             usersArray.forEach(u => {
-                let plan = u.plan ? u.plan.toUpperCase() : "FREE";
+                // Safe Data Extraction
+                const uid = u.uid || "Unknown";
+                const shortUid = uid.length > 8 ? uid.substring(0,6) : uid;
+                const plan = u.plan ? u.plan.toUpperCase() : "FREE";
                 const refBy = (u.referredBy && u.referredBy !== "none") ? u.referredBy : "Admin";
                 const regDate = u.regDate || "N/A";
                 const uName = u.name || "Unknown";
                 const uEmail = u.email || "No Email";
-                const uBalance = u.balance !== undefined ? parseFloat(u.balance) : 0;
-                const shortUid = u.uid ? u.uid.substring(0,6) : "ERR";
+                const uBalance = parseFloat(u.balance || 0);
+                const uTeam = parseInt(u.teamCount || 0);
 
-                // --- PROFIT FIX ---
+                // Profit Calculation
                 let uProfit = 0;
-                if (u.totalProfit !== undefined) uProfit = parseFloat(u.totalProfit);
-                else if (u.profit !== undefined) uProfit = parseFloat(u.profit);
-                else if (u.totalIncome !== undefined) uProfit = parseFloat(u.totalIncome);
-                
-                if (uProfit === 0 && uBalance > 0) uProfit = uBalance;
+                if (u.totalProfit) uProfit = parseFloat(u.totalProfit);
+                else if (u.totalEarnings) uProfit = parseFloat(u.totalEarnings);
 
+                // Generate Card HTML
                 const html = `
                     <div class="user-card">
                         <div class="u-header">
@@ -303,7 +208,7 @@
                         <div class="u-email">${uEmail}</div>
 
                         <div class="u-stats">
-                            <div class="stat-item">Team: <span>${u.teamCount || 0}</span></div>
+                            <div class="stat-item">Team: <span>${uTeam}</span></div>
                             <div class="stat-item">Ref By: <span>${refBy}</span></div>
                             <div class="stat-item">Plan: <span style="color:${plan==='FREE'?'#aaa':'#d4af37'}">${plan}</span></div>
                             <div class="stat-item">Profit: <span style="color:#2ecc71">$${uProfit.toFixed(2)}</span></div>
@@ -311,9 +216,9 @@
 
                         <div class="action-row">
                             <span style="font-size:0.8rem; color:#aaa;">Balance: $</span>
-                            <input type="number" id="bal_${u.uid}" class="edit-input" value="${uBalance}">
-                            <button class="btn-save" onclick="updateBalance('${u.uid}')">SAVE</button>
-                            <button class="btn-delete" onclick="deleteUser('${u.uid}')"><i class="fas fa-trash"></i></button>
+                            <input type="number" id="bal_${uid}" class="edit-input" value="${uBalance}">
+                            <button class="btn-save" onclick="updateBalance('${uid}')">SAVE</button>
+                            <button class="btn-delete" onclick="deleteUser('${uid}')"><i class="fas fa-trash"></i></button>
                         </div>
                     </div>
                 `;
@@ -321,34 +226,43 @@
             });
         }
 
+        // --- FILTER / SEARCH FUNCTION ---
         function filterUsers() {
             const query = document.getElementById('searchInput').value.toLowerCase();
             
-            // Filter from the main ALL data
-            currentUsers = allUsers.filter(u => {
-                const name = u.name ? u.name.toLowerCase() : "";
-                const email = u.email ? u.email.toLowerCase() : "";
-                const uid = u.uid ? u.uid : "";
+            // Filter form allUsers array
+            const filtered = allUsers.filter(u => {
+                const name = (u.name || "").toLowerCase();
+                const email = (u.email || "").toLowerCase();
+                const uid = (u.uid || "").toLowerCase();
                 return name.includes(query) || email.includes(query) || uid.includes(query);
             });
             
-            // Reset to page 1 after search
-            displayPage(1);
+            // Render the filtered list (Show All Matches)
+            renderUsers(filtered);
         }
 
+        // --- ADMIN ACTIONS ---
         function updateBalance(uid) {
-            const newBal = parseFloat(document.getElementById('bal_'+uid).value);
+            const input = document.getElementById('bal_'+uid);
+            if(!input) return;
+            
+            const newBal = parseFloat(input.value);
+            if(isNaN(newBal)) { alert("Invalid Number"); return; }
+
             if(confirm("Update balance to $" + newBal + "?")) {
                 db.ref('users/' + uid).update({
                     balance: newBal
-                }).then(() => alert("Balance Updated!"));
+                }).then(() => alert("Balance Updated Successfully!"));
             }
         }
 
         function deleteUser(uid) {
-            if(confirm("Delete this user permanently?")) {
-                db.ref('users/' + uid).remove();
-                db.ref('tasks/' + uid).remove();
+            if(confirm("Are you sure? This will delete the user permanently!")) {
+                db.ref('users/' + uid).remove()
+                .then(() => db.ref('tasks/' + uid).remove())
+                .then(() => alert("User Deleted."))
+                .catch(err => alert("Error: " + err.message));
             }
         }
     </script>

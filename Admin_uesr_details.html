@@ -150,6 +150,7 @@
                     snap.forEach(child => {
                         let userObj = child.val();
                         if(userObj) {
+                            // FIX: Ensure UID is grabbed from key if missing in object
                             userObj.uid = child.key; 
                             allUsers.push(userObj);
                         }
@@ -183,6 +184,7 @@
             usersArray.forEach(u => {
                 // Safe Data Extraction
                 const uid = u.uid || "Unknown";
+                // Show first 6 chars of UID for cleaner UI
                 const shortUid = uid.length > 8 ? uid.substring(0,6) : uid;
                 const plan = u.plan ? u.plan.toUpperCase() : "FREE";
                 const refBy = (u.referredBy && u.referredBy !== "none") ? u.referredBy : "Admin";
